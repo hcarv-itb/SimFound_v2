@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<project>
+    <kind type="protein-ligand">
+        <interaction sub_type="protein-substrate">
+            <system  title="Calb-MeOH" complete="True">
+                <protein>CalB</protein>
+                <ligand>MeOH</ligand>
+                <parameter>concentration</parameter>
+                <replicas>10</replicas>
+                <description>Alcoholysis reaction of CalB-acetyl intermediate with methanol</description>
+            </system>
+            <system title="Calb-(Ser)3-MeOH" complete="True">
+                <protein>CalB-ser</protein>
+                <ligand>MeOH</ligand>
+                <parameter>concentration</parameter>
+                <replicas>10</replicas>
+                <description>Triple Ser variant of CalB</description>
+            </system>
+            <system title="Calb-(Ala)3-MeOH" complete="False">
+                <protein>Calb-ala</protein>
+                <ligand>MeOH</ligand>
+                <parameter>concentration</parameter>
+                <replicas>10</replicas>
+                <description>Triple Ala variant of CalB</description>
+            </system>
+            <system title="msAcT-BeOH" complete="False">
+                <protein>msAcT</protein>
+                <ligand>BeOH</ligand>
+                <parameter>concentration</parameter>
+                <replicas>10</replicas>
+                <description></description>
+            </system>
+        </interaction>
+        <interaction sub_type="protein-protein">
+            <system title="SETD2-H3" complete="False">
+                <protein1>SETD2</protein1>
+                <protein2>H3</protein2>
+                <parameter>mutant</parameter>
+                <replicas>2</replicas>
+                <descpription>PN2 continuation</descpription>
+            </system>
+        </interaction>
+    </kind>
+    <kind type="DES">
+        <interaction sub_type="protein-DES">
+            <system title='DES-MSc' complete="False">
+                <protein>P</protein>
+                <ligand>L</ligand>
+                <parameter>temperature</parameter>
+                <descprition>Test system for master project</descprition>
+            </system>
+        </interaction>
+    </kind>
+</project>
