@@ -153,11 +153,16 @@ class Discretize:
 
 
 
-    def nac_profile(self, input_df,
+    def nac_profile(self, 
                         shells, 
                         resolution=0.5,
                         nac_lims=(0,150), 
-                        labels=None):
+                        labels=None,
+                        sels=None,
+                        start=0,
+                        stop=10,
+                        stride=1,
+                        dt=1):
         
         """
         Function to obtain orientation of molecules (as given by difference between distances) for each NAC bin. 
@@ -165,32 +170,110 @@ class Discretize:
         Needs to convert the arrays into dataframes. 
         NOTE: The combined dataframe of NAC and DIST_O "merge" can be built with less number of frames, e.g. skipping each 2,  with the ".iloc[::2]" option.
         This may be required due to too much data being passed from the replicate_iterator().
+        
+        
+        TODO: make call to ask for start stop, etc.
         """
 
         nac_range=np.arange(nac_lims[0], nac_lims[1], resolution)
     
+        def calculate(name, system, feature_name):
+                
+            system.discretized={}
       
-        indexes=system.name.split('-') # + (feature,) #For df build        
-        names=[f'l{i}' for i in range(1, len(indexes)+1)] 
-        column_index=pd.MultiIndex.from_tuples([indexes], names=names)
+            indexes=system.name.split('-') # + (feature,) #For df build        
+            names=[f'l{i}' for i in range(1, len(indexes)+1)] 
+            column_index=pd.MultiIndex.from_tuples([indexes], names=names)
        
-        feature_file=system.features[feature_name]
+            feature_file=system.features[feature_name]
+            print(feature_file)            
+            
+            if feature_name == 'pre-calculated':
+                
+               print(f'Feature name is: {feature_name}.\nWill load pre-calculated file.')
+                
+               raw_data=np.load(feature_file)
+               #Reconstruct a DataFrame of stored feature into a Dataframe
+               #TODO: Check behaviour for ref > 1.
+                    
+               frames, ref, sel=np.shape(raw_data)
+               raw_reshape=raw_data.reshape(frames, ref*sel)
+                            
+               if ref == 1:
+                   RAW=pd.DataFrame(raw_reshape)
+                   RAW.columns=RAW.columns + 1
+               else:
+                   nac_df_system=pd.DataFrame()
+                   split=np.split(raw_reshape, ref, axis=1)
+                   for ref in split:
+                       df_ref=pd.DataFrame(ref)
+                       df_ref.columns=df_ref.columns + 1
+                       nac_df_system=pd.concat([nac_df_system, df_ref], axis=0) 
+                       
+
+            elif feature_name == 'dNAC':
+        
+                nac_file=f'{results_folder}/dNAC_{len(sels)}-i{start*ps}-o{stop}-s{dt}.npy'
+
+                if not os.path.exists(nac_file):
+                    
+                    dists=[] #list of distance arrays to be populated
+                    
+                    #iterate through the list of sels. 
+                    #For each sel, define atomgroup1 (sel1) and atomgroup2 (sel2)
+                    for idx, sel in enumerate(sels, 1): 
+                        dist_file=f'{system_folder}/distance{idx}-i{start*ps}-o{stop}-s{dt}.npy'
+            
+                        if not os.path.exists(dist_file):
+                
+                            print(f'\t{dist_file} not found. Reading trajectory...')  
+                            u=mda.Universe(topology, trajectory)
+                            sel1, sel2 =u.select_atoms(sel[0]), u.select_atoms(sel[1]).positions
+                    
+                            print(f'\t\tsel1: {sel1}\n\t\tsel2: {sel2}\n\t\tCalculating...')        
+                    
+                            dists_=np.around(
+                                [D.distance_array(sel1, sel2, box=u.dimensions) for ts in u.trajectory[start:stop:dt]],
+                                decimals=3) 
+                                
+                            np.save(filename, dists_)
+                        
+                        else:
+                            dists_=np.load(dist_file)
+                            print(f'\t{dist_file} found. Shape: {np.shape(dists[idx])}')
+                    
+                        dists.append(dists_)
+                        
+                    #NAC calculation
+                    nac_array=np.around(np.sqrt(np.power(np.asarray(dists), 2).sum(axis=0)/len(dists)), 3) #SQRT(SUM(di^2)/#i)  
+                    
+                    nac_df_system=pd.DataFrame(nac_array)
+                    #nac_df=pd.DataFrame(np.round(nac_array.ravel(), decimals=1))
+                    
+                    print(nac_df)
+     
+            
+            else:
+               print('Feature name not defined')
+               nac_df_system=None
+               
+               
+            return nac_df_system
 
 
+            #Generate the discretization dNAC into shells of thickness "resolution" across "range"
+            nac_center_bin=nac_range+(resolution/2)
+            
+            NAC=pd.DataFrame(index=nac_center_bin[:-1], columns=column_index)
 
-        #Generate the discretization dNAC into shells of thickness "resolution" across "range"
-        nac_center_bin=nac_range+(resolution/2)
+            for value in RAW: #optional: Do it across entire daframe to ignore individual molecule "value" information 
             
-        NAC=pd.DataFrame(index=nac_center_bin[:-1], columns=column_index)
-
-        for value in input_df: #optional: Do it across entire daframe to ignore individual molecule "value" information 
+                hist, _=np.histogram(RAW[value], bins=nac_range)    
+                NAC=pd.concat([NAC, pd.DataFrame(hist, index=nac_center_bin[:-1], columns=column_index)], axis=1)
             
-            hist, _=np.histogram(input_df[value], bins=nac_range)    
-            NAC=pd.concat([NAC, pd.DataFrame(hist, index=nac_center_bin[:-1], columns=column_index)], axis=1)
+            NAC.dropna(axis=1, inplace=True)
             
-        NAC.dropna(axis=1, inplace=True)
-            
-        return NAC, np.shape(RAW)[0] #0, frames, 1 ref, 2 sel. TODO: Check this well, its needed for ref > 1
+            return NAC, np.shape(RAW)[0] #0, frames, 1 ref, 2 sel. TODO: Check this well, its needed for ref > 1
         
 
 
