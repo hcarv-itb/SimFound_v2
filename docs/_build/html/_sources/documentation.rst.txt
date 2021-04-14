@@ -2,8 +2,8 @@ Documentation
 =============
 
 
-Simulation Foundry v2
----------------------
+Source
+------
 
 
 .. automodule:: source.main

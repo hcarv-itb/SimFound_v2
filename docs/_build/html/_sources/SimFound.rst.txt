@@ -1,21 +1,22 @@
-source
-======
+Source code
+===========
 
+Source code can be checked here.
 
 
 Submodules
 ----------
 
-Main module
------------
+source.main module
+------------------
 
-.. automodule:: source.main
+.. automodule:: source
    :members:
    :undoc-members:
    :show-inheritance:
 
-Deprecated
-----------
+source.deprecated module
+---------------------
 
 .. automodule:: source.deprecated
    :members:
@@ -23,7 +24,8 @@ Deprecated
    :show-inheritance:
 
 
-base contents
+
+Module contents
 ---------------
 
 .. automodule:: source
