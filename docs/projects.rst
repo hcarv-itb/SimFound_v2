@@ -11,7 +11,7 @@ Thermodynamics and kinetics of CALB-methanol interactions.
 .. toctree::
    :maxdepth: 3
    
-   notebook/SimFound_v2.ipynb
+   SimFound_v2.ipynb
 
 .. toctree::
    :maxdepth: 3

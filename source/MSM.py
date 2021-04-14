@@ -5,55 +5,45 @@ Created on Thu Jan 21 18:52:02 2021
 @author: hcarv
 """
 
+import os
+import pyemma
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+import numpy as np
+import pandas as pd
+
 class MSM:
-    """Base class to create Markov state models. Discretization scheme 'scheme' needs to provided.
-    The dictionary of values needs to be provided. Accepts name of protein 'prot' and name of ligand 'mol' to generate file names.
-    Physical time of frames needs to be provided 'ps'."""
+    """
+    Base class to create Markov state models. 
     
-    def __init__(self, scheme, feature, parameter, values, protein, ligand, ps, results='results'):
-        self.scheme=scheme
-        self.feature=feature
-        self.parameter=parameter
-        self.values=values
-        self.protein=protein
-        self.ligand=ligand
-        self.ps=int(ps)
+    """
+    
+    def __init__(self, systems, data=None, discretized_name='discretized', results=os.getcwd()):
+        """
+        
+
+        Parameters
+        ----------
+        systems : dict
+            The dictionary of systems.
+        discretized_name : array
+            The array of feature dictionaries. The default is 'None'.
+        results_folder : path
+            The path were to store results from methods.
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        self.systems=systems
+        self.data=data
+        self.discretized_name=discretized_name
         self.results=results
-        self.name=f'{scheme}-{feature}-{parameter}'
+        self.msms={}
         
-    def ITS(self, lags):
-        """Function to create ITS plot using as input 'lags' and the 'discretized' values.
-        The corresponding 'png' file is checked in the 'results' folder. If found, calculations will be skipped."""
-        
-        
-        its_name=f'{self.results}/its_bayesMSM_{self.scheme}-{self.feature}-{self.protein}-{self.ligand}-{self.parameter}-{self.ps}ps.png'
-        self.values['its']=its_name
-        print(its_name)
-        
-        if os.path.exists(its_name):
-            print('ITS plot already calculated:')
-            plt.axis("off")
-            plt.imshow(mpimg.imread(its_name))
-            plt.clf()
-        else:
-            data=np.array(np.load(self.values['discretized'][0]))
-            its=None
-            its_stride=1
-            while its == None and its_stride < 10000:
-                try:
-                    print(f'Trying stride {its_stride}')
-                    data_i=np.ascontiguousarray(data[0::its_stride])
-                    its=pyemma.msm.its(data_i, lags=lags, errors='bayes')
-                except:
-                    print(f'Could not generate ITS. Increasing stride.')
-                    its_stride=its_stride*2
-                    
-            its_plot=pyemma.plots.plot_implied_timescales(its, units='ps', dt=self.ps)
-            its_plot.set_title(f'Discretization: {self.scheme}\nFeature: {self.feature}\n{self.parameter}')
-            plt.savefig(its_name, dpi=600)
-            plt.show()
-            
-        return its_name
+
 
       
     def bayesMSM(self, lag, variant=False, statdist_model=None):
@@ -61,14 +51,16 @@ class MSM:
         If no suitable lag is found, model calculation will be skipped.
         Accepts variants. Currently, only *norm* is defined."""
         
-        lag_model=lag[self.scheme][self.feature][self.parameter]
+        
+        #TODO: Get lag directly from passed lagged object or dictionary.
+        lag_model=lag
 
 
         if lag_model == None:
             print('No suitable lag time found. Skipping model')
             bayesMSM=None       
         else:
-            bayesMSM_name=f'{self.results}/bayesMSM_{self.scheme}-{self.feature}-{self.protein}-{self.ligand}-{self.parameter}-{self.ps}ps-lag{lag_model}.npy'
+            bayesMSM_name=f'{system.results}/bayesMSM_{system.feature_name}-lag{lag_model}.npy'
             print(bayesMSM_name)
             if os.path.exists(bayesMSM_name):
                 bayesMSM=pyemma.load(bayesMSM_name)
@@ -86,7 +78,31 @@ class MSM:
                     except:
                         print(f'Could not generate bayesMSM. Increasing stride.')
                         msm_stride=msm_stride*2
-            
+        
+        #Set up
+
+        #TODO: iterate through features.
+        discretized_name, discretized_data=[i for i in self.feature]
+        
+        
+        discretized_df_systems=pd.DataFrame()
+        
+        #Access individual systems. 
+        #The id of project upon feature level should match the current id of project 
+        for name, system in self.systems.items(): 
+                    
+            discretized_df_system=calculate(name, system, feature_name)
+            discretized_df_systems=pd.concat([discretized_df_systems, discretized_df_system], axis=1) #call to function
+        
+        #print(discretized_df_systems)
+        discretized_df_systems.name=f'{feature_name}_combinatorial'              
+        discretized_df_systems.to_csv(f'{self.results}/combinatorial_{feature_name}_discretized.csv')
+   
+        self.discretized[feature_name]=('combinatorial', discretized_df_systems)
+        
+        return discretized_df_systems    
+        
+        
         return bayesMSM
         
     def stationaryDistribution(self, model):
@@ -141,7 +157,46 @@ class MSM:
                 plt.show()    
              
         return cktest_fig
+  
+    def ITS(self, lags):
+        """Function to create ITS plot using as input 'lags' and the 'discretized' values.
+        The corresponding 'png' file is checked in the 'results' folder. If found, calculations will be skipped."""
         
+        
+        its_name=f'{self.results}/its_bayesMSM_{self.scheme}-{self.feature}-{self.protein}-{self.ligand}-{self.parameter}-{self.ps}ps.png'
+        self.values['its']=its_name
+        print(its_name)
+        
+        if os.path.exists(its_name):
+            print('ITS plot already calculated:')
+            plt.axis("off")
+            plt.imshow(mpimg.imread(its_name))
+            plt.clf()
+        else:
+            data=np.array(np.load(self.values['discretized'][0]))
+            its=None
+            its_stride=1
+            while its == None and its_stride < 10000:
+                try:
+                    print(f'Trying stride {its_stride}')
+                    data_i=np.ascontiguousarray(data[0::its_stride])
+                    its=pyemma.msm.its(data_i, lags=lags, errors='bayes')
+                except:
+                    print(f'Could not generate ITS. Increasing stride.')
+                    its_stride=its_stride*2
+                    
+            its_plot=pyemma.plots.plot_implied_timescales(its, units='ps', dt=self.ps)
+            its_plot.set_title(f'Discretization: {self.scheme}\nFeature: {self.feature}\n{self.parameter}')
+            plt.savefig(its_name, dpi=600)
+            plt.show()
+            
+        return its_name
+
+
+
+
+
+      
     @staticmethod
     def flux(name, model, parameter_scalar=None, regions=None, labels=None, A_source=None, B_sink=None, value=None, top_pathways=2):
         """Function to calculate flux of model. A and B need to provided."""

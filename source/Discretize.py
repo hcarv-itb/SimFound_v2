@@ -6,8 +6,8 @@ Created on Fri Feb  5 11:59:08 2021
 """
 
 #Workflow modules
-import tools
-import tools_plots
+#tools
+#from source import tools_plots
 
 #python modules
 import os
@@ -20,17 +20,18 @@ class Discretize:
     """Base class to discretize features. Takes as input a dictionary of features, 
     each containing a dictionary for each parameter and raw_data"""
     
-    def __init__(self, systems, results, feature=None):
+    def __init__(self, data, feature_name='feature', results=os.getcwd()):
         """
         
 
         Parameters
         ----------
-        systems : dict
-            The dictionary of systems.
-        features : array
-            The array of feature dictionaries. The default is 'None'.
-        results_folder : path
+
+        data : df
+            A DataFrame of features.
+        feature_name : str
+            The name of the feature.The default is feature
+        results : path
             The path were to store results from methods.
 
         Returns
@@ -38,187 +39,198 @@ class Discretize:
         None.
 
         """
-        
-        self.systems=systems
-        self.feature=feature #dictionary of features
+
+        self.data=data
+        self.feature_name=feature_name
         self.results=results
         self.discretized={}
-    
+
+        
+        print(f'Input feature: {self.feature_name} \nData: \n {self.data}')
 
     
-    def combinatorial(self, shells, labels=None):
+    def combinatorial(self, 
+                      shells,
+                      level=3,
+                      start=0,
+                      stop=10,
+                      stride=1,
+                      labels=None):
         """
         
         Function to generate combinatorial encoding of shells into states. Discretization is made based on combination of shells. 
         Not sensitive to which shell a given molecule is at each frame. Produces equal-sized strings for all parameters.
         Static methods defined in *tools.Functions*  are employed here.
-        
-        
+
         Parameters
         ----------
-        shells: array
+        shells : array
             The array of shell boundaries.
-        labels: array
-            The array of shell labels (+1 shells). Method can resolve for inconsistencies by reverting to default numeric label.
-            
-        
+        level : TYPE, optional
+            DESCRIPTION. The default is 3.
+        start : TYPE, optional
+            DESCRIPTION. The default is 0.
+        stop : TYPE, optional
+            DESCRIPTION. The default is -1.
+        stride : TYPE, optional
+            DESCRIPTION. The default is 1.
+        labels : TYPE, optional
+            The shell labels (+1 shells). Method will resolve inconsistencies by reverting to numeric label.
+
         Returns
         -------
-        Dataframe of discretized features
-        
-        
+        feature_df : dataframe
+            Dataframe of discretized features.
+
         """
 
-        
-        def calculate(name, system, feature_name):
-                
-            system.discretized={}
-            file=f'{system.results_folder}discretized_{feature_name}-combinatorial-{shells_name}.npy'
-                    
-            indexes=system.name.split('-') # + (feature,) #For df build        
-            names=[f'l{i}' for i in range(1, len(indexes)+1)] 
-            column_index=pd.MultiIndex.from_tuples([indexes], names=names)
-       
-            if not os.path.exists(file):
-                print(f'Discretized {feature_name} array for {name} not found. Calculating...')
-                
-                feature_file=system.features[feature_name]
-                        
-                if feature_file == None:
-                    print(f'Feature {feature_name} data not found.')
-                else:
-                    
-                    raw_data=np.load(feature_file)
-                          
-                    #Reconstruct a DataFrame of stored feature into a Dataframe
-                    #TODO: Check behaviour for sel > 1.
-                    
-                    frames, ref, sel=np.shape(raw_data)
-                    raw_reshape=raw_data.reshape(frames, ref*sel)
-                            
-                    if ref == 1:
-                        RAW=pd.DataFrame(raw_reshape)
-                        RAW.columns=RAW.columns + 1
-                    else:
-                        RAW=pd.DataFrame()
-                        RAW_split=np.split(raw_reshape, ref, axis=1)
-                        for ref in RAW_split:
-                            RAW_ref=pd.DataFrame(ref)
-                            RAW_ref.columns=RAW_ref.columns + 1
-                            RAW=pd.concat([RAW, RAW_ref], axis=0)  
+        #TODO: make levels more human readable. Automate level name in df, then query directly for the name search
+        levels=self.data.columns.levels
 
-                    state_df=tools.Functions.state_mapper(self.shells, array=RAW.values, labels=labels) #Get discretization from state mapper
+        shells_name='_'.join(str(shells))
+        shells_name=str(shells)
+        feature_df=pd.DataFrame()
 
-                    comb_states=pd.DataFrame(state_df.values, index=0, columns=column_index[:-1])
-                    comb_states.to_csv(f'{system.results_folder}discretized_{feature_name}-combinatorial-{shells_name}.csv')
-                        
-                    np.save(file, state_df.values)
-                        
-            else:
-                #print(f'File found for {name}.')
-                comb_states=pd.read_csv(f'{system.results_folder}discretized_{feature_name}-combinatorial-{shells_name}.csv',
-                                        index_col=0, header=list(range(0,len(names))))
-            comb_states.index.names=['Frame index']    
-            system.discretized[feature_name]=file #Update system atributes
-            #print(comb_states)
-            return comb_states    
-        
-
-        #Set up
-
-        self.shells=shells
-        shells_name='_'.join(str(self.shells))
-        
-        #TODO: iterate through features.
-        feature_name, feature_data=[i for i in self.feature]
-        
-        
-        discretized_df_systems=pd.DataFrame()
-        
-        #Access individual systems. 
-        #The id of project upon feature level should match the current id of project 
-        for name, system in self.systems.items(): 
-                    
-            discretized_df_system=calculate(name, system, feature_name)
-            discretized_df_systems=pd.concat([discretized_df_systems, discretized_df_system], axis=1) #call to function
-        
-        #print(discretized_df_systems)
-        discretized_df_systems.name=f'{feature_name}_combinatorial'              
-        discretized_df_systems.to_csv(f'{self.results}/combinatorial_{feature_name}_discretized.csv')
+        #TODO: consider multiproc
+        for iterable in levels[level]:
             
-   
-        self.discretized[feature_name]=('combinatorial', discretized_df_systems)
+            print(f'Iterable: {iterable}')
+            
+            #This line is gold
+            iterable_df=self.data.loc[start:stop:stride,self.data.columns.get_level_values(f'l{level+1}') == iterable]
+            
+            #Get discretization from state mapper
+            iterable_df_disc=tools.Functions.state_mapper(shells, data=iterable_df, labels=labels)  
+            iterable_df_disc.rename(iterable, inplace=True)
+            
+            feature_df=pd.concat([feature_df, iterable_df_disc], axis=1) 
+
+        #TODODODODODODODOD
+        print(f'Combinatorial: \n {feature_df}')
         
-        return discretized_df_systems
 
-
-
-    def nac_profile(self, input_df,
-                        shells, 
-                        resolution=0.5,
-                        nac_lims=(0,150), 
-                        labels=None):
+        feature_df.name=f'{self.feature_name}_combinatorial'              
+        #feature_df.to_csv(f'{self.results}/combinatorial_{self.feature_name}_discretized_{shells_name}.csv')
         
+        self.discretized[self.feature_name]=('combinatorial', feature_df)
+        
+        return feature_df
+
+
+    def shell_profile(self,  
+                    thickness=0.5,
+                    limits=(0,150),
+                    level=2,
+                    start=0,
+                    stop=10,
+                    stride=1,
+                    n_cores=-1):
         """
-        Function to obtain orientation of molecules (as given by difference between distances) for each NAC bin. 
-        Takes as inputs the nac and distance .npy objects calculated in NAC_calculation() and distances_calculation_all(). 
-        Needs to convert the arrays into dataframes. 
-        NOTE: The combined dataframe of NAC and DIST_O "merge" can be built with less number of frames, e.g. skipping each 2,  with the ".iloc[::2]" option.
-        This may be required due to too much data being passed from the replicate_iterator().
+        Generate the discretization feature into shells=(min("limits"), max("limits"), "thickness"). 
+
+        Parameters
+        ----------
+        thickness : TYPE, optional
+            DESCRIPTION. The default is 0.5.
+        limits : TYPE, optional
+            DESCRIPTION. The default is (0,150).
+        level : int, optional
+            The level for data agreggation. The default is 2 (molecule).
+        labels : TYPE, optional
+            DESCRIPTION. The default is None.
+        shells : TYPE, optional
+            DESCRIPTION. The default is None.
+        n_cores : int
+            The number of processes.
+
+        Returns
+        -------
+        TYPE
+            DESCRIPTION.
+
         """
 
-        nac_range=np.arange(nac_lims[0], nac_lims[1], resolution)
+        #TODO: Go get the df of the system instead of passing full dataframe. 
+        #Requires changing procedure.
+        #NOTE: Needs to be consistent with Feature manipulation.
+        
+        feature_range=np.arange(limits[0], limits[1],thickness)
+        feature_center_bin=feature_range+(thickness/2)                
+        feature_df=pd.DataFrame()
+                
+        levels=self.data.columns.levels
+                
+        print(f'Generating shell profile between {start} and {stop} frames (stride {stride}).')
+            
+        for iterable in levels[level]:
+            
+            print(f'Iterable: {iterable}')
+            
+            #This line is gold
+            iterable_df=self.data.loc[start:stop:stride,self.data.columns.get_level_values(f'l{level+1}') == iterable]            
+            iterable_df_disc=pd.DataFrame(index=feature_center_bin[:-1], columns=iterable_df.columns)
+            
+            #print(iterable_df)
+
+            values_=iterable_df_disc.columns
+            values=[(iterable_df[value], value) for value in values_]
+            
+            fixed=(feature_range, feature_center_bin[:-1])
+
+            shells=tools.Tasks.parallel_task(Discretize.shell_calculation, 
+                                             values, 
+                                             fixed, 
+                                             n_cores=n_cores)
+
+            for shell in shells:
+
+                iterable_df_disc=pd.concat([iterable_df_disc, shell], axis=1)
+            
+            iterable_df_disc.dropna(axis=1, inplace=True)
+            
+            feature_df=pd.concat([feature_df, iterable_df_disc], axis=1)
+            
+        print(f'Shell profile: \n {feature_df}')
+        
+        self.discretized[self.feature_name]=('shell_profile', feature_df)
+        
+        return feature_df
     
-      
-        indexes=system.name.split('-') # + (feature,) #For df build        
-        names=[f'l{i}' for i in range(1, len(indexes)+1)] 
-        column_index=pd.MultiIndex.from_tuples([indexes], names=names)
-       
-        feature_file=system.features[feature_name]
+    
+    @staticmethod
+    def shell_calculation(series_value, specs=()):
+        """
+        The workhorse function for shell calculation.
+        Returns a 1D histogram as a Series using parameters handed by specs (ranges, center of bins).
 
+        Parameters
+        ----------
+        series_value : TYPE
+            DESCRIPTION.
+        specs : TYPE, optional
+            DESCRIPTION. The default is ().
 
+        Returns
+        -------
+        hist_df : TYPE
+            DESCRIPTION.
 
-        #Generate the discretization dNAC into shells of thickness "resolution" across "range"
-        nac_center_bin=nac_range+(resolution/2)
-            
-        NAC=pd.DataFrame(index=nac_center_bin[:-1], columns=column_index)
-
-        for value in input_df: #optional: Do it across entire daframe to ignore individual molecule "value" information 
-            
-            hist, _=np.histogram(input_df[value], bins=nac_range)    
-            NAC=pd.concat([NAC, pd.DataFrame(hist, index=nac_center_bin[:-1], columns=column_index)], axis=1)
-            
-        NAC.dropna(axis=1, inplace=True)
-            
-        return NAC, np.shape(RAW)[0] #0, frames, 1 ref, 2 sel. TODO: Check this well, its needed for ref > 1
+        """
         
-
-
-        #Set up
-
-        self.shells=shells
-        shells_name='_'.join(str(self.shells))
+        (feature_range, index)=specs
+        (series, value)=series_value
         
-        #TODO: iterate through features.
-        feature_name, feature_data=[i for i in self.feature]
+        names=[f'l{i}' for i in range(1, len(series.name)+1)] 
+        column_index=pd.MultiIndex.from_tuples([value], names=names)
         
+        hist, _=np.histogram(series, bins=feature_range)
+        hist_df=pd.DataFrame(hist, index=index, columns=column_index)
         
-        nac_df=pd.DataFrame()
-        
-        #Access individual systems. 
-        #The id of project upon feature level should match the current id of project 
-        for name, system in self.systems.items(): 
-                                
-            nac_df_system, frames=calculate(name, system, feature_name)            
-            nac_df=pd.concat([nac_df, nac_df_system], axis=1) #call to function
-                
-        
-        return nac_df
+        return hist_df
 
-
-    def dG_calculation(self, 
-                       input_df, 
-                       mol='methanol', 
+    @staticmethod
+    def dG_calculation(input_df, 
+                       mol='MeOH', 
                        bulk=(30, 41), 
                        level=2, 
                        resolution=0.5, 
@@ -236,11 +248,16 @@ class Discretize:
         P_t_optimized uses the "c_opt" bulk concentration.
         dG is calculated from P_t_optimized.
         NOTE: The "ranges_bulk" should be carefully chosen for each system.
+        
+        TODO: Fix mol requirement. Ask project.
     
         """
 	
         from scipy.optimize import curve_fit
 
+
+        #ordered_concentrations=['50mM', '150mM', '300mM', '600mM', '1M', '2.5M', '5.5M']
+        ordered_concentrations=['300mM', '1M', '2.5M', '5.5M']
         #Calculates the theoretical NAC values in "bulk" in a spherical shell of size given by "ranges". 
         #The output is N - 1 compared to N values in ranges, so an additional value of "resolution" is added for equivalence.
         #N_ref= lambda ranges, bulk_value: np.log(((4.0/3.0)*np.pi)*np.diff(np.power(np.append(ranges, ranges[-1] + resolution), 3.0))*6.022*bulk_value*factor)
@@ -260,14 +277,13 @@ class Discretize:
         name_original=r'N$_{(i)}$reference (initial)'
         name_fit=r'N$_{(i)}$reference (fit)'
 
-        df, pairs, replicas, molecules, frames=Discretize.get_descriptors(input_df, 
+        df, pairs, replicas, molecules, frames=tools.Functions.get_descriptors(input_df, 
                                                                    level, 
                                                                    describe=describe,
                                                                    quantiles=quantiles)
-
-
         
         df.name=f'{feature_name}_{describe}' 
+        #print(df)
         df.to_csv(f'{results}/{feature_name}_{describe}.csv')
         
         #print(df)
@@ -286,7 +302,7 @@ class Discretize:
         fig_fits,axes_fit=plt.subplots(rows, columns, sharex=True, sharey=True, constrained_layout=True, figsize=(9,6))
         fig_dG,axes_dG=plt.subplots(rows, columns, sharex=True, sharey=True, constrained_layout=True, figsize=(9,6))
 
-        for iterable, ax_fit, ax_dG in zip(descriptors_iterables, axes_fit.flat, axes_dG.flat):
+        for iterable, ax_fit, ax_dG in zip(ordered_concentrations, axes_fit.flat, axes_dG.flat): #descriptors_iterables
 
             try:
                 bulk_value=float(str(iterable).split('M')[0]) #get the value (in M) of the concentration from the label of c.
@@ -316,8 +332,6 @@ class Discretize:
                 a=np.log(N_enz.values)
                 a_m=np.log(N_error_m)
                 a_p=np.log(N_error_p)
-                
-                
                 
             elif describe == 'quantile':
                 
@@ -362,17 +376,20 @@ class Discretize:
             N_t=N_ref(ranges, bulk_value)   
 
             #Optimize the value of bulk with curve_fit of nac vs N_ref. 
-            #Initial guess is "bulk" value. Bounds can be set as  +/- 50% of bulk value. 
-            c_opt, c_cov = curve_fit(N_ref, 
+            #Initial guess is "bulk" value. Bounds can be set as  +/- 50% of bulk value.
+            try:
+                c_opt, c_cov = curve_fit(N_ref, 
                                      bulk_range[:-1], 
                                      N_enz_fit, 
                                      p0=bulk_value) #, bounds=(bulk_value - bulk_value*0.5, bulk_value + bulk_value*0.5))
-
+            except:
+                c_opt = (bulk_value, 0)
+            fitted_bulk=c_opt[0]
             #stdev=np.sqrt(np.diag(c_cov))[0]
             #print(f'The fitted bulk value is: {c_opt[0]} +/- {stdev}')  
             
             #Recalculate N_ref with adjusted bulk concentration.
-            N_opt=pd.Series(N_ref(ranges, c_opt[0]), index=N_enz.index.values, name=f'{name_fit} {iterable}')
+            N_opt=pd.Series(N_ref(ranges, fitted_bulk), index=N_enz.index.values, name=f'{name_fit} {iterable}')
             N_opt.replace(0, np.nan, inplace=True)
 
             #Calculate dG (kT)
@@ -448,7 +465,7 @@ class Discretize:
             ax_fit.set_yscale('log')
             ax_fit.set_xscale('log')
             ax_fit.set_xlim(1,bulk_range[-1] + 10)
-            ax_fit.set_title(f'{bulk_value} {unit} ({np.round(c_opt[0], decimals=1)} {unit})', fontsize=10)
+            ax_fit.set_title(f'{bulk_value} {unit} ({np.round(fitted_bulk, decimals=1)} {unit})', fontsize=10)
             
             ax_dG.axhline(y=0, ls='--', color='black')
             ax_dG.set_xlim(1,bulk_range[-1]+10)
@@ -480,80 +497,6 @@ class Discretize:
         dG_fits.to_csv(f'{feature_name}-{describe}.csv')
         
         return dG_fits
-        
-    @staticmethod
-    def get_descriptors(input_df, level, describe='sum', quantiles=[0.1, 0.5, 0.99]):
-        """
-        Agreggate based on level (concentration) the quantile description (or other).
-        
-        """
-        
-        
-        
-        print(f'Descriptor of: {describe}')
-        levels=input_df.columns.levels
-        
-        #TODO: remove to previous.
-        ordered_concentrations=['50mM', '150mM', '300mM', '600mM', '1M', '2.5M', '5.5M']
-        
-        df=pd.DataFrame()
-                    
-        o_c=[]
-        for c in ordered_concentrations:
-            for q in quantiles:
-                o_c.append(f'{c}-Q{q}')
-            
-        for iterable in ordered_concentrations: #levels[level]:
-            
-            df_it=input_df.loc[:,input_df.columns.get_level_values(f'l{level+1}') == iterable] #level +1 due to index starting at l1
-
-            pairs=len(df_it.columns.get_level_values(f'l{level+2}'))
-            replicas=len(df_it.columns.get_level_values(f'l{level+2}').unique()) #level +2 is is the replicates x number of molecules
-            molecules=int(pairs/replicas)
-
-            frames=int(df_it.sum(axis=0).unique()) #Optional, unpack the number of frames for each molecule.
-            
-            
-            #print(f'Iterable: {iterable}\n\tPairs: {pairs}\n\treplicas: {replicas}\n\tmolecules: {molecules}\n\tframes: {frames}\n\tcounts: {counts}')
-            
-
-            if describe == 'single':
-                descriptor=df_it.quantile(q=0.5)/frames*molecules
-    
-            elif describe == 'mean':
-                descriptor=df_it.mean(axis=1)/frames*molecules
-    
-                descriptor.name=iterable
-                descriptor_sem=df_it.sem(axis=1)/frames*molecules
-                
-                descriptor_sem.name=f'{iterable}-St.Err.'
-                descriptor=pd.concat([descriptor, descriptor_sem], axis=1)
-                #print(descriptor)
-            
-            elif describe == 'quantile':
-                    
-                descriptor=pd.DataFrame()    
-                ordered_concentrations=o_c                    
-                    
-                for quantile in quantiles:        
-                    descriptor_q=df_it.quantile(q=quantile, axis=1)/frames*molecules
-                    descriptor_q.name=f'{iterable}-Q{quantile}'
-                    descriptor=pd.concat([descriptor, descriptor_q], axis=1)
-            
-                #print(descriptor)
-                #descriptor.plot(logy=True, logx=True)
-            
-            elif describe == 'sum':
-                
-                #descriptor=df_it.sum(axis=1)/(frames*len(replicas))
-                descriptor=df_it.sum(axis=1)/(frames*replicas)
-            
-            descriptor.name=iterable            
-            df=pd.concat([df, descriptor], axis=1)
-        
-        return df, pairs, replicas, molecules, frames
-    
-    
     
     
     @staticmethod

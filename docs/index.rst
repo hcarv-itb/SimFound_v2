@@ -7,11 +7,11 @@ Welcome to Simulation Foundry v2
 ================================
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Documentation
+   :maxdepth: 3
+   :caption: TOPICS
    
    projects
-   SimFound
+   documentation
    
    
 Indices and tables

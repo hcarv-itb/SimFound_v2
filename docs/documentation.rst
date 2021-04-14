@@ -1,16 +1,12 @@
 Documentation
 =============
 
-
-Source
-------
-
-
-.. automodule:: source.main
-     :members:
-
 .. toctree::
-    :maxdepth: 2
-    
+   :maxdepth: 2
+
+   source
+   main
+   dev
+
 
 

@@ -30,6 +30,9 @@
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
@@ -81,10 +84,10 @@
               
             
             
-              <p class="caption"><span class="caption-text">Documentation</span></p>
+              <p class="caption"><span class="caption-text">TOPICS</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="projects.html">Projects</a></li>
-<li class="toctree-l1"><a class="reference internal" href="SimFound.html">Source code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="documentation.html">Documentation</a></li>
 </ul>
 
             
@@ -150,19 +153,60 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="welcome-to-simulation-foundry-v2">
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="welcome-to-simulation-foundry-v2">
 <h1>Welcome to Simulation Foundry v2<a class="headerlink" href="#welcome-to-simulation-foundry-v2" title="Permalink to this headline">¶</a></h1>
 <div class="toctree-wrapper compound">
-<p class="caption"><span class="caption-text">Documentation</span></p>
+<p class="caption"><span class="caption-text">TOPICS</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="projects.html">Projects</a><ul class="simple">
+<li class="toctree-l1"><a class="reference internal" href="projects.html">Projects</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="SimFound_v2.html">Simulation Foundry, v2</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="SimFound_v2.html#Import-module"><em>Import module</em></a></li>
+<li class="toctree-l3"><a class="reference internal" href="SimFound_v2.html#Project-and-system-definition"><strong>Project and system definition</strong></a></li>
+<li class="toctree-l3"><a class="reference internal" href="SimFound_v2.html#Featurization"><strong>Featurization</strong></a></li>
+<li class="toctree-l3"><a class="reference internal" href="SimFound_v2.html#Discretization"><strong>Discretization</strong></a></li>
+<li class="toctree-l3"><a class="reference internal" href="SimFound_v2.html#Markov-State-Models"><strong>Markov State Models</strong></a></li>
+<li class="toctree-l3"><a class="reference internal" href="SimFound_v2.html#Trajectory-operations"><strong>Trajectory operations</strong></a></li>
+<li class="toctree-l3"><a class="reference internal" href="SimFound_v2.html#Density-Maps">Density Maps</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="SimFound.html">Source code</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="SimFound.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="SimFound.html#module-source">source.main module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="SimFound.html#source-deprecated-module">source.deprecated module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="SimFound.html#module-0">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="documentation.html">Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="source.html">Analysis Module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="source.html#module-source.Discretize">Discretize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="source.html#module-source.Featurize">Featurize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="source.html#trajectory">Trajectory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="source.html#module-source.MSM">Markov State Models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="source.html#module-source.tools">Tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="source.html#module-source.deprecated">Deprecated</a></li>
+<li class="toctree-l3"><a class="reference internal" href="source.html#module-source">base contents</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="main.html">Main</a></li>
 </ul>
 </li>
 </ul>

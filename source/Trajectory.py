@@ -22,6 +22,15 @@ class Trajectory:
         self.results=results
   
     
+  
+    def start_simulations(self):
+        
+        print(self.systems)
+  
+        
+    
+  
+    
     @staticmethod
     def trj_filter(df, name, value):
         """

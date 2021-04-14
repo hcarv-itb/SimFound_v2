@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>source &mdash; Simulation Foundry, v2 2.0 documentation</title>
+  <title>Analysis Module &mdash; Simulation Foundry, v2 2.0 documentation</title>
   
 
   
@@ -30,12 +30,17 @@
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" /> 
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Main" href="main.html" />
+    <link rel="prev" title="Documentation" href="documentation.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -80,10 +85,26 @@
               
             
             
-              <p class="caption"><span class="caption-text">Documentation</span></p>
-<ul>
+              <p class="caption"><span class="caption-text">TOPICS</span></p>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="projects.html">Projects</a></li>
-<li class="toctree-l1"><a class="reference internal" href="SimFound.html">Source code</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="documentation.html">Documentation</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Analysis Module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#module-source.Discretize">Discretize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-source.Featurize">Featurize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#trajectory">Trajectory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-source.MSM">Markov State Models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-source.tools">Tools</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id1">Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-source.deprecated">Deprecated</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-source">base contents</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="main.html">Main</a></li>
+</ul>
+</li>
 </ul>
 
             
@@ -130,7 +151,9 @@
     
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
-      <li>source</li>
+          <li><a href="documentation.html">Documentation</a> &raquo;</li>
+        
+      <li>Analysis Module</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -149,13 +172,471 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="source">
-<h1>source<a class="headerlink" href="#source" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="submodules">
-<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="analysis-module">
+<h1>Analysis Module<a class="headerlink" href="#analysis-module" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-source.Discretize">
+<span id="discretize"></span><h2>Discretize<a class="headerlink" href="#module-source.Discretize" title="Permalink to this headline">¶</a></h2>
+<p>Created on Fri Feb  5 11:59:08 2021</p>
+<p>&#64;author: hcarv</p>
+<dl class="py class">
+<dt id="source.Discretize.Discretize">
+<em class="property">class </em><code class="sig-prename descclassname">source.Discretize.</code><code class="sig-name descname">Discretize</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">feature_name</span><span class="o">=</span><span class="default_value">'feature'</span></em>, <em class="sig-param"><span class="n">results</span><span class="o">=</span><span class="default_value">'C:\\Users\\hcarv\\Documents\\GitHub\\SimFound_v2\\docs'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Discretize.Discretize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Base class to discretize features. Takes as input a dictionary of features, 
+each containing a dictionary for each parameter and raw_data</p>
+<dl class="py method">
+<dt id="source.Discretize.Discretize.combinatorial">
+<code class="sig-name descname">combinatorial</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">shells</span></em>, <em class="sig-param"><span class="n">level</span><span class="o">=</span><span class="default_value">3</span></em>, <em class="sig-param"><span class="n">start</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">stop</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">stride</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">labels</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Discretize.Discretize.combinatorial" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to generate combinatorial encoding of shells into states. Discretization is made based on combination of shells. 
+Not sensitive to which shell a given molecule is at each frame. Produces equal-sized strings for all parameters.
+Static methods defined in <em>tools.Functions</em>  are employed here.</p>
+<dl class="simple">
+<dt>shells<span class="classifier">array</span></dt><dd><p>The array of shell boundaries.</p>
+</dd>
+<dt>level<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is 3.</p>
+</dd>
+<dt>start<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is 0.</p>
+</dd>
+<dt>stop<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is -1.</p>
+</dd>
+<dt>stride<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is 1.</p>
+</dd>
+<dt>labels<span class="classifier">TYPE, optional</span></dt><dd><p>The shell labels (+1 shells). Method will resolve inconsistencies by reverting to numeric label.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>feature_df<span class="classifier">dataframe</span></dt><dd><p>Dataframe of discretized features.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.Discretize.Discretize.dG_calculation">
+<em class="property">static </em><code class="sig-name descname">dG_calculation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_df</span></em>, <em class="sig-param"><span class="n">mol</span><span class="o">=</span><span class="default_value">'MeOH'</span></em>, <em class="sig-param"><span class="n">bulk</span><span class="o">=</span><span class="default_value">30, 41</span></em>, <em class="sig-param"><span class="n">level</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">resolution</span><span class="o">=</span><span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">feature_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">describe</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">quantiles</span><span class="o">=</span><span class="default_value">[0.01, 0.5, 0.75, 0.99]</span></em>, <em class="sig-param"><span class="n">results</span><span class="o">=</span><span class="default_value">'C:\\Users\\hcarv\\Documents\\GitHub\\SimFound_v2\\docs'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Discretize.Discretize.dG_calculation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to normalize NAC values according to theoretic distribution in a shpere with bulk concentration “c”. 
+Takes as inputs “c”, a NAC histogram with standard errors and number of frames where NAC was calculated “length”.
+Calculations are made with the  N_theo() function. 
+The probability of NAC for each bin is P_nac and P_nac_err. The theoretical distribution of NAC at “c” is P_t.
+The value of bulk “c” is adjusted by fitting the P_nac to the bulk region “ranges_bulk” using curve_fit(). 
+P_t_optimized uses the “c_opt” bulk concentration.
+dG is calculated from P_t_optimized.
+NOTE: The “ranges_bulk” should be carefully chosen for each system.</p>
+<p>TODO: Fix mol requirement. Ask project.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.Discretize.Discretize.plot">
+<em class="property">static </em><code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">level</span><span class="o">=</span><span class="default_value">2</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Discretize.Discretize.plot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="source.Discretize.Discretize.shell_calculation">
+<em class="property">static </em><code class="sig-name descname">shell_calculation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series_value</span></em>, <em class="sig-param"><span class="n">specs</span><span class="o">=</span><span class="default_value">()</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Discretize.Discretize.shell_calculation" title="Permalink to this definition">¶</a></dt>
+<dd><p>The workhorse function for shell calculation.
+Returns a 1D histogram as a Series using parameters handed by specs (ranges, center of bins).</p>
+<dl class="simple">
+<dt>series_value<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>specs<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is ().</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>hist_df<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.Discretize.Discretize.shell_profile">
+<code class="sig-name descname">shell_profile</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">thickness</span><span class="o">=</span><span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">limits</span><span class="o">=</span><span class="default_value">0, 150</span></em>, <em class="sig-param"><span class="n">level</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">start</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">stop</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">stride</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">n_cores</span><span class="o">=</span><span class="default_value">- 1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Discretize.Discretize.shell_profile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate the discretization feature into shells=(min(“limits”), max(“limits”), “thickness”).</p>
+<dl class="simple">
+<dt>thickness<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is 0.5.</p>
+</dd>
+<dt>limits<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is (0,150).</p>
+</dd>
+<dt>level<span class="classifier">int, optional</span></dt><dd><p>The level for data agreggation. The default is 2 (molecule).</p>
+</dd>
+<dt>labels<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is None.</p>
+</dd>
+<dt>shells<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is None.</p>
+</dd>
+<dt>n_cores<span class="classifier">int</span></dt><dd><p>The number of processes.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>TYPE</dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </div>
-<div class="section" id="main-module">
-<h2>Main module<a class="headerlink" href="#main-module" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-source.Featurize">
+<span id="featurize"></span><h2>Featurize<a class="headerlink" href="#module-source.Featurize" title="Permalink to this headline">¶</a></h2>
+<p>Created on Fri Feb 12 16:34:14 2021</p>
+<p>&#64;author: hcarv</p>
+<dl class="py class">
+<dt id="source.Featurize.Featurize">
+<em class="property">class </em><code class="sig-prename descclassname">source.Featurize.</code><code class="sig-name descname">Featurize</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">systems</span></em>, <em class="sig-param"><span class="n">results</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Featurize.Featurize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Base class to create a <em>features</em> object. Different featurization schemes can be coded.</p>
+<dl class="simple">
+<dt>project: object</dt><dd><p>Object instance of the class “Project”.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>feature: object</dt><dd><p>Feature instance</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="source.Featurize.Featurize.dist">
+<code class="sig-name descname">dist</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">distances</span></em>, <em class="sig-param"><span class="n">start</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">stop</span><span class="o">=</span><span class="default_value">- 1</span></em>, <em class="sig-param"><span class="n">stride</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span> &#x2192; dict<a class="headerlink" href="#source.Featurize.Featurize.dist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates distances between pairs of atom groups (dist) for each set of selections “dists” 
+using MDAnalysis D.distance_array method.
+Stores the distances in results_dir. Returns the distances as dataframes.</p>
+<blockquote>
+<div><p>Uses the NAC_frames files obtained in extract_frames(). 
+NOTE: Can only work for multiple trajectories if the number of atoms is the same (–noWater)</p>
+</div></blockquote>
+<dl class="simple">
+<dt>distances<span class="classifier">list</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>start<span class="classifier">int, optional</span></dt><dd><p>DESCRIPTION. The default is 0.</p>
+</dd>
+<dt>stop<span class="classifier">int, optional</span></dt><dd><p>DESCRIPTION. The default is -1.</p>
+</dd>
+<dt>stride<span class="classifier">int, optional</span></dt><dd><p>DESCRIPTION. The default is 1.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>dict</dt><dd><p>A dictionary of distance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.Featurize.Featurize.distance_calculation">
+<em class="property">static </em><code class="sig-name descname">distance_calculation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">system_specs</span></em>, <em class="sig-param"><span class="n">measurements</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Featurize.Featurize.distance_calculation" title="Permalink to this definition">¶</a></dt>
+<dd><p>The workhorse function to calculate distances. Uses MDAnalysis.
+Retrieves infromation from two tuples passed by callers contained in “Parameters”.</p>
+<dl class="simple">
+<dt>topology<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>trajectory<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>distances<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>start<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>stop<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>results_folder<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>name<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>stride<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>timestep<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>TYPE</dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.Featurize.Featurize.nac">
+<code class="sig-name descname">nac</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">distances</span></em>, <em class="sig-param"><span class="n">feature_name</span><span class="o">=</span><span class="default_value">'feature'</span></em>, <em class="sig-param"><span class="n">start</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">stop</span><span class="o">=</span><span class="default_value">- 1</span></em>, <em class="sig-param"><span class="n">stride</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">n_cores</span><span class="o">=</span><span class="default_value">- 1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Featurize.Featurize.nac" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the d_NAC values from an arbitrary number of distance “sels” pairs. 
+Increase “n_cores” to speed up calculations.
+Retrieves the d_NAC array and corresponding dataframe.
+Recieves instructions from multiprocessing calls.
+Makes calls to “nac_calculation” method.
+Operation is adjusted for multiprocessing calls, hence the requirement for tuple manipulation.</p>
+<dl class="simple">
+<dt>distances<span class="classifier">list of tuples</span></dt><dd><p>A list of distance tuples of the kind [(ref1-sel1), …, (refN-selN)].</p>
+</dd>
+<dt>feature_name<span class="classifier">string</span></dt><dd><p>The name given to the featurized object. The default is ‘feature’.</p>
+</dd>
+<dt>start<span class="classifier">int, optional</span></dt><dd><p>The starting frame used to calculate. The default is 0.</p>
+</dd>
+<dt>stop<span class="classifier">int, optional</span></dt><dd><p>The last frame used to calculate. The default is -1.</p>
+</dd>
+<dt>stride<span class="classifier">int, optional</span></dt><dd><p>Read every nth frame. The default is 1.</p>
+</dd>
+<dt>n_cores<span class="classifier">int, optional</span></dt><dd><p>The number of cores to execute task. Set to -1 for all cores. The default is 2.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>dataframe</dt><dd><p>A dataframe containing all the d_NAC values across the list of iterables*replicas*pairs.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.Featurize.Featurize.nac_calculation">
+<em class="property">static </em><code class="sig-name descname">nac_calculation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">system_specs</span></em>, <em class="sig-param"><span class="n">specs</span><span class="o">=</span><span class="default_value">()</span></em>, <em class="sig-param"><span class="n">results_folder</span><span class="o">=</span><span class="default_value">'C:\\Users\\hcarv\\Documents\\GitHub\\SimFound_v2\\docs'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Featurize.Featurize.nac_calculation" title="Permalink to this definition">¶</a></dt>
+<dd><p>The workhorse function for nac_calculation. 
+Retrieves the d_NAC array and corresponding dataframe.
+Recieves instructions from multiprocessing calls.
+Makes calls to “nac_calculation” or “nac_precalculated”.
+Operation is adjusted for multiprocessing calls, hence the requirement for tuple manipulation.</p>
+<dl class="simple">
+<dt>system_specs<span class="classifier">tuple</span></dt><dd><p>A tuple containing system information (trajectory, topology, results_folder, name).</p>
+</dd>
+<dt>measurements<span class="classifier">tuple, optional</span></dt><dd><p>A tuple containing measurement information (distances, start, stop, timestep, stride).</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>nac_df_system<span class="classifier">dataframe</span></dt><dd><p>The d_NAC dataframe of the system</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>nac_file<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>nac_df_system<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.Featurize.Featurize.plot">
+<em class="property">classmethod </em><code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_df</span></em>, <em class="sig-param"><span class="n">level</span><span class="o">=</span><span class="default_value">'l3'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Featurize.Featurize.plot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="trajectory">
+<h2>Trajectory<a class="headerlink" href="#trajectory" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-source.MSM">
+<span id="markov-state-models"></span><h2>Markov State Models<a class="headerlink" href="#module-source.MSM" title="Permalink to this headline">¶</a></h2>
+<p>Created on Thu Jan 21 18:52:02 2021</p>
+<p>&#64;author: hcarv</p>
+<dl class="py class">
+<dt id="source.MSM.MSM">
+<em class="property">class </em><code class="sig-prename descclassname">source.MSM.</code><code class="sig-name descname">MSM</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">systems</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">discretized_name</span><span class="o">=</span><span class="default_value">'discretized'</span></em>, <em class="sig-param"><span class="n">results</span><span class="o">=</span><span class="default_value">'C:\\Users\\hcarv\\Documents\\GitHub\\SimFound_v2\\docs'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.MSM.MSM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Base class to create Markov state models.</p>
+<dl class="py method">
+<dt id="source.MSM.MSM.CKTest">
+<code class="sig-name descname">CKTest</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">lag</span></em>, <em class="sig-param"><span class="n">mt</span></em>, <em class="sig-param"><span class="n">mlags</span><span class="o">=</span><span class="default_value">5</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.MSM.MSM.CKTest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to calculate CK test. Takes as input name of the model, the variant (name and model), dictionary of lags
+the number of coarse grained states, and the defail*cg_states* and <em>mlags</em>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.MSM.MSM.ITS">
+<code class="sig-name descname">ITS</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">lags</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.MSM.MSM.ITS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to create ITS plot using as input ‘lags’ and the ‘discretized’ values.
+The corresponding ‘png’ file is checked in the ‘results’ folder. If found, calculations will be skipped.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.MSM.MSM.MFPT">
+<code class="sig-name descname">MFPT</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.MSM.MSM.MFPT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculation of mean first passage times for all models.
+TODO: Method requires nested loops (i,j) to fill each cell of the MFPT matrix. 
+TODO: Check deprecated for list compreehension method (does not work multiIindex df).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.MSM.MSM.bayesMSM">
+<code class="sig-name descname">bayesMSM</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">lag</span></em>, <em class="sig-param"><span class="n">variant</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">statdist_model</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.MSM.MSM.bayesMSM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to calculate model based on provided lag time. Must be evaluated suitable lag time based on ITS.
+If no suitable lag is found, model calculation will be skipped.
+Accepts variants. Currently, only <em>norm</em> is defined.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.MSM.MSM.flux">
+<em class="property">static </em><code class="sig-name descname">flux</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">parameter_scalar</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">regions</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">labels</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">A_source</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">B_sink</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">value</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">top_pathways</span><span class="o">=</span><span class="default_value">2</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.MSM.MSM.flux" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to calculate flux of model. A and B need to provided.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.MSM.MSM.mfpt_filter">
+<em class="property">static </em><code class="sig-name descname">mfpt_filter</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">mfpt_df</span></em>, <em class="sig-param"><span class="n">scheme</span></em>, <em class="sig-param"><span class="n">feature</span></em>, <em class="sig-param"><span class="n">parameter</span></em>, <em class="sig-param"><span class="n">error</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.MSM.MSM.mfpt_filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to filter out MFPT values whose standard deviations are above <em>error</em> value.
+Default value of <em>error</em> is 20%</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.MSM.MSM.stationaryDistribution">
+<code class="sig-name descname">stationaryDistribution</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.MSM.MSM.stationaryDistribution" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the stationary distribution for input model.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-source.tools">
+<span id="tools"></span><h2>Tools<a class="headerlink" href="#module-source.tools" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id1">
+<h3>Tools<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>The functions used by multiple classes.</p>
+<p>Created on Fri Nov  6 21:50:14 2020</p>
+<p>&#64;author: hcarv</p>
+<dl class="py class">
+<dt id="source.tools.Functions">
+<em class="property">class </em><code class="sig-prename descclassname">source.tools.</code><code class="sig-name descname">Functions</code><a class="headerlink" href="#source.tools.Functions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="source.tools.Functions.density_stats">
+<em class="property">static </em><code class="sig-name descname">density_stats</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">level_unique</span></em>, <em class="sig-param"><span class="n">stride</span></em>, <em class="sig-param"><span class="n">results</span></em>, <em class="sig-param"><span class="n">unique</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">method</span><span class="o">=</span><span class="default_value">'histogram'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Functions.density_stats" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="source.tools.Functions.fileHandler">
+<em class="property">static </em><code class="sig-name descname">fileHandler</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path_or_file</span></em>, <em class="sig-param"><span class="n">confirmation</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">_new</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Functions.fileHandler" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="source.tools.Functions.regionLabels">
+<em class="property">static </em><code class="sig-name descname">regionLabels</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">regions</span></em>, <em class="sig-param"><span class="n">labels</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Functions.regionLabels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluate number of defined regions and corresponding indetifiers.
+Instance will have <em>region_labels</em> as provided or with default numerical indetifiers if not.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.tools.Functions.sampledStateLabels">
+<em class="property">static </em><code class="sig-name descname">sampledStateLabels</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">shells</span></em>, <em class="sig-param"><span class="n">sampled_states</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">labels</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Functions.sampledStateLabels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Static method that generates state labels for sampled states.
+Requires the <em>regions</em> to be provided and optionally the <em>sampled_states</em> and <em>labels</em>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.tools.Functions.stateEncoder">
+<em class="property">static </em><code class="sig-name descname">stateEncoder</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">shells</span></em>, <em class="sig-param"><span class="n">labels</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Functions.stateEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a mapping of state index to combination of labels.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.tools.Functions.state_mapper">
+<em class="property">static </em><code class="sig-name descname">state_mapper</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">shells</span></em>, <em class="sig-param"><span class="n">array</span></em>, <em class="sig-param"><span class="n">labels</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Functions.state_mapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Static method that converts an <em>array</em> of values into a unique state based on occupancy of regions.
+Requires the <em>regions</em>, input <em>array</em> and <em>labels</em> to be provided.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="source.tools.Tasks">
+<em class="property">class </em><code class="sig-prename descclassname">source.tools.</code><code class="sig-name descname">Tasks</code><a class="headerlink" href="#source.tools.Tasks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Base class to spwan multiproc (Jupyter and Pandas compatible)</p>
+<dl class="py method">
+<dt id="source.tools.Tasks.parallel_task">
+<code class="sig-name descname">parallel_task</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">collection</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Tasks.parallel_task" title="Permalink to this definition">¶</a></dt>
+<dd><p>Core function for multiprocessing of a given task.Takes as input a function and an iterator.
+Warning: Spawns as many threads as the number of elements in the iterator.</p>
+<dl class="simple">
+<dt>input_function<span class="classifier">function, optional</span></dt><dd><p>A function to be executed multiple times. The default is None.</p>
+</dd>
+<dt>collection<span class="classifier">lists, optional</span></dt><dd><p>Fixed and valued elements. The default is None.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>manager<span class="classifier">dict</span></dt><dd><p>Multiprocessing Manager object.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="source.tools.Template">
+<em class="property">class </em><code class="sig-prename descclassname">source.tools.</code><code class="sig-name descname">Template</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Template" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A template class</p>
+<dl class="py method">
+<dt id="source.tools.Template.exportAs">
+<code class="sig-name descname">exportAs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">format</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Template.exportAs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="source.tools.Template.readXML">
+<code class="sig-name descname">readXML</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">i_file</span><span class="o">=</span><span class="default_value">'input.xml'</span></em><span class="sig-paren">)</span> &#x2192; object<a class="headerlink" href="#source.tools.Template.readXML" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parses the XML file describing the project.</p>
+<dl class="simple">
+<dt>i_file<span class="classifier">file</span></dt><dd><p>The input XML file to be read. The default is ‘input.xml’.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>object</dt><dd><p>The python object of the XML file.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.tools.Template.setParametersFromXML">
+<code class="sig-name descname">setParametersFromXML</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; dict<a class="headerlink" href="#source.tools.Template.setParametersFromXML" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>ValueError</dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>dict</dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.tools.Template.value_return">
+<code class="sig-name descname">value_return</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Template.value_return" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>name<span class="classifier">variable</span></dt><dd><p>Another class.</p>
+</dd>
+</dl>
+<p>the value of name
+.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="source.tools.template">
+<code class="sig-prename descclassname">source.tools.</code><code class="sig-name descname">template</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">function_i</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.template" title="Permalink to this definition">¶</a></dt>
+<dd><p>The value of a function.</p>
+<dl class="simple">
+<dt>function: variable</dt><dd><p>Some function.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>function: variable</dt><dd><p>The value of the function.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
 </div>
 <div class="section" id="module-source.deprecated">
 <span id="deprecated"></span><h2>Deprecated<a class="headerlink" href="#module-source.deprecated" title="Permalink to this headline">¶</a></h2>
@@ -170,6 +651,15 @@
            
           </div>
           <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="main.html" class="btn btn-neutral float-right" title="Main" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="documentation.html" class="btn btn-neutral float-left" title="Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
   
 
   <hr/>

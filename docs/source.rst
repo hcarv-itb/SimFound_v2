@@ -1,15 +1,50 @@
-source
-======
+Analysis Module
+===============
 
 
-
-Submodules
+Discretize
 ----------
 
-Main module
------------
 
-.. automodule:: source.main
+.. automodule:: source.Discretize
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   
+
+
+Featurize
+---------
+
+
+.. automodule:: source.Featurize
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   
+
+Trajectory
+----------
+
+
+.. automodule:: source.Trajectory
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   
+   
+Markov State Models
+-------------------
+
+.. automodule:: source.MSM
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   
+Tools
+-----
+
+.. automodule:: source.tools
    :members:
    :undoc-members:
    :show-inheritance:

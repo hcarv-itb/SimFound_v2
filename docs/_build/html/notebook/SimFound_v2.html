@@ -1,0 +1,1152 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Simulation Foundry, v2 &mdash; Simulation Foundry, v2 2.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Simulation Foundry, v2
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">TOPICS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../projects.html">Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../documentation.html">Documentation</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Simulation Foundry, v2</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Simulation Foundry, v2</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/notebook/SimFound_v2.ipynb.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container,
+div.nbinput.container div.prompt,
+div.nbinput.container div.input_area,
+div.nbinput.container div[class*=highlight],
+div.nbinput.container div[class*=highlight] pre,
+div.nboutput.container,
+div.nboutput.container div.prompt,
+div.nboutput.container div.output_area,
+div.nboutput.container div[class*=highlight],
+div.nboutput.container div[class*=highlight] pre {
+    background: none;
+    border: none;
+    padding: 0 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    width: 4.5ex;
+    padding-top: 5px;
+    position: relative;
+    user-select: none;
+}
+
+div.nbinput.container div.prompt > div,
+div.nboutput.container div.prompt > div {
+    position: absolute;
+    right: 0;
+    margin-right: 0.3ex;
+}
+
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        width: unset;
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+
+    div.nbinput.container div.prompt > div,
+    div.nboutput.container div.prompt > div {
+        position: unset;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    background: #f5f5f5;
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 5px;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt a.copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="Simulation-Foundry,-v2">
+<h1>Simulation Foundry, v2<a class="headerlink" href="#Simulation-Foundry,-v2" title="Permalink to this headline">¶</a></h1>
+<p>Author: Henrique F. Carvalho (2021)</p>
+<div class="section" id="Import-module">
+<h2><em>Import module</em><a class="headerlink" href="#Import-module" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1">#Import modules</span>
+<span class="kn">import</span> <span class="nn">pyemma</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">importlib</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="c1">#Path were classes are stored</span>
+<span class="n">base_path</span><span class="o">=</span><span class="s1">&#39;/media/dataHog/hca/&#39;</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">base_path</span><span class="p">)</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">base_path</span><span class="o">+</span><span class="s1">&#39;proLig/&#39;</span><span class="p">)</span>
+
+<span class="kn">import</span> <span class="nn">main</span>
+<span class="c1">#import Trajectory</span>
+<span class="c1">#import Discretize</span>
+<span class="kn">import</span> <span class="nn">Featurize</span>
+<span class="kn">import</span> <span class="nn">plots</span>
+<span class="kn">import</span> <span class="nn">tools</span>
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
+
+<span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">main</span><span class="p">)</span>
+
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;module &#39;main&#39; from &#39;/media/dataHog/hca/proLig/main.py&#39;&gt;
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Project-and-system-definition">
+<h2><strong>Project and system definition</strong><a class="headerlink" href="#Project-and-system-definition" title="Permalink to this headline">¶</a></h2>
+<p>A system is defined using the <em>Project</em> class. Defining the project instance spawns all the simulation objects (instances of class systems) and defines the file structure, nomenclature that will later be used for system setup, simulation, and analysis.</p>
+<p>System components (protein, substrate) are set, and one parameter of substrate, concentration, is defined.</p>
+<p>Other parameters can be coded.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">workdir</span><span class="o">=</span><span class="n">base_path</span><span class="o">+</span><span class="s1">&#39;proLig_CalB-Methanol&#39;</span>
+<span class="n">results</span><span class="o">=</span><span class="n">workdir</span><span class="o">+</span><span class="s2">&quot;/project_results&quot;</span>
+
+<span class="c1">#Check for project folders and creates them if not found)</span>
+<span class="n">tools</span><span class="o">.</span><span class="n">Functions</span><span class="o">.</span><span class="n">fileHandler</span><span class="p">([</span><span class="n">workdir</span><span class="p">,</span> <span class="n">results</span><span class="p">],</span> <span class="n">confirmation</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="n">protein</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;calb&#39;</span><span class="p">]</span>
+<span class="n">ligand</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;MeOH&#39;</span><span class="p">]</span>
+<span class="n">concentrations</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;50mM&#39;</span><span class="p">,</span> <span class="s1">&#39;150mM&#39;</span><span class="p">,</span> <span class="s1">&#39;300mM&#39;</span><span class="p">,</span> <span class="s1">&#39;600mM&#39;</span><span class="p">,</span> <span class="s1">&#39;1M&#39;</span><span class="p">,</span> <span class="s1">&#39;2.5M&#39;</span><span class="p">,</span> <span class="s1">&#39;5.5M&#39;</span><span class="p">]</span>
+<span class="c1">#concentrations=[&#39;50mM&#39;]</span>
+
+<span class="n">project</span><span class="o">=</span><span class="n">main</span><span class="o">.</span><span class="n">Project</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;CalB-Methanolysis&#39;</span><span class="p">,</span> <span class="n">hierarchy</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;protein&#39;</span><span class="p">,</span> <span class="s1">&#39;ligand&#39;</span><span class="p">,</span> <span class="s1">&#39;parameter&#39;</span><span class="p">),</span> <span class="n">workdir</span><span class="o">=</span><span class="n">workdir</span><span class="p">,</span>
+                     <span class="n">parameter</span><span class="o">=</span><span class="n">concentrations</span><span class="p">,</span> <span class="n">replicas</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">timestep</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                     <span class="n">protein</span><span class="o">=</span><span class="n">protein</span><span class="p">,</span> <span class="n">ligand</span><span class="o">=</span><span class="n">ligand</span><span class="p">,</span> <span class="n">results</span><span class="o">=</span><span class="n">results</span><span class="p">)</span>
+
+
+<span class="n">project_systems</span><span class="o">=</span><span class="n">project</span><span class="o">.</span><span class="n">setSystems</span><span class="p">()</span>
+
+<span class="k">for</span> <span class="nb">property</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">project</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="nb">property</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+workdir: /media/dataHog/hca/proLig_CalB-Methanol
+title: CalB-Methanolysis
+hierarchy: (&#39;protein&#39;, &#39;ligand&#39;, &#39;parameter&#39;)
+parameter: [&#39;50mM&#39;, &#39;150mM&#39;, &#39;300mM&#39;, &#39;600mM&#39;, &#39;1M&#39;, &#39;2.5M&#39;, &#39;5.5M&#39;]
+replicas: 10
+protein: [&#39;calb&#39;]
+ligand: [&#39;MeOH&#39;]
+timestep: 5
+results: /media/dataHog/hca/proLig_CalB-Methanol/project_results
+systems: {&#39;calb-MeOH-50mM-1&#39;: &lt;main.System object at 0x7f83007d1210&gt;, &#39;calb-MeOH-50mM-2&#39;: &lt;main.System object at 0x7f83007d1250&gt;, &#39;calb-MeOH-50mM-3&#39;: &lt;main.System object at 0x7f83007d1290&gt;, &#39;calb-MeOH-50mM-4&#39;: &lt;main.System object at 0x7f83007d12d0&gt;, &#39;calb-MeOH-50mM-5&#39;: &lt;main.System object at 0x7f83007d1310&gt;, &#39;calb-MeOH-50mM-6&#39;: &lt;main.System object at 0x7f83007d1390&gt;, &#39;calb-MeOH-50mM-7&#39;: &lt;main.System object at 0x7f83007d13d0&gt;, &#39;calb-MeOH-50mM-8&#39;: &lt;main.System object at 0x7f83007d1410&gt;, &#39;calb-MeOH-50mM-9&#39;: &lt;main.System object at 0x7f83007d1450&gt;, &#39;calb-MeOH-50mM-10&#39;: &lt;main.System object at 0x7f83007d1350&gt;, &#39;calb-MeOH-150mM-1&#39;: &lt;main.System object at 0x7f83007d1490&gt;, &#39;calb-MeOH-150mM-2&#39;: &lt;main.System object at 0x7f83007d14d0&gt;, &#39;calb-MeOH-150mM-3&#39;: &lt;main.System object at 0x7f83007d1510&gt;, &#39;calb-MeOH-150mM-4&#39;: &lt;main.System object at 0x7f83007d1550&gt;, &#39;calb-MeOH-150mM-5&#39;: &lt;main.System object at 0x7f83007d1590&gt;, &#39;calb-MeOH-150mM-6&#39;: &lt;main.System object at 0x7f83007d15d0&gt;, &#39;calb-MeOH-150mM-7&#39;: &lt;main.System object at 0x7f83007d1610&gt;, &#39;calb-MeOH-150mM-8&#39;: &lt;main.System object at 0x7f83007d1650&gt;, &#39;calb-MeOH-150mM-9&#39;: &lt;main.System object at 0x7f83007d1690&gt;, &#39;calb-MeOH-150mM-10&#39;: &lt;main.System object at 0x7f83007d16d0&gt;, &#39;calb-MeOH-300mM-1&#39;: &lt;main.System object at 0x7f83007d1710&gt;, &#39;calb-MeOH-300mM-2&#39;: &lt;main.System object at 0x7f83007d1750&gt;, &#39;calb-MeOH-300mM-3&#39;: &lt;main.System object at 0x7f83007d1790&gt;, &#39;calb-MeOH-300mM-4&#39;: &lt;main.System object at 0x7f83007d17d0&gt;, &#39;calb-MeOH-300mM-5&#39;: &lt;main.System object at 0x7f83007d1810&gt;, &#39;calb-MeOH-300mM-6&#39;: &lt;main.System object at 0x7f83007d1850&gt;, &#39;calb-MeOH-300mM-7&#39;: &lt;main.System object at 0x7f83007d1890&gt;, &#39;calb-MeOH-300mM-8&#39;: &lt;main.System object at 0x7f83007d18d0&gt;, &#39;calb-MeOH-300mM-9&#39;: &lt;main.System object at 0x7f83007d1910&gt;, &#39;calb-MeOH-300mM-10&#39;: &lt;main.System object at 0x7f83007d1950&gt;, &#39;calb-MeOH-600mM-1&#39;: &lt;main.System object at 0x7f83007d1990&gt;, &#39;calb-MeOH-600mM-2&#39;: &lt;main.System object at 0x7f83007d19d0&gt;, &#39;calb-MeOH-600mM-3&#39;: &lt;main.System object at 0x7f83007d1a10&gt;, &#39;calb-MeOH-600mM-4&#39;: &lt;main.System object at 0x7f83007d1a50&gt;, &#39;calb-MeOH-600mM-5&#39;: &lt;main.System object at 0x7f83007d1a90&gt;, &#39;calb-MeOH-600mM-6&#39;: &lt;main.System object at 0x7f83007d1ad0&gt;, &#39;calb-MeOH-600mM-7&#39;: &lt;main.System object at 0x7f83007d1b10&gt;, &#39;calb-MeOH-600mM-8&#39;: &lt;main.System object at 0x7f83007d1b50&gt;, &#39;calb-MeOH-600mM-9&#39;: &lt;main.System object at 0x7f83007d1b90&gt;, &#39;calb-MeOH-600mM-10&#39;: &lt;main.System object at 0x7f83007d1bd0&gt;, &#39;calb-MeOH-1M-1&#39;: &lt;main.System object at 0x7f83007d1c10&gt;, &#39;calb-MeOH-1M-2&#39;: &lt;main.System object at 0x7f83007d1c90&gt;, &#39;calb-MeOH-1M-3&#39;: &lt;main.System object at 0x7f83007d1d10&gt;, &#39;calb-MeOH-1M-4&#39;: &lt;main.System object at 0x7f83007d1d90&gt;, &#39;calb-MeOH-1M-5&#39;: &lt;main.System object at 0x7f83007d1e10&gt;, &#39;calb-MeOH-1M-6&#39;: &lt;main.System object at 0x7f83007d1e90&gt;, &#39;calb-MeOH-1M-7&#39;: &lt;main.System object at 0x7f83007d1f10&gt;, &#39;calb-MeOH-1M-8&#39;: &lt;main.System object at 0x7f83007d1f90&gt;, &#39;calb-MeOH-1M-9&#39;: &lt;main.System object at 0x7f83007d9050&gt;, &#39;calb-MeOH-1M-10&#39;: &lt;main.System object at 0x7f83007d90d0&gt;, &#39;calb-MeOH-2.5M-1&#39;: &lt;main.System object at 0x7f83007d9150&gt;, &#39;calb-MeOH-2.5M-2&#39;: &lt;main.System object at 0x7f83007d9190&gt;, &#39;calb-MeOH-2.5M-3&#39;: &lt;main.System object at 0x7f83007d91d0&gt;, &#39;calb-MeOH-2.5M-4&#39;: &lt;main.System object at 0x7f83007d9210&gt;, &#39;calb-MeOH-2.5M-5&#39;: &lt;main.System object at 0x7f83007d9250&gt;, &#39;calb-MeOH-2.5M-6&#39;: &lt;main.System object at 0x7f83007d9290&gt;, &#39;calb-MeOH-2.5M-7&#39;: &lt;main.System object at 0x7f83007d92d0&gt;, &#39;calb-MeOH-2.5M-8&#39;: &lt;main.System object at 0x7f83007d9310&gt;, &#39;calb-MeOH-2.5M-9&#39;: &lt;main.System object at 0x7f83007d9350&gt;, &#39;calb-MeOH-2.5M-10&#39;: &lt;main.System object at 0x7f83007d9390&gt;, &#39;calb-MeOH-5.5M-1&#39;: &lt;main.System object at 0x7f83007d93d0&gt;, &#39;calb-MeOH-5.5M-2&#39;: &lt;main.System object at 0x7f83007d9410&gt;, &#39;calb-MeOH-5.5M-3&#39;: &lt;main.System object at 0x7f83007d9450&gt;, &#39;calb-MeOH-5.5M-4&#39;: &lt;main.System object at 0x7f83007d9490&gt;, &#39;calb-MeOH-5.5M-5&#39;: &lt;main.System object at 0x7f83007d94d0&gt;, &#39;calb-MeOH-5.5M-6&#39;: &lt;main.System object at 0x7f83007d9510&gt;, &#39;calb-MeOH-5.5M-7&#39;: &lt;main.System object at 0x7f83007d9550&gt;, &#39;calb-MeOH-5.5M-8&#39;: &lt;main.System object at 0x7f83007d9590&gt;, &#39;calb-MeOH-5.5M-9&#39;: &lt;main.System object at 0x7f83007d95d0&gt;, &#39;calb-MeOH-5.5M-10&#39;: &lt;main.System object at 0x7f83007d9610&gt;}
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Featurization">
+<h2><strong>Featurization</strong><a class="headerlink" href="#Featurization" title="Permalink to this headline">¶</a></h2>
+<div class="line-block">
+<div class="line">To model the kinetics of methanol interactions with CalB, the trajectories are <em>featurized</em>.</div>
+<div class="line">The class <em>Featurize</em> has available two methods: <strong>distance</strong> and <strong>nac</strong>.</div>
+</div>
+<p>Both methods accept an arbitrary number of distances and outputs a dataframe (also stores data) that can be used for discretization.</p>
+<p>The distance to <em>Near Attack Conformation</em> method monitors all pairwise protein-methanol distances (<span class="math notranslate nohighlight">\(d_{NAC}\)</span>) throughout simulated time. It is based on the <em>Near Attack Conformation</em> concept, applied to describe catalytic reactions.</p>
+<p>The selected protein-substrate atom pairs are: 1. Acetyl carbon of Ser105 (SEA, index 1526) and hydroxyl oxygen of methanol (OA). 2. Imidazole nitrogen from His224 (NE2, resid 224) and hydroxyl hydrogen of methano (HO).</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">main</span><span class="p">)</span>
+<span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">Featurize</span><span class="p">)</span>
+
+
+<span class="n">features</span><span class="o">=</span><span class="p">{}</span>
+
+<span class="n">distances</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;resname MeOH and name OA&#39;</span><span class="p">,</span> <span class="s1">&#39;resname SEA and index 1526&#39;</span><span class="p">),</span>
+      <span class="p">(</span><span class="s1">&#39;resname MeOH and name HO&#39;</span><span class="p">,</span> <span class="s1">&#39;resid 224 and name NE2&#39;</span><span class="p">)]</span>
+
+<span class="c1">#features[&#39;distance1&#39;]=main.Featurize(project_systems, results=results).distance(distances[0], processes=12)</span>
+<span class="c1">#features[&#39;nac_pre-calculated&#39;]=main.Featurize(project_systems, results=results).nac(distances, processes=12, use_precalc=True)</span>
+<span class="n">features</span><span class="p">[</span><span class="s1">&#39;nac&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">main</span><span class="o">.</span><span class="n">Featurize</span><span class="p">(</span><span class="n">project_systems</span><span class="p">,</span> <span class="n">results</span><span class="o">=</span><span class="n">results</span><span class="p">)</span><span class="o">.</span><span class="n">nac</span><span class="p">(</span><span class="n">distances</span><span class="p">,</span> <span class="n">processes</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
+
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Working on 14 logical cores.
+Calculating calb-MeOH-150mM-7Calculating calb-MeOH-50mM-1Calculating calb-MeOH-50mM-7Calculating calb-MeOH-50mM-9Calculating calb-MeOH-150mM-5Calculating calb-MeOH-50mM-3Calculating calb-MeOH-150mM-3Calculating calb-MeOH-50mM-5Calculating calb-MeOH-150mM-1Calculating calb-MeOH-300mM-7
+
+
+
+
+
+
+
+
+Distance 1 not found for calb-MeOH-50mM-1. Reading trajectory...
+Distance 1 not found for calb-MeOH-50mM-7. Reading trajectory...Distance 1 not found for calb-MeOH-150mM-7. Reading trajectory...Distance 1 not found for calb-MeOH-50mM-9. Reading trajectory...
+Distance 1 not found for calb-MeOH-150mM-1. Reading trajectory...Distance 1 not found for calb-MeOH-50mM-3. Reading trajectory...Distance 1 not found for calb-MeOH-150mM-3. Reading trajectory...Distance 1 not found for calb-MeOH-150mM-5. Reading trajectory...
+Distance 1 not found for calb-MeOH-50mM-5. Reading trajectory...
+
+
+
+
+
+
+Calculating calb-MeOH-150mM-9Calculating calb-MeOH-300mM-1
+
+Distance 2 not found for calb-MeOH-300mM-7. Reading trajectory...Calculating calb-MeOH-300mM-3
+
+Calculating calb-MeOH-300mM-5
+Distance 2 not found for calb-MeOH-300mM-5. Reading trajectory...
+Calculating calb-MeOH-600mM-1
+Distance 1 not found for calb-MeOH-600mM-1. Reading trajectory...
+Calculating calb-MeOH-300mM-9
+Distance 1 not found for calb-MeOH-300mM-9. Reading trajectory...
+Calculating calb-MeOH-600mM-3
+Distance 1 not found for calb-MeOH-600mM-3. Reading trajectory...
+Calculating calb-MeOH-150mM-7
+Calculating calb-MeOH-600mM-3
+Calculating calb-MeOH-300mM-5
+Calculating calb-MeOH-300mM-9
+Calculating calb-MeOH-300mM-7
+Calculating calb-MeOH-600mM-1
+Calculating calb-MeOH-150mM-5
+Calculating calb-MeOH-150mM-1Calculating calb-MeOH-150mM-3
+
+Calculating calb-MeOH-50mM-7
+Calculating calb-MeOH-50mM-9
+Calculating calb-MeOH-50mM-1
+Calculating calb-MeOH-50mM-5
+Calculating calb-MeOH-50mM-3
+Distance 2 not found for calb-MeOH-300mM-9. Reading trajectory...
+Calculating calb-MeOH-600mM-5
+Calculating calb-MeOH-600mM-7
+Distance 1 not found for calb-MeOH-600mM-5. Reading trajectory...
+Distance 1 not found for calb-MeOH-600mM-7. Reading trajectory...
+Calculating calb-MeOH-300mM-9
+Calculating calb-MeOH-600mM-7
+Calculating calb-MeOH-600mM-5
+Distance 2 not found for calb-MeOH-600mM-3. Reading trajectory...
+Distance 2 not found for calb-MeOH-600mM-1. Reading trajectory...
+Calculating calb-MeOH-600mM-3
+Calculating calb-MeOH-600mM-1
+Distance 2 not found for calb-MeOH-150mM-5. Reading trajectory...
+Distance 2 not found for calb-MeOH-150mM-1. Reading trajectory...
+Distance 2 not found for calb-MeOH-150mM-3. Reading trajectory...
+Distance 2 not found for calb-MeOH-150mM-7. Reading trajectory...
+Calculating calb-MeOH-600mM-9
+Calculating calb-MeOH-150mM-1
+Calculating calb-MeOH-150mM-5
+Calculating calb-MeOH-150mM-3
+Distance 1 not found for calb-MeOH-600mM-9. Reading trajectory...
+Calculating calb-MeOH-150mM-7
+Calculating calb-MeOH-600mM-9
+Calculating calb-MeOH-1M-1
+Distance 1 not found for calb-MeOH-1M-1. Reading trajectory...
+Calculating calb-MeOH-1M-3
+Distance 1 not found for calb-MeOH-1M-3. Reading trajectory...
+Calculating calb-MeOH-1M-1
+Calculating calb-MeOH-1M-3
+Calculating calb-MeOH-1M-5
+Calculating calb-MeOH-1M-7
+Distance 1 not found for calb-MeOH-1M-5. Reading trajectory...Distance 1 not found for calb-MeOH-1M-7. Reading trajectory...
+
+Calculating calb-MeOH-1M-9
+Distance 1 not found for calb-MeOH-1M-9. Reading trajectory...
+Calculating calb-MeOH-2.5M-1
+Distance 1 not found for calb-MeOH-2.5M-1. Reading trajectory...
+Calculating calb-MeOH-1M-5
+Calculating calb-MeOH-1M-7
+Calculating calb-MeOH-1M-9
+Distance 2 not found for calb-MeOH-600mM-7. Reading trajectory...
+Distance 2 not found for calb-MeOH-600mM-5. Reading trajectory...
+Calculating calb-MeOH-2.5M-1
+Calculating calb-MeOH-600mM-7
+Calculating calb-MeOH-600mM-5
+Distance 2 not found for calb-MeOH-50mM-1. Reading trajectory...
+Distance 2 not found for calb-MeOH-50mM-3. Reading trajectory...
+Calculating calb-MeOH-50mM-1
+Calculating calb-MeOH-50mM-3
+Distance 2 not found for calb-MeOH-50mM-9. Reading trajectory...
+Distance 2 not found for calb-MeOH-50mM-7. Reading trajectory...
+Distance 2 not found for calb-MeOH-50mM-5. Reading trajectory...
+Calculating calb-MeOH-50mM-9
+Calculating calb-MeOH-50mM-7
+Calculating calb-MeOH-50mM-5
+Distance 2 not found for calb-MeOH-600mM-9. Reading trajectory...
+Calculating calb-MeOH-600mM-9
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Discretization">
+<h2><strong>Discretization</strong><a class="headerlink" href="#Discretization" title="Permalink to this headline">¶</a></h2>
+<p>The <em>features</em> are discretized based on selected discretization scheme, <strong>Binding free energy profile</strong> or <strong>Combinatorial</strong>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">main</span><span class="p">)</span>
+
+<span class="n">discretize</span><span class="o">=</span><span class="p">{}</span>
+
+<span class="k">for</span> <span class="n">feature</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">features</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">discretize</span><span class="p">[</span><span class="n">feature</span><span class="p">]</span><span class="o">=</span><span class="n">Discretize</span><span class="p">(</span><span class="n">project_systems</span><span class="p">,</span> <span class="n">feature</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">results</span><span class="o">=</span><span class="n">results</span><span class="p">)</span>
+
+<span class="n">discretize</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="Binding-free-energy-profile">
+<h3><strong>Binding free energy profile</strong><a class="headerlink" href="#Binding-free-energy-profile" title="Permalink to this headline">¶</a></h3>
+<p>Represent the feaurization as a binding free energy profile (<strong>:math:`Delta`G</strong>). Options to describe the profile are <em>sum</em>, <em>mean</em>, <em>quantile</em>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">resolution</span><span class="o">=</span><span class="mf">0.5</span>
+<span class="n">lims</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">150</span><span class="p">)</span>
+<span class="n">stride</span><span class="o">=</span><span class="mi">1</span>
+<span class="n">ps</span><span class="o">=</span><span class="mi">5</span>
+<span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+<span class="n">stop</span><span class="o">=</span><span class="mi">10</span>
+
+<span class="n">nac_profiles</span><span class="o">=</span><span class="p">{}</span>
+
+<span class="k">for</span> <span class="n">feature</span><span class="p">,</span> <span class="n">discretized</span> <span class="ow">in</span> <span class="n">discretize</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+
+    <span class="n">nac_profile</span><span class="p">[</span><span class="n">feature</span><span class="p">]</span><span class="o">=</span><span class="n">discretized</span><span class="o">.</span><span class="n">nac_profile</span><span class="p">(</span><span class="n">shells</span><span class="p">,</span>
+                                   <span class="n">resolution</span><span class="o">=</span><span class="n">resolution</span><span class="p">,</span>
+                                   <span class="n">nac_lims</span><span class="o">=</span><span class="n">lims</span><span class="p">,</span>
+                                   <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
+                                   <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
+                                   <span class="n">ps</span><span class="o">=</span><span class="n">ps</span><span class="p">,</span>
+                                   <span class="n">start</span><span class="o">=</span><span class="n">start</span>
+                                   <span class="n">stop</span><span class="o">=</span><span class="n">stop</span><span class="p">)</span>
+
+<span class="n">nac_profile</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">main</span><span class="p">)</span>
+<span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">Discretize</span><span class="p">)</span>
+<span class="n">discretize</span><span class="o">=</span><span class="n">main</span><span class="o">.</span><span class="n">Discretize</span><span class="o">.</span><span class="n">Discretize</span><span class="p">(</span><span class="n">project_systems</span><span class="p">,</span> <span class="n">feature</span><span class="o">=</span><span class="n">features</span><span class="p">[</span><span class="s1">&#39;nac&#39;</span><span class="p">],</span> <span class="n">results</span><span class="o">=</span><span class="n">results</span><span class="p">)</span>
+<span class="n">descriptors</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;mean&#39;</span><span class="p">,</span><span class="s1">&#39;quantile&#39;</span><span class="p">)</span>
+<span class="n">dG</span><span class="o">=</span><span class="p">{}</span>
+
+<span class="c1">#For quantile control</span>
+<span class="n">quantiles</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">,</span> <span class="mf">0.90</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.99</span><span class="p">,</span> <span class="mf">0.999</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">descriptor</span> <span class="ow">in</span> <span class="n">descriptors</span><span class="p">:</span>
+    <span class="n">dG</span><span class="p">[</span><span class="n">descriptor</span><span class="p">]</span><span class="o">=</span><span class="n">discretize</span><span class="o">.</span><span class="n">dG_calculation</span><span class="p">(</span><span class="n">nac_profile</span><span class="p">,</span> <span class="n">describe</span><span class="o">=</span><span class="n">descriptor</span><span class="p">,</span>
+                                             <span class="n">bulk</span><span class="o">=</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="mi">41</span><span class="p">),</span>
+                                             <span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                                             <span class="n">resolution</span><span class="o">=</span><span class="n">resolution</span><span class="p">,</span>
+                                             <span class="n">feature_name</span><span class="o">=</span><span class="s1">&#39;dNAC&#39;</span><span class="p">,</span>
+                                             <span class="n">mol</span><span class="o">=</span><span class="s1">&#39;methanol&#39;</span><span class="p">,</span>
+                                             <span class="n">quantiles</span><span class="o">=</span><span class="n">quantiles</span><span class="p">,</span>
+                                             <span class="n">results</span><span class="o">=</span><span class="n">results</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="Combinatorial">
+<h3><strong>Combinatorial</strong><a class="headerlink" href="#Combinatorial" title="Permalink to this headline">¶</a></h3>
+<p>Discretize, for each frame, which combinations of regions are occupied by all ligands in the system (one state per frame)</p>
+<p>The concept of regions is applied to the 1D <span class="math notranslate nohighlight">\(d_{NAC}\)</span> reaction coordinate, whereby a region is defined as a <em>spherical shell</em> along the <span class="math notranslate nohighlight">\(d_{NAC}\)</span> radius</p>
+<p>Set the shell boundaries (limits, thickness). The minimum (0) and maximum (max) value are implicit.</p>
+<p>E.g.: shells (4.5, 10, 12, 24) corresponds to: 1. shell [0, 4.5[ (A) 2. shell [4.5, 10[ (P) 3. shell [10, 12[ (E) 4. shell [10, 24[ (S) 5. shell [24, max[ (B)</p>
+<p>Labels <em>labels</em> of each region are optional but recommended (otherwise reverts to numerical). Number of <em>labels</em> is plus one the number of defined <em>regions</em>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+
+<span></span><span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">main</span><span class="p">)</span>
+<span class="n">shells</span><span class="o">=</span><span class="p">[</span><span class="mf">4.5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">24</span><span class="p">]</span>
+<span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;P&#39;</span><span class="p">,</span> <span class="s1">&#39;E&#39;</span><span class="p">,</span> <span class="s1">&#39;S&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">]</span>
+
+<span class="n">combinatorial</span><span class="o">=</span><span class="n">discretize</span><span class="o">.</span><span class="n">combinatorial</span><span class="p">(</span><span class="n">shells</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">combinatorial</span><span class="p">)</span>
+
+<span class="n">discretize</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">combinatorial</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="Trajectory-operations">
+<h2>Trajectory operations<a class="headerlink" href="#Trajectory-operations" title="Permalink to this headline">¶</a></h2>
+<p>Initiate the trajectory object, which will be used to make further actions.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">main</span><span class="p">)</span>
+<span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">Trajectory</span><span class="p">)</span>
+<span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">tools</span><span class="p">)</span>
+<span class="n">trajectories</span><span class="o">=</span><span class="n">main</span><span class="o">.</span><span class="n">Trajectory</span><span class="o">.</span><span class="n">Trajectory</span><span class="p">(</span><span class="n">project_systems</span><span class="p">,</span> <span class="n">results</span><span class="o">=</span><span class="n">results</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Define the frames belonging to a set of states across all <em>trajectories</em>. A dataframe of discretized trajectories must be given.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+
+<span></span><span class="c1">#stateLabels=[&#39;SB&#39;, &#39;ESB&#39;, &#39;PB&#39;, &#39;PSB&#39;, &#39;PEB&#39;, &#39;PESB&#39;, &#39;AB&#39;, &#39;ASB&#39;, &#39;AEB&#39;, &#39;AESB&#39;, &#39;APSB&#39;, &#39;APESB&#39;]</span>
+<span class="c1">#states=[3, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 31]</span>
+
+<span class="c1">#stateLabels=[&#39;SB&#39;, &#39;ESB&#39;, &#39;PB&#39;, &#39;PSB&#39;, &#39;PESB&#39;, &#39;AB&#39;, &#39;ASB&#39;, &#39;APSB&#39;, &#39;APESB&#39;]</span>
+<span class="c1">#states=[3,7,9,11,15,17,19,27,31]</span>
+
+<span class="n">stateLabels</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;PSB&#39;</span><span class="p">]</span>
+<span class="n">states</span><span class="o">=</span><span class="p">[</span><span class="mi">11</span><span class="p">]</span>
+
+<span class="n">extracted_frames</span><span class="o">=</span><span class="n">trajectories</span><span class="o">.</span><span class="n">extractFrames_by_iterable</span><span class="p">(</span><span class="n">combinatorial</span><span class="p">,</span> <span class="n">iterable</span><span class="o">=</span><span class="n">states</span><span class="p">,</span> <span class="n">feature</span><span class="o">=</span><span class="s1">&#39;nac&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="Density-Maps">
+<h2>Density Maps<a class="headerlink" href="#Density-Maps" title="Permalink to this headline">¶</a></h2>
+<p>NOTE: Compute intensive, using previously stored files.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1">#of extracted frames</span>
+<span class="n">densities</span><span class="p">,</span> <span class="n">stats</span><span class="o">=</span><span class="n">trajectories</span><span class="o">.</span><span class="n">DensityMap_frames</span><span class="p">(</span><span class="n">frames</span><span class="o">=</span><span class="n">extracted_frames</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">dists</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;resid 290 and name NZ&#39;</span><span class="p">,</span> <span class="s1">&#39;resid 145 and name OD1&#39;</span><span class="p">)])</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+
+<span></span><span class="n">stats_</span><span class="o">=</span><span class="n">stats</span>
+<span class="n">parameters</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;min&#39;</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">,</span> <span class="s1">&#39;mean&#39;</span><span class="p">,</span> <span class="s1">&#39;std&#39;</span><span class="p">]</span>
+<span class="n">level_unique</span><span class="o">=</span><span class="n">stats_</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">stats_</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">6</span><span class="p">),</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">axes</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">flat</span>
+
+<span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">ax</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">level_unique</span><span class="p">,</span> <span class="n">axes</span><span class="p">):</span>
+    <span class="c1">#print(p, ax)</span>
+    <span class="n">df_level</span><span class="o">=</span><span class="n">stats_</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="n">p</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">it</span> <span class="ow">in</span> <span class="n">df_level</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">:</span>
+        <span class="c1">#print(df_level[it])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">df_level</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">df_level</span><span class="p">[</span><span class="n">it</span><span class="p">])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="c1">#ax.set_yscale(&#39;log&#39;)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">full_densities</span><span class="o">=</span><span class="n">trajectories</span><span class="o">.</span><span class="n">DensityMap_fullTraj</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">filtered</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">full_densities</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">plots</span><span class="o">.</span><span class="n">plot_feature_histogram</span><span class="p">(</span><span class="n">systems_featurized_nac</span><span class="p">)</span>
+
+<span class="c1">#for name, features in features_dict.items():</span>
+<span class="c1">#    plots.plot_feature_histogram(concentrations, name, features, results)</span>
+
+<span class="k">for</span> <span class="n">feature</span><span class="p">,</span> <span class="n">parameter</span> <span class="ow">in</span> <span class="n">features</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">feature</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">value</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">parameter</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+</pre></div>
+</div>
+</div>
+<p>Plot histograms of discretized features.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+
+<span></span><span class="k">for</span> <span class="n">scheme</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">disc</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">feature</span><span class="p">,</span> <span class="n">parameter_dict</span> <span class="ow">in</span> <span class="n">v</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">parameter</span><span class="p">,</span> <span class="n">values</span> <span class="ow">in</span> <span class="n">parameter_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="s1">&#39;discretized&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+            <span class="n">minimum</span><span class="p">,</span> <span class="n">maximum</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">around</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">data</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">around</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">minimum</span><span class="p">,</span> <span class="n">maximum</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="n">parameter</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">scheme</span> <span class="o">==</span> <span class="s1">&#39;combinatorial&#39;</span><span class="p">:</span>
+            <span class="n">label_names</span><span class="o">=</span><span class="n">base</span><span class="o">.</span><span class="n">Functions</span><span class="o">.</span><span class="n">sampledStateLabels</span><span class="p">(</span><span class="n">regions</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>
+            <span class="n">positions</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">label_names</span><span class="p">))</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">positions</span><span class="o">+</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">label_names</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">70</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;State Index&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Counts&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">scheme</span><span class="si">}</span><span class="s1">-</span><span class="si">{</span><span class="n">feature</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">results</span><span class="si">}</span><span class="s1">/discretization_</span><span class="si">{</span><span class="n">scheme</span><span class="si">}</span><span class="s1">_histogram-</span><span class="si">{</span><span class="n">feature</span><span class="si">}</span><span class="s1">.png&#39;</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="Markov-State-Model">
+<h2>Markov State Model<a class="headerlink" href="#Markov-State-Model" title="Permalink to this headline">¶</a></h2>
+<p>A dictionary of MSM <em>msm_dict</em> is created. Each MSM is identified by the corresponding discretization <em>scheme</em>, the <em>feature</em> and <em>parameter</em> as a key of <em>msm_dict</em>. The corresponding values themselves a dictionary holding the calculated properties of the MSM. The instance of <em>classes.MSM</em> is <em>instance</em>.</p>
+<p>TODO: Fetch prot and mol directly from System class.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">msm_dict</span><span class="o">=</span><span class="p">{}</span>
+
+<span class="n">protein</span><span class="p">,</span> <span class="n">ligand</span><span class="p">,</span> <span class="n">timestep</span><span class="o">=</span><span class="n">system</span><span class="o">.</span><span class="n">getProperties</span><span class="p">(</span><span class="s1">&#39;protein&#39;</span><span class="p">,</span> <span class="s1">&#39;ligand&#39;</span><span class="p">,</span> <span class="s1">&#39;timestep&#39;</span><span class="p">)</span>
+
+
+<span class="k">for</span> <span class="n">scheme</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">disc</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">feature</span><span class="p">,</span> <span class="n">parameter_dict</span> <span class="ow">in</span> <span class="n">v</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">parameter</span><span class="p">,</span> <span class="n">values</span> <span class="ow">in</span> <span class="n">parameter_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">msm_dict</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">scheme</span><span class="si">}</span><span class="s1">-</span><span class="si">{</span><span class="n">feature</span><span class="si">}</span><span class="s1">-</span><span class="si">{</span><span class="n">parameter</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;instance&#39;</span><span class="p">:</span> <span class="n">base</span><span class="o">.</span><span class="n">MSM</span><span class="p">(</span><span class="n">scheme</span><span class="p">,</span> <span class="n">feature</span><span class="p">,</span> <span class="n">parameter</span><span class="p">,</span>
+                                                                              <span class="n">values</span><span class="p">,</span> <span class="n">protein</span><span class="p">,</span> <span class="n">ligand</span><span class="p">,</span> <span class="n">timestep</span><span class="p">,</span> <span class="n">results</span><span class="o">=</span><span class="n">results</span><span class="p">)}</span>
+
+</pre></div>
+</div>
+</div>
+<p><strong>Implied Time Scales</strong></p>
+<p>Calculate the Implied Time Scales for each MSM object using the <em>ITS</em> function. This function uses the pyEMMA function (pyemma.msm.its). The default array of lags can be used by pyEMMA, but here the values are provided by <em>lags</em>.</p>
+<p>The function checks for previously calculated ITS plots by checking the presence of the corresponding <em>png</em> file in the <em>results</em> folder.</p>
+<p>The file path to the generated ITS image is stored in the <em>msm_dict</em> (2nd position)</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">lags</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">500</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">2000</span><span class="p">,</span> <span class="mi">5000</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">msm_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">model</span><span class="p">[</span><span class="s1">&#39;its&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">model</span><span class="p">[</span><span class="s1">&#39;instance&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">ITS</span><span class="p">(</span><span class="n">lags</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p><strong>Bayesian MSM</strong> Calculation of Bayesian MSM is made here. A lag time must be defined for each discretization <em>scheme-feature-parameter</em> combination.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
+<span class="n">lag</span><span class="o">=</span><span class="p">{}</span>
+
+<span class="n">minimum</span><span class="o">=</span><span class="p">{}</span>
+<span class="n">minimum</span><span class="p">[</span><span class="s1">&#39;nac&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;50mM&#39;</span><span class="p">:</span><span class="mi">500</span><span class="p">,</span> <span class="s1">&#39;150mM&#39;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span> <span class="s1">&#39;300mM&#39;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span> <span class="s1">&#39;600mM&#39;</span><span class="p">:</span><span class="mi">2000</span><span class="p">,</span> <span class="s1">&#39;1M&#39;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span> <span class="s1">&#39;2.5M&#39;</span><span class="p">:</span><span class="mi">2000</span><span class="p">,</span> <span class="s1">&#39;5.5M&#39;</span><span class="p">:</span><span class="mi">2000</span><span class="p">}</span>
+<span class="n">minimum</span><span class="p">[</span><span class="s1">&#39;dist&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;50mM&#39;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span> <span class="s1">&#39;150mM&#39;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span> <span class="s1">&#39;300mM&#39;</span><span class="p">:</span><span class="mi">2000</span><span class="p">,</span> <span class="s1">&#39;600mM&#39;</span><span class="p">:</span><span class="mi">2000</span><span class="p">,</span> <span class="s1">&#39;1M&#39;</span><span class="p">:</span><span class="mi">2000</span><span class="p">,</span> <span class="s1">&#39;2.5M&#39;</span><span class="p">:</span><span class="mi">2000</span><span class="p">,</span> <span class="s1">&#39;5.5M&#39;</span><span class="p">:</span><span class="mi">2000</span><span class="p">}</span>
+<span class="n">lag</span><span class="p">[</span><span class="s1">&#39;minimum&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">minimum</span>
+
+<span class="n">single</span><span class="o">=</span><span class="p">{}</span>
+<span class="n">single</span><span class="p">[</span><span class="s1">&#39;nac&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;50mM&#39;</span><span class="p">:</span><span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;150mM&#39;</span><span class="p">:</span><span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;300mM&#39;</span><span class="p">:</span><span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;600mM&#39;</span><span class="p">:</span><span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;1M&#39;</span><span class="p">:</span><span class="mi">200</span><span class="p">,</span> <span class="s1">&#39;2.5M&#39;</span><span class="p">:</span><span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;5.5M&#39;</span><span class="p">:</span><span class="mi">2000</span><span class="p">}</span>
+<span class="n">single</span><span class="p">[</span><span class="s1">&#39;dist&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;50mM&#39;</span><span class="p">:</span><span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;150mM&#39;</span><span class="p">:</span><span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;300mM&#39;</span><span class="p">:</span><span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;600mM&#39;</span><span class="p">:</span><span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;1M&#39;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span> <span class="s1">&#39;2.5M&#39;</span><span class="p">:</span><span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;5.5M&#39;</span><span class="p">:</span><span class="kc">None</span><span class="p">}</span>
+<span class="n">lag</span><span class="p">[</span><span class="s1">&#39;single&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">single</span>
+
+<span class="n">combinatorial</span><span class="o">=</span><span class="p">{}</span>
+<span class="n">combinatorial</span><span class="p">[</span><span class="s1">&#39;nac&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;50mM&#39;</span><span class="p">:</span><span class="mi">200</span><span class="p">,</span> <span class="s1">&#39;150mM&#39;</span><span class="p">:</span><span class="mi">2000</span><span class="p">,</span> <span class="s1">&#39;300mM&#39;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span> <span class="s1">&#39;600mM&#39;</span><span class="p">:</span><span class="mi">5000</span><span class="p">,</span> <span class="s1">&#39;1M&#39;</span><span class="p">:</span><span class="mi">2000</span><span class="p">,</span> <span class="s1">&#39;2.5M&#39;</span><span class="p">:</span><span class="mi">2000</span><span class="p">,</span> <span class="s1">&#39;5.5M&#39;</span><span class="p">:</span><span class="mi">2000</span><span class="p">}</span>
+<span class="n">combinatorial</span><span class="p">[</span><span class="s1">&#39;dist&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;50mM&#39;</span><span class="p">:</span><span class="mi">200</span><span class="p">,</span> <span class="s1">&#39;150mM&#39;</span><span class="p">:</span><span class="mi">200</span><span class="p">,</span> <span class="s1">&#39;300mM&#39;</span><span class="p">:</span><span class="mi">200</span><span class="p">,</span> <span class="s1">&#39;600mM&#39;</span><span class="p">:</span><span class="mi">500</span><span class="p">,</span> <span class="s1">&#39;1M&#39;</span><span class="p">:</span><span class="mi">500</span><span class="p">,</span> <span class="s1">&#39;2.5M&#39;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span> <span class="s1">&#39;5.5M&#39;</span><span class="p">:</span><span class="mi">1000</span><span class="p">}</span>
+<span class="n">lag</span><span class="p">[</span><span class="s1">&#39;combinatorial&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">combinatorial</span>
+
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">msm_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">model</span><span class="p">[</span><span class="s1">&#39;bayesMSM&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">model</span><span class="p">[</span><span class="s1">&#39;instance&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">bayesMSM</span><span class="p">(</span><span class="n">lag</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p><strong>Stationary Distribution</strong></p>
+<p>Stationary distribution is calculated for each available model. Model instance accessed by <em>model(2)</em></p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">pi</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">msm_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">pi_model</span><span class="o">=</span><span class="n">model</span><span class="p">[</span><span class="s1">&#39;instance&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">stationaryDistribution</span><span class="p">(</span><span class="n">model</span><span class="p">[</span><span class="s1">&#39;bayesMSM&#39;</span><span class="p">])</span>
+    <span class="n">pi</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">pi</span><span class="p">,</span> <span class="n">pi_model</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">pi</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">results</span><span class="si">}</span><span class="s1">/stationary_distributions.csv&#39;</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">scheme</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">disc</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">v</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">scheme</span> <span class="o">==</span> <span class="s1">&#39;combinatorial&#39;</span><span class="p">:</span>
+            <span class="n">statdist_df</span><span class="o">=</span><span class="n">pi</span><span class="o">.</span><span class="n">xs</span><span class="p">((</span><span class="n">scheme</span><span class="p">,</span> <span class="n">feature</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">how</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">)</span>
+            <span class="n">statdist_df</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s1">&#39;bar&#39;</span><span class="p">)</span>
+            <span class="n">label_names</span><span class="o">=</span><span class="n">base</span><span class="o">.</span><span class="n">Functions</span><span class="o">.</span><span class="n">sampledStateLabels</span><span class="p">(</span><span class="n">regions</span><span class="p">,</span> <span class="n">sampled_states</span><span class="o">=</span><span class="n">statdist_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>
+            <span class="n">positions</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">label_names</span><span class="p">))</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">positions</span><span class="p">,</span> <span class="n">label_names</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">70</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Combinatorial States&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pi</span><span class="o">.</span><span class="n">xs</span><span class="p">((</span><span class="n">scheme</span><span class="p">,</span> <span class="n">feature</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">)</span> <span class="c1">#kind=&#39;bar&#39;, stacked=True)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;State Index&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">yscale</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Stationary Distribution&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Discretization: </span><span class="si">{</span><span class="n">scheme</span><span class="si">}</span><span class="se">\n</span><span class="s1">Feature: </span><span class="si">{</span><span class="n">feature</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">results</span><span class="si">}</span><span class="s1">/stationary_distribution-</span><span class="si">{</span><span class="n">scheme</span><span class="si">}</span><span class="s1">-</span><span class="si">{</span><span class="n">feature</span><span class="si">}</span><span class="s1">.png&#39;</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<p><strong>Flux</strong></p>
+<p>Calculate the flux between set of source states <em>A_source</em> and set of sink states <em>B_sink</em>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
+<span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">plots</span><span class="p">)</span>
+
+<span class="n">flux_df</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+<span class="n">committor_df</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+<span class="n">pathway_df</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span><span class="n">model</span> <span class="ow">in</span> <span class="n">msm_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">flux_model</span><span class="p">,</span> <span class="n">committor_model</span><span class="p">,</span> <span class="n">pathway_model</span><span class="o">=</span><span class="n">base</span><span class="o">.</span><span class="n">MSM</span><span class="o">.</span><span class="n">flux</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">model</span><span class="p">[</span><span class="s1">&#39;bayesMSM&#39;</span><span class="p">],</span> <span class="n">parameter_scalar</span><span class="o">=</span><span class="n">parameter_scalar</span><span class="p">,</span>
+                                <span class="n">regions</span><span class="o">=</span><span class="n">regions</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
+                                <span class="n">A_source</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;SB&#39;</span><span class="p">,</span> <span class="s1">&#39;ESB&#39;</span><span class="p">],</span>
+                                <span class="n">B_sink</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;AB&#39;</span><span class="p">,</span> <span class="s1">&#39;ASB&#39;</span><span class="p">,</span> <span class="s1">&#39;AEB&#39;</span><span class="p">,</span> <span class="s1">&#39;AESB&#39;</span><span class="p">,</span> <span class="s1">&#39;APB&#39;</span><span class="p">,</span> <span class="s1">&#39;APSB&#39;</span><span class="p">,</span> <span class="s1">&#39;APEB&#39;</span><span class="p">,</span> <span class="s1">&#39;APESB&#39;</span><span class="p">],</span>
+                                <span class="n">top_pathways</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+    <span class="n">flux_df</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">flux_df</span><span class="p">,</span> <span class="n">flux_model</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">committor_df</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">committor_df</span><span class="p">,</span> <span class="n">committor_model</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">pathway_df</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">pathway_df</span><span class="p">,</span> <span class="n">pathway_model</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+
+<span class="n">plots</span><span class="o">.</span><span class="n">plot_pathways</span><span class="p">(</span><span class="n">pathway_df</span><span class="p">,</span> <span class="n">ligand</span><span class="p">,</span> <span class="n">results</span><span class="p">)</span>
+<span class="n">plots</span><span class="o">.</span><span class="n">plot_flux</span><span class="p">(</span><span class="n">flux_df</span><span class="p">,</span> <span class="n">ligand</span><span class="p">,</span> <span class="n">results</span><span class="p">)</span>
+<span class="n">plots</span><span class="o">.</span><span class="n">plot_committor</span><span class="p">(</span><span class="n">committor_df</span><span class="p">,</span> <span class="n">ligand</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="n">regions</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+
+
+<span class="n">pathway_df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">results</span><span class="si">}</span><span class="s1">/pathways.csv&#39;</span><span class="p">)</span>
+<span class="n">flux_df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">results</span><span class="si">}</span><span class="s1">/net_fluxes.csv&#39;</span><span class="p">)</span>
+<span class="n">committor_df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">results</span><span class="si">}</span><span class="s1">/committors.csv&#39;</span><span class="p">)</span>
+
+
+
+
+</pre></div>
+</div>
+</div>
+<p><strong>Mean First Passage Times</strong></p>
+<p>Calculate the MFPTs between all states.</p>
+<div class="line-block">
+<div class="line">k<span class="math notranslate nohighlight">\(_{on}\)</span>=1/MFPTxC, where C is concentration in Molar</div>
+<div class="line">k<span class="math notranslate nohighlight">\(_{off}\)</span>=1/MFPT</div>
+</div>
+<p>Stores the resutls in the <em>mfpt</em> dataframe</p>
+<p><strong>Warning</strong>: This step takes a long time to perform. The following cell loads a pre-calculated <em>mfpt</em> dataframe.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
+<span class="n">mfpt_df</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">msm_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">mfpt</span><span class="o">=</span><span class="n">model</span><span class="p">[</span><span class="s1">&#39;instance&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">MFPT</span><span class="p">(</span><span class="n">model</span><span class="p">[</span><span class="s1">&#39;bayesMSM&#39;</span><span class="p">])</span>
+    <span class="n">mfpt_df</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">mfpt_df</span><span class="p">,</span> <span class="n">mfpt</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="n">mfpt_df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">results</span><span class="si">}</span><span class="s1">/mfpt.csv&#39;</span><span class="p">)</span>
+
+
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
+<span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">plots</span><span class="p">)</span>
+
+<span class="n">mfpt_df</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">results</span><span class="si">}</span><span class="s1">/mfpt.csv&#39;</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],</span> <span class="n">header</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">])</span>
+
+<span class="n">schemes</span><span class="o">=</span><span class="n">mfpt_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="s1">&#39;Scheme&#39;</span><span class="p">)</span>
+<span class="n">features</span><span class="o">=</span><span class="n">mfpt_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="s1">&#39;feature&#39;</span><span class="p">)</span>
+<span class="n">states</span><span class="o">=</span><span class="n">mfpt_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="s1">&#39;state_source&#39;</span><span class="p">)</span>
+<span class="n">parameters</span><span class="o">=</span><span class="n">mfpt_df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="s1">&#39;parameter&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+
+<span class="n">error</span><span class="o">=</span><span class="mf">0.2</span>
+
+<span class="k">for</span> <span class="n">scheme</span> <span class="ow">in</span> <span class="n">schemes</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Scheme: &#39;</span><span class="p">,</span> <span class="n">scheme</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">features</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Feature: &#39;</span><span class="p">,</span> <span class="n">feature</span><span class="p">)</span>
+        <span class="n">plots</span><span class="o">.</span><span class="n">plot_MFPT</span><span class="p">(</span><span class="n">mfpt_df</span><span class="p">,</span> <span class="n">scheme</span><span class="p">,</span> <span class="n">feature</span><span class="p">,</span> <span class="n">concentrations</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span> <span class="n">regions</span><span class="o">=</span><span class="n">regions</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">results</span><span class="si">}</span><span class="s1">/mfpt_</span><span class="si">{</span><span class="n">scheme</span><span class="si">}</span><span class="s1">-</span><span class="si">{</span><span class="n">feature</span><span class="si">}</span><span class="s1">-</span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s1">.png&#39;</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+</pre></div>
+</div>
+</div>
+<p><strong>Process Trajectories</strong></p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2021, Henrique F. Carvalho
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

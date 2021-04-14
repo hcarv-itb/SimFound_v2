@@ -185,11 +185,36 @@ class Functions:
     
     
 class Tasks:
+    """
     
+    Base class to spwan multiproc (Jupyter and Pandas compatible)
+    
+    
+    """
     
     def parallel_task(input_function=None, collection=None):
-        """Core function for multiprocessing of a given task.Takes as input a function and an iterator.
-        Warning: Spawns as many threads as the number of elements in the iterator."""
+        """
+        
+        
+        Core function for multiprocessing of a given task.Takes as input a function and an iterator.
+        Warning: Spawns as many threads as the number of elements in the iterator.
+
+
+        Parameters
+        ----------
+        input_function : function, optional
+            A function to be executed multiple times. The default is None.
+        collection : lists, optional
+            Fixed and valued elements. The default is None.
+
+
+        Returns
+        -------
+        manager : dict
+            Multiprocessing Manager object.
+            
+
+        """
         
         
         from pathlib import Path
