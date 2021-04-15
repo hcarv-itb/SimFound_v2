@@ -1,8 +1,5 @@
 Main
-
-
-Main
-----
+====
 
 
 .. automodule:: source.main

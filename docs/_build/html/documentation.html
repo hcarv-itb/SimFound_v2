@@ -39,7 +39,7 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Analysis Module" href="source.html" />
+    <link rel="next" title="Analysis Modules" href="source.html" />
     <link rel="prev" title="Simulation Foundry, v2" href="SimFound_v2.html" /> 
 </head>
 
@@ -87,10 +87,12 @@
             
               <p class="caption"><span class="caption-text">TOPICS</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="projects.html">Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="projects.html">Notebooks</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Documentation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="source.html">Analysis Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source.html">Analysis Modules</a></li>
 <li class="toctree-l2"><a class="reference internal" href="main.html">Main</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deprecated.html">Legacy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tools.html">Operators</a></li>
 </ul>
 </li>
 </ul>
@@ -184,19 +186,27 @@
 </style>
 <div class="section" id="documentation">
 <h1>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h1>
+<p><em>Simulation Foundry (SFv2)</em> base objects are constructed with the <strong>Project</strong> and <strong>Systems</strong> modules.
+The <strong>Analysis</strong> module performs tasks on single systems and agreggate results based on project hierarchy definitions.
+The <strong>Operators</strong> modules perform actions on the system trajectories (<strong>Trajectory</strong>) and tasks (<strong>Tools</strong>) used by other modules.</p>
+<p>Functionality is being imported from <strong>Legacy</strong>, a previous workflow for analysis (and submission) of GROMACS jobs.</p>
+<a class="reference internal image-reference" href="_images/source.png"><img alt="Source_SFv2" src="_images/source.png" style="width: 600px;" /></a>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="source.html">Analysis Module</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="source.html#module-source.Discretize">Discretize</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source.html">Analysis Modules</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="source.html#discretize">Discretize</a></li>
 <li class="toctree-l2"><a class="reference internal" href="source.html#module-source.Featurize">Featurize</a></li>
-<li class="toctree-l2"><a class="reference internal" href="source.html#trajectory">Trajectory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source.html#module-source.Trajectory">Trajectory</a></li>
 <li class="toctree-l2"><a class="reference internal" href="source.html#module-source.MSM">Markov State Models</a></li>
-<li class="toctree-l2"><a class="reference internal" href="source.html#module-source.tools">Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="source.html#module-source.deprecated">Deprecated</a></li>
-<li class="toctree-l2"><a class="reference internal" href="source.html#module-source">base contents</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="main.html">Main</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deprecated.html">Legacy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tools.html">Operators</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tools.html#module-source.tools">Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tools.html#module-source.Trajectory">Trajectory</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
@@ -209,7 +219,7 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="source.html" class="btn btn-neutral float-right" title="Analysis Module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="source.html" class="btn btn-neutral float-right" title="Analysis Modules" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="SimFound_v2.html" class="btn btn-neutral float-left" title="Simulation Foundry, v2" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>

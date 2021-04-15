@@ -1,0 +1,390 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Legacy &mdash; Simulation Foundry, v2 2.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Tools" href="tools.html" />
+    <link rel="prev" title="Main" href="main.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> Simulation Foundry, v2
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">TOPICS</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="projects.html">Notebooks</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="documentation.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="source.html">Analysis Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.html">Main</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Legacy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tools.html">Tools</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Simulation Foundry, v2</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="documentation.html">Documentation</a> &raquo;</li>
+        
+      <li>Legacy</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/deprecated.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="legacy">
+<h1>Legacy<a class="headerlink" href="#legacy" title="Permalink to this headline">¶</a></h1>
+<p>Old school standalone functions now being migrated to analysis modules.</p>
+<span class="target" id="module-source.deprecated.subAnalysis"></span><dl class="py function">
+<dt id="source.deprecated.subAnalysis.NAC_calculation">
+<code class="sig-prename descclassname">source.deprecated.subAnalysis.</code><code class="sig-name descname">NAC_calculation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sels</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.deprecated.subAnalysis.NAC_calculation" title="Permalink to this definition">¶</a></dt>
+<dd><p>“Calculates distances between pairs of atom groups (sel) for each set of selections “sels” using MDAnalysis D.distance_array method.
+Calculates the histogram (0, 140, 0.5 Angstrom) of NAC values and outputs it as a dataframe (NAC) with bins defined in ‘ranges’ and label ‘i’.
+Stores the distances and NAC objects as .npy for each combination of tstart, tstop and dt</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="source.deprecated.subAnalysis.NAC_calculation_water">
+<code class="sig-prename descclassname">source.deprecated.subAnalysis.</code><code class="sig-name descname">NAC_calculation_water</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sels</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.deprecated.subAnalysis.NAC_calculation_water" title="Permalink to this definition">¶</a></dt>
+<dd><p>“Time of Flight method for NAC, kNAC and Nmol calculations. Useful for large number of distance pairs, where 
+storing the NAC is not viable. For each frame calculates the NAC value,
+discretizes the values into states to assign a state to the frame and updates de NAChistogram. 
+Nmol is calculated differently from normal function - integrals are taken from the histogram and not from the NAC object</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="source.deprecated.subAnalysis.NAC_discretization_byFrame">
+<code class="sig-prename descclassname">source.deprecated.subAnalysis.</code><code class="sig-name descname">NAC_discretization_byFrame</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.deprecated.subAnalysis.NAC_discretization_byFrame" title="Permalink to this definition">¶</a></dt>
+<dd><p>Discretizes the NAC values based on state discretization per frame (one frame: state x 1) 
+Not sensitive to which state a given molecule is at each frame. Produces equal-sized strings for all concentrations
+OR based on state discretization per #substrates (one frame = state x #substrates).
+OR based on combinatorial state discretization (one frame = state x 1), but with states^2
+Sensitive to which state a given molecule is at each frame.
+Requires the NAC array to be loaded from NAC_calculation().
+Values of state boundaries are given by states array.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="source.deprecated.subAnalysis.NAC_normalization">
+<code class="sig-prename descclassname">source.deprecated.subAnalysis.</code><code class="sig-name descname">NAC_normalization</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">nac_hist</span></em>, <em class="sig-param"><span class="n">c</span></em>, <em class="sig-param"><span class="n">length</span></em>, <em class="sig-param"><span class="n">mol</span></em>, <em class="sig-param"><span class="n">NAC_bulkRange</span></em>, <em class="sig-param"><span class="n">resolution</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.deprecated.subAnalysis.NAC_normalization" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to normalize NAC values according to theoretic distribution in a shpere with bulk concentration “c”. 
+Takes as inputs “c”, average NAC histogram with standard errors and number of frames where NAC was calculated “length”.
+Calculations are made with the  N_theo() function. 
+The probability of NAC for each bin is P_nac and P_nac_err. The theoretical distribution of NAC at “c” is P_t.
+The value of bulk “c” is adjusted by fitting the P_nac to the bulk region “ranges_bulk” using curve_fit(). 
+P_t_optimized uses the “c_opt” bulk concentration.
+dG is calculated from P_t_optimized.
+NOTE: The “ranges_bulk” should be carefully chosen for each system.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="source.deprecated.subAnalysis.Nmol_NAC">
+<code class="sig-prename descclassname">source.deprecated.subAnalysis.</code><code class="sig-name descname">Nmol_NAC</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.deprecated.subAnalysis.Nmol_NAC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the number of molecules within each bin of Nmol_range of NAC values</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="source.deprecated.subAnalysis.Nmol_stats">
+<code class="sig-prename descclassname">source.deprecated.subAnalysis.</code><code class="sig-name descname">Nmol_stats</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">Nmol_c</span></em>, <em class="sig-param"><span class="n">results_dir</span></em>, <em class="sig-param"><span class="n">prot</span></em>, <em class="sig-param"><span class="n">mol</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.deprecated.subAnalysis.Nmol_stats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the statistics of number of molecules for each radius and concentration
+Performs fitting of data to Langmuir model</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="source.deprecated.subAnalysis.angle_calculation">
+<code class="sig-prename descclassname">source.deprecated.subAnalysis.</code><code class="sig-name descname">angle_calculation</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.deprecated.subAnalysis.angle_calculation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates angles between atom groups (sel) for one selection (angles) using MDAnalysis “calc_angles” method.
+Calculates the histogram (0, 180, 1 degree) of angle values and outputs it as a dataframe (ANGLE) with bins defined in ‘ranges’ and label ‘i’.
+Stores the ANGLE object as .npy for each combination of tstart, tstop and dt</p>
+<p>NOTE: Currently, the method works for only one angle selection (angles) so it does not iterate through the list of sels.
+For each sel, define atom1 (sel1) and atom2 (sel2) atom3 (sel3)</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="source.deprecated.subAnalysis.calcDensity">
+<code class="sig-prename descclassname">source.deprecated.subAnalysis.</code><code class="sig-name descname">calcDensity</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cutoff</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.deprecated.subAnalysis.calcDensity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrive the density in Molar of density_sel</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="source.deprecated.subAnalysis.distance_calculation">
+<code class="sig-prename descclassname">source.deprecated.subAnalysis.</code><code class="sig-name descname">distance_calculation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dists</span></em>, <em class="sig-param"><span class="n">prot</span></em>, <em class="sig-param"><span class="n">mol</span></em>, <em class="sig-param"><span class="n">c</span></em>, <em class="sig-param"><span class="n">cutoff</span></em>, <em class="sig-param"><span class="n">results_dir</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.deprecated.subAnalysis.distance_calculation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates distances between pairs of atom groups (dist) for each set of selections “dists” using MDAnalysis D.distance_array method.
+Stores the distances in results_dir. Returns the distances as dataframes.
+Uses the NAC_frames files obtained in extract_frames(). 
+NOTE: Can only work for multiple trajectories if the number of atoms is the same (–noWater)</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="source.deprecated.subAnalysis.distance_calculation_all">
+<code class="sig-prename descclassname">source.deprecated.subAnalysis.</code><code class="sig-name descname">distance_calculation_all</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dists</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.deprecated.subAnalysis.distance_calculation_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates distances between pairs of atom groups (dist) for each set of selections “dists” using MDAnalysis D.distance_array method.
+Stores the distances in replicate as .npy. Returns the dataframe of distances or stores it as pickle.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="source.deprecated.subAnalysis.extract_frames">
+<code class="sig-prename descclassname">source.deprecated.subAnalysis.</code><code class="sig-name descname">extract_frames</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.deprecated.subAnalysis.extract_frames" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract frames with NAC within 0.05 A from cutoff value(s) for any substrate column and convert to timestep (ps).
+Requires the NAC array to be loaded from NAC_calculation().
+Writes the corresponding frames as .xtc and the corresponding .gro. Legacy: option to save also the waters controlled with –noWater.
+Adapted from Gudrun’s script</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="source.deprecated.subAnalysis.histogram_nac">
+<code class="sig-prename descclassname">source.deprecated.subAnalysis.</code><code class="sig-name descname">histogram_nac</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">histogram_df</span></em>, <em class="sig-param"><span class="n">c</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.deprecated.subAnalysis.histogram_nac" title="Permalink to this definition">¶</a></dt>
+<dd><p>Average and standard error of set of NAC histograms per bin. Takes as input a histogram_df, which contains the count value per NAC bin.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="source.deprecated.subAnalysis.histogram_nac_quartile">
+<code class="sig-prename descclassname">source.deprecated.subAnalysis.</code><code class="sig-name descname">histogram_nac_quartile</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">histogram_df</span></em>, <em class="sig-param"><span class="n">c</span></em>, <em class="sig-param"><span class="n">ranges</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.deprecated.subAnalysis.histogram_nac_quartile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Median and quartiles of NAC values per bin ranges. Takes as input a histogram_df, which contains all NAC histograms from each replicate.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="source.deprecated.subAnalysis.nac_Nmol">
+<code class="sig-prename descclassname">source.deprecated.subAnalysis.</code><code class="sig-name descname">nac_Nmol</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.deprecated.subAnalysis.nac_Nmol" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the number of molecules within each bin of Nmol_range of NAC values</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="source.deprecated.subAnalysis.nac_angles">
+<code class="sig-prename descclassname">source.deprecated.subAnalysis.</code><code class="sig-name descname">nac_angles</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.deprecated.subAnalysis.nac_angles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to obtain angles for each NAC bin.
+Takes as inputs the nac and angle .npy objects calculated in NAC_calculation() and Angle_calculation().
+Needs to convert the arrays into dataframes.
+NOTE: The combined dataframe of NAC and ANGLE “merge” can be built with less number of frames, e.g. skipping each 2,  with the “.iloc[::2]” option.
+This may be required due to too much data being passed from the replicate_iterator().
+The current solution is to save “merge” as a pickle.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="source.deprecated.subAnalysis.nac_distances">
+<code class="sig-prename descclassname">source.deprecated.subAnalysis.</code><code class="sig-name descname">nac_distances</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.deprecated.subAnalysis.nac_distances" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to obtain orientation of molecules (as given by difference between distances) for each NAC bin. 
+Takes as inputs the nac and distance .npy objects calculated in NAC_calculation() and distances_calculation_all(). 
+Needs to convert the arrays into dataframes. 
+NOTE: The combined dataframe of NAC and DIST_O “merge” can be built with less number of frames, e.g. skipping each 2,  with the “.iloc[::2]” option.
+This may be required due to too much data being passed from the replicate_iterator().</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="source.deprecated.subAnalysis.state_mapper">
+<code class="sig-prename descclassname">source.deprecated.subAnalysis.</code><code class="sig-name descname">state_mapper</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">array</span></em>, <em class="sig-param"><span class="n">states</span></em>, <em class="sig-param"><span class="n">state_encodings</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.deprecated.subAnalysis.state_mapper" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="tools.html" class="btn btn-neutral float-right" title="Tools" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="main.html" class="btn btn-neutral float-left" title="Main" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2021, Henrique F. Carvalho
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

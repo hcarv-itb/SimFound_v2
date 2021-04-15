@@ -1,9 +1,7 @@
-Projects
-========
+Notebooks
+=========
 
-Projects can be managed here. 
-
-Thermodynamics and kinetics of CALB-methanol interactions.
+Project notebooks can be seen here. 
 
 
 .. note:: This is a toy example of a working notebook!

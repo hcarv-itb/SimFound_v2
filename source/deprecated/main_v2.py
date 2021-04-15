@@ -19,8 +19,8 @@ import re
 import sys
 sys.path.insert(0, '/home/media/dataHog/hca/proLig')
 #from proLig import *
-from subAnalysis import *
-from plot_functions import *
+#from subAnalysis import *
+#from plot_functions import *
 
 
 manager=Manager()

@@ -1,12 +1,10 @@
 
 
 """
-Main
-====
 
 
 The core python classes of the package.
-Classes are implemented in jupyter notebooks of in offline runs (optional).
+Classes are implemented in jupyter notebooks or in offline runs (optional).
 
 
 Created on Fri Jul  3 11:30:16 2020
@@ -16,17 +14,17 @@ Created on Fri Jul  3 11:30:16 2020
 
 #import tools
 #import tools_plots
-from Trajectory import Trajectory
-from MSM import MSM
-from Discretize import Discretize
-from Featurize import Featurize
+#from Trajectory import Trajectory
+#from MSM import MSM
+#from Discretize import Discretize
+#from Featurize import Featurize
 
 
 
-try:
-    import pyemma
-except:
-    pass
+#try:
+#    import pyemma
+#except:
+#    pass
 
 
 import matplotlib.pyplot as plt
@@ -616,41 +614,4 @@ class Visualize():
 
     
         return view
-    
 
-
-class Test:
-    
-    def __init__(self, input_file='input.xml'):
-        self.input = input_file
-    
-    def test(self):
-        from lxml import etree as et
-        #import xml.etree.ElementTree as et
-        parser = et.XMLParser(recover=True)
-
-        workdir=Path(os.getcwd())
-        name=f'{workdir}\input.xml'
-        #TODO: fix this for unix
-        print(name)
-        tree = et.parse(name, parser=parser)        
-        root=tree.getroot()
-        
-        print(root.tag)
-        
-        for child in root:
-            print(child.tag, child.attrib)
-            
-        #print([elem.tag for elem in root.iter()])
-        
-        for system in root.iter('system'):
-            print(system.attrib)
-            
-        for description in root.iter('description'):
-            print(description.text)
-    
-        for system in root.findall("./kind/interaction/system/[protein='CalB']"):
-            print(system.attrib)
-    
-        return root
-        

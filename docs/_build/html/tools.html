@@ -1,0 +1,523 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Operators &mdash; Simulation Foundry, v2 2.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Legacy" href="deprecated.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> Simulation Foundry, v2
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">TOPICS</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="projects.html">Notebooks</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="documentation.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="source.html">Analysis Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.html">Main</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deprecated.html">Legacy</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Operators</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#module-source.tools">Tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-source.Trajectory">Trajectory</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Simulation Foundry, v2</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="documentation.html">Documentation</a> &raquo;</li>
+        
+      <li>Operators</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/tools.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="operators">
+<h1>Operators<a class="headerlink" href="#operators" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-source.tools">
+<span id="tools"></span><h2>Tools<a class="headerlink" href="#module-source.tools" title="Permalink to this headline">¶</a></h2>
+<p>Created on Fri Nov  6 21:50:14 2020</p>
+<p>&#64;author: hcarv</p>
+<dl class="py class">
+<dt id="source.tools.Functions">
+<em class="property">class </em><code class="sig-prename descclassname">source.tools.</code><code class="sig-name descname">Functions</code><a class="headerlink" href="#source.tools.Functions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="source.tools.Functions.density_stats">
+<em class="property">static </em><code class="sig-name descname">density_stats</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">level_unique</span></em>, <em class="sig-param"><span class="n">stride</span></em>, <em class="sig-param"><span class="n">results</span></em>, <em class="sig-param"><span class="n">unique</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">method</span><span class="o">=</span><span class="default_value">'histogram'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Functions.density_stats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base function for 3D state-discretization.</p>
+<p>TODO: A lot.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.tools.Functions.fileHandler">
+<em class="property">static </em><code class="sig-name descname">fileHandler</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path_or_file</span></em>, <em class="sig-param"><span class="n">confirmation</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">_new</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Functions.fileHandler" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="source.tools.Functions.regionLabels">
+<em class="property">static </em><code class="sig-name descname">regionLabels</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">regions</span></em>, <em class="sig-param"><span class="n">labels</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Functions.regionLabels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluate number of defined regions and corresponding indetifiers.
+Instance will have <em>region_labels</em> as provided or with default numerical indetifiers if not.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.tools.Functions.sampledStateLabels">
+<em class="property">static </em><code class="sig-name descname">sampledStateLabels</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">shells</span></em>, <em class="sig-param"><span class="n">sampled_states</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">labels</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Functions.sampledStateLabels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Static method that generates state labels for sampled states.
+Requires the <em>regions</em> to be provided and optionally the <em>sampled_states</em> and <em>labels</em>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.tools.Functions.stateEncoder">
+<em class="property">static </em><code class="sig-name descname">stateEncoder</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">shells</span></em>, <em class="sig-param"><span class="n">labels</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Functions.stateEncoder" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="source.tools.Functions.state_mapper">
+<em class="property">static </em><code class="sig-name descname">state_mapper</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">shells</span></em>, <em class="sig-param"><span class="n">array</span></em>, <em class="sig-param"><span class="n">labels</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Functions.state_mapper" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="source.tools.Tasks">
+<em class="property">class </em><code class="sig-prename descclassname">source.tools.</code><code class="sig-name descname">Tasks</code><a class="headerlink" href="#source.tools.Tasks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Base class to spwan multiproc (Jupyter and Pandas compatible)</p>
+<dl class="py method">
+<dt id="source.tools.Tasks.parallel_task">
+<code class="sig-name descname">parallel_task</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">collection</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Tasks.parallel_task" title="Permalink to this definition">¶</a></dt>
+<dd><p>Core function for multiprocessing of a given task.Takes as input a function and an iterator.
+Warning: Spawns as many threads as the number of elements in the iterator.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="source.tools.XML">
+<em class="property">class </em><code class="sig-prename descclassname">source.tools.</code><code class="sig-name descname">XML</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_file</span><span class="o">=</span><span class="default_value">'input.xml'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.XML" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="source.tools.XML.exportAs">
+<code class="sig-name descname">exportAs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">format</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.XML.exportAs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="source.tools.XML.get_root">
+<em class="property">static </em><code class="sig-name descname">get_root</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.XML.get_root" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="source.tools.XML.readXML">
+<code class="sig-name descname">readXML</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">i_file</span><span class="o">=</span><span class="default_value">'input.xml'</span></em><span class="sig-paren">)</span> &#x2192; object<a class="headerlink" href="#source.tools.XML.readXML" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parses the XML file describing the project.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.tools.XML.setParametersFromXML">
+<code class="sig-name descname">setParametersFromXML</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">params</span></em><span class="sig-paren">)</span> &#x2192; dict<a class="headerlink" href="#source.tools.XML.setParametersFromXML" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-source.Trajectory">
+<span id="trajectory"></span><h2>Trajectory<a class="headerlink" href="#module-source.Trajectory" title="Permalink to this headline">¶</a></h2>
+<p>Created on Thu Jan 21 18:50:14 2021</p>
+<p>&#64;author: hcarv</p>
+<dl class="py class">
+<dt id="source.Trajectory.Trajectory">
+<em class="property">class </em><code class="sig-prename descclassname">source.Trajectory.</code><code class="sig-name descname">Trajectory</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">systems</span></em>, <em class="sig-param"><span class="n">results</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class to perform operatoin on trajectories using MDTRAJ.</p>
+<dl class="py method">
+<dt id="source.Trajectory.Trajectory.DensityMap_frames">
+<code class="sig-name descname">DensityMap_frames</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">frames</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">level</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">density_selection</span><span class="o">=</span><span class="default_value">'not protein'</span></em>, <em class="sig-param"><span class="n">convert</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">unit</span><span class="o">=</span><span class="default_value">'Molar'</span></em>, <em class="sig-param"><span class="n">stride</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">dists</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.DensityMap_frames" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="source.Trajectory.Trajectory.DensityMap_fullTraj">
+<code class="sig-name descname">DensityMap_fullTraj</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">level</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">density_selection</span><span class="o">=</span><span class="default_value">'not protein'</span></em>, <em class="sig-param"><span class="n">convert</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">unit</span><span class="o">=</span><span class="default_value">'Molar'</span></em>, <em class="sig-param"><span class="n">filtered</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">stride</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span> &#x2192; dict<a class="headerlink" href="#source.Trajectory.Trajectory.DensityMap_fullTraj" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>level<span class="classifier">int, optional</span></dt><dd><p>The hierarchy level to collect. The default is 2 (parameter).</p>
+</dd>
+<dt>density_selection<span class="classifier">str, optional</span></dt><dd><p>The selection to calculate the density map (MDANALYSIS). The default is ‘not protein’ (water striped trj’s).</p>
+</dd>
+<dt>convert<span class="classifier">bool, optional</span></dt><dd><p>Whether to convert the density value into another unit. The default is True.</p>
+</dd>
+<dt>unit<span class="classifier">str, optional</span></dt><dd><p>The concentration unit (MDANALYSIS). The default is ‘Molar’.</p>
+</dd>
+<dt>filtered<span class="classifier">bool, optional</span></dt><dd><p>Whether to use a filtered trajectory or not. The default is False.</p>
+</dd>
+<dt>stride<span class="classifier">int, optional</span></dt><dd><p>The trajectory stride value (MDTRAJ). The default is 1.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>dict</dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.Trajectory.Trajectory.clusterMDAnalysis">
+<em class="property">static </em><code class="sig-name descname">clusterMDAnalysis</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">base_name</span></em>, <em class="sig-param"><span class="n">trajectory</span></em>, <em class="sig-param"><span class="n">topology</span></em>, <em class="sig-param"><span class="n">select</span><span class="o">=</span><span class="default_value">'all'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.clusterMDAnalysis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to obtain cluster using the encore.cluster tool from MDAnalysis.</p>
+<dl class="simple">
+<dt>base_name<span class="classifier">str</span></dt><dd><p>The base name of the system to be processed (incl. path).</p>
+</dd>
+<dt>trajectory<span class="classifier">str</span></dt><dd><p>The trajectory file.</p>
+</dd>
+<dt>topology<span class="classifier">str</span></dt><dd><p>The topology file.</p>
+</dd>
+<dt>selection<span class="classifier">str, optional</span></dt><dd><p>The selection for calculation (MDAnalysis syntax). The default is ‘protein’.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>cluster_file<span class="classifier">str</span></dt><dd><p>The name of the cluster files.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.Trajectory.Trajectory.concatenate_superpose">
+<em class="property">static </em><code class="sig-name descname">concatenate_superpose</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">files_to_concatenate</span></em>, <em class="sig-param"><span class="n">trajectory</span></em>, <em class="sig-param"><span class="n">topology</span></em>, <em class="sig-param"><span class="n">ref_frame</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">stride</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">atom_set</span><span class="o">=</span><span class="default_value">'backbone'</span></em><span class="sig-paren">)</span> &#x2192; object<a class="headerlink" href="#source.Trajectory.Trajectory.concatenate_superpose" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>files_to_concatenate<span class="classifier">tuple</span></dt><dd><p>A list of tuples (trajectory, topology).</p>
+</dd>
+<dt>trajectory<span class="classifier">path</span></dt><dd><p>The path (name) of the output trajectory file.</p>
+</dd>
+<dt>topology<span class="classifier">path</span></dt><dd><p>The path (name) of the output topology file.</p>
+</dd>
+<dt>ref_frame<span class="classifier">int, optional</span></dt><dd><p>Reference frame to superpose (MDTRAJ). The default is 0.</p>
+</dd>
+<dt>stride<span class="classifier">int, optional</span></dt><dd><p>The trajectory stride value (MDTRAJ). The default is 1.</p>
+</dd>
+<dt>atom_set<span class="classifier">str, optional</span></dt><dd><p>The selection used as reference atom group for superposing (MDTRAJ). The default is ‘backbone’.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>superposed<span class="classifier">object</span></dt><dd><p>A superposed MDTRAJ trajectory object.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.Trajectory.Trajectory.densityCalc">
+<em class="property">static </em><code class="sig-name descname">densityCalc</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">base_name</span></em>, <em class="sig-param"><span class="n">trajectory</span></em>, <em class="sig-param"><span class="n">topology</span></em>, <em class="sig-param"><span class="n">selection</span><span class="o">=</span><span class="default_value">'name OA'</span></em>, <em class="sig-param"><span class="n">convert</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">unit</span><span class="o">=</span><span class="default_value">'Molar'</span></em>, <em class="sig-param"><span class="n">start</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">stop</span><span class="o">=</span><span class="default_value">- 1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.densityCalc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to calculate the spatial densities of atom selection. 
+Uses the ‘DensityAnalysis’ tool from MDAnalysis.</p>
+<dl class="simple">
+<dt>base_name<span class="classifier">str</span></dt><dd><p>The base name of the system to be processed (incl. path).</p>
+</dd>
+<dt>trajectory<span class="classifier">str</span></dt><dd><p>The trajectory file.</p>
+</dd>
+<dt>topology<span class="classifier">str</span></dt><dd><p>The topology file.</p>
+</dd>
+<dt>selection<span class="classifier">str, optional</span></dt><dd><p>The selection for calculation (MDAnalysis syntax). The default is ‘name OA’.</p>
+</dd>
+<dt>convert<span class="classifier">bool, optional</span></dt><dd><p>Wether to convert or not density values into another unit. The default is True.</p>
+</dd>
+<dt>unit<span class="classifier">str, optional</span></dt><dd><p>The density unit. The default is ‘Molar’.</p>
+</dd>
+<dt>start<span class="classifier">int, optional</span></dt><dd><p>The initial frame for calculation. The default is 0.</p>
+</dd>
+<dt>stop<span class="classifier">int, optional</span></dt><dd><p>The last frame for calculation. The default is -1 (last).</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>density_file<span class="classifier">str</span></dt><dd><p>The name of the grid file “.dx”.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.Trajectory.Trajectory.distances">
+<em class="property">static </em><code class="sig-name descname">distances</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">dists</span></em>, <em class="sig-param"><span class="n">trajectory</span></em>, <em class="sig-param"><span class="n">topology</span></em>, <em class="sig-param"><span class="n">stride</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">skip_frames</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.distances" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates distances between pairs of atom groups (dist) for each set of selections “dists” using MDAnalysis D.distance_array method.
+Stores the distances in results_dir. Returns the distances as dataframes.</p>
+<blockquote>
+<div><p>Uses the NAC_frames files obtained in extract_frames(). 
+NOTE: Can only work for multiple trajectories if the number of atoms is the same (–noWater)</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.Trajectory.Trajectory.extractFrames_by_iterable">
+<code class="sig-name descname">extractFrames_by_iterable</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">iterable</span></em>, <em class="sig-param"><span class="n">feature</span></em>, <em class="sig-param"><span class="n">t_start</span><span class="o">=</span><span class="default_value">20000</span></em>, <em class="sig-param"><span class="n">extract</span><span class="o">=</span><span class="default_value">'not water'</span></em><span class="sig-paren">)</span> &#x2192; dict<a class="headerlink" href="#source.Trajectory.Trajectory.extractFrames_by_iterable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract frames trajectories based on iterable and dataframe.
+Writes the corresponding frames as .xtc and the corresponding .pdb. 
+Legacy: option to save also the waters controlled with –noWater.</p>
+<dl class="simple">
+<dt>df<span class="classifier">DataFrame</span></dt><dd><p>A dataframe which contains featurized project trajectory values.</p>
+</dd>
+<dt>iterable<span class="classifier">list</span></dt><dd><p>A set of values to be used as criteria to filter the featurized trajectories.</p>
+</dd>
+<dt>feature<span class="classifier">str</span></dt><dd><p>The name of the feature.</p>
+</dd>
+<dt>t_start<span class="classifier">int, optional</span></dt><dd><p>The starting frame index.</p>
+</dd>
+<dt>extract<span class="classifier">str, optional</span></dt><dd><p>A string of atom selections (MDTRAJ). The default is ‘not water’.</p>
+</dd>
+</dl>
+<p>IMPORTANT: automate t_start definition (equilibration phase discarded)</p>
+<dl class="simple">
+<dt>dict</dt><dd><p>A dictionary of ‘names’: ‘extracted Frame Files’.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.Trajectory.Trajectory.filterTraj">
+<code class="sig-name descname">filterTraj</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t_start</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">extract</span><span class="o">=</span><span class="default_value">'not water'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.filterTraj" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract trajectory subsets.
+Writes the corresponding trajectories as .xtc and the corresponding .pdb. 
+Legacy: option to save also the waters controlled with –noWater.</p>
+<dl class="simple">
+<dt>t_start<span class="classifier">int, optional</span></dt><dd><p>The starting frame index.</p>
+</dd>
+<dt>extract<span class="classifier">str, optional</span></dt><dd><p>A string of atom selections (MDTRAJ). The default is ‘not water’.</p>
+</dd>
+</dl>
+<p>IMPORTANT: automate t_start definition (equilibration phase discarded)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.Trajectory.Trajectory.start_simulations">
+<code class="sig-name descname">start_simulations</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.start_simulations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="source.Trajectory.Trajectory.trj_filter">
+<em class="property">static </em><code class="sig-name descname">trj_filter</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.trj_filter" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>df<span class="classifier">DataFrame</span></dt><dd><p>A dataframe which contains values of project trajectories (e.g. some feature).</p>
+</dd>
+<dt>name<span class="classifier">str</span></dt><dd><p>The name of the system of each trajectory, used to filter the DataFrame.</p>
+</dd>
+<dt>value<span class="classifier">The value to be searched in the dataframe. </span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>numpy.array</dt><dd><p>An array of index values of the trajectory where value was found.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="deprecated.html" class="btn btn-neutral float-left" title="Legacy" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2021, Henrique F. Carvalho
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import MDAnalysis as mda
-import tools
+#import tools
 
 class Trajectory:
     """Class to perform operatoin on trajectories using MDTRAJ."""

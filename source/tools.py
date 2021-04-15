@@ -1,21 +1,19 @@
 """
-
-Tools
-=====
-
-The functions used by multiple classes.
-
 Created on Fri Nov  6 21:50:14 2020
 
 @author: hcarv
-"""
 
+"""
 
 class Functions:
     
     @staticmethod
     def fileHandler(path_or_file, confirmation=False, _new=False, *args):
+        """
         
+
+
+        """
         
         import os
         
@@ -48,8 +46,14 @@ class Functions:
 
     @staticmethod
     def regionLabels(regions, labels):
-        """Evaluate number of defined regions and corresponding indetifiers.
-        Instance will have *region_labels* as provided or with default numerical indetifiers if not."""
+        """
+        Evaluate number of defined regions and corresponding indetifiers.
+        Instance will have *region_labels* as provided or with default numerical indetifiers if not.
+
+
+
+        """
+
         
         try:
             if (len(labels) == len(regions) + 1):
@@ -69,8 +73,14 @@ class Functions:
     
     @staticmethod
     def sampledStateLabels(shells, sampled_states=None, labels=None):
-        """Static method that generates state labels for sampled states.
-        Requires the *regions* to be provided and optionally the *sampled_states* and *labels*."""        
+        """
+        Static method that generates state labels for sampled states.
+        Requires the *regions* to be provided and optionally the *sampled_states* and *labels*.
+
+
+
+        """
+      
         
         state_names=Functions.stateEncoder(shells, labels)[1] #Call to stateEncoder[0] = state_names
         
@@ -85,7 +95,9 @@ class Functions:
         
     @staticmethod    
     def stateEncoder(shells, labels):
-        """Create a mapping of state index to combination of labels."""
+        """
+
+        """
          
         import itertools
         
@@ -107,14 +119,20 @@ class Functions:
     
     @staticmethod
     def state_mapper(shells, array, labels=None):
-        """Static method that converts an *array* of values into a unique state based on occupancy of regions.
-        Requires the *regions*, input *array* and *labels* to be provided.""" 
+        """
+
+
+        """
+
         
         import numpy as np
         import pandas as pd
   
         def state_evaluator(x):
-            """Combinatorial encoding of regions into a single state."""
+            """
+ 
+            
+            """
             for c,v in enumerate(Functions.stateEncoder(shells, labels)[0]): #Call to stateEncoder[0] = state_encodings
                 if np.array_equal(v, x.values):
                     return c 
@@ -134,6 +152,14 @@ class Functions:
     
     @staticmethod
     def density_stats(level_unique, stride, results, unique=None, method='histogram'):
+        """
+        
+        Base function for 3D state-discretization.
+        
+        TODO: A lot.
+
+
+        """
         
         import os
         #import path
@@ -182,144 +208,60 @@ class Functions:
             df=pd.DataFrame(data_grid, columns=col_index)
         
         return df
-    
-    
-class Tasks:
+
+
+class XML:
     """
-    
-    Base class to spwan multiproc (Jupyter and Pandas compatible)
     
     
     """
+    def __init__(self, input_file='input.xml'):
+        self.input = input_file
     
-    def parallel_task(input_function=None, collection=None):
-        """
+    @staticmethod
+    def get_root(self):
         
+        import Path
+        import os
         
-        Core function for multiprocessing of a given task.Takes as input a function and an iterator.
-        Warning: Spawns as many threads as the number of elements in the iterator.
+        from lxml import etree as et
+        #import xml.etree.ElementTree as et
+        parser = et.XMLParser(recover=True)
 
-
-        Parameters
-        ----------
-        input_function : function, optional
-            A function to be executed multiple times. The default is None.
-        collection : lists, optional
-            Fixed and valued elements. The default is None.
-
-
-        Returns
-        -------
-        manager : dict
-            Multiprocessing Manager object.
+        workdir=Path(os.getcwd())
+        name=f'{workdir}\input.xml'
+        #TODO: fix this for unix
+        print(name)
+        tree = et.parse(name, parser=parser)        
+        root=tree.getroot()
+        
+        print(root.tag)
+        
+        for child in root:
+            print(child.tag, child.attrib)
             
-
-        """
+        #print([elem.tag for elem in root.iter()])
         
-        
-        from pathlib import Path
-        import multiprocessing
-        from multiprocessing import Manager, Process
-
-        n_cpus=multiprocessing.cpu_count()
-        temp_dir='/tmp'
-        
-        
-        
-        def task_exec(manager, input_function, idx, c):
-            """Execution of the input function. Output is stored in the manager, which is handled to the job"""
+        for system in root.iter('system'):
+            print(system.attrib)
             
-            task=manager
-            function=input_function
-            task[idx]=function(c)           
-        
-        if input_function != None and collection != None:
-        
-            manager=Manager().list()
-            job=[Process(target=task_exec, args=(manager, input_function, idx, c)) for idx, c in enumerate(collection)]
-            _=[p.start() for p in job]
-            _=[p.join() for p in job]
-       
-            return manager
-        
-        else:
-            print('No input function or container provided')
-            
+        for description in root.iter('description'):
+            print(description.text)
+    
+        for system in root.findall("./kind/interaction/system/[protein='CalB']"):
+            print(system.attrib)
+    
+        return root
 
-
-def template(function_i):
-    """
-    The value of a function.
-    
-    
-    Parameters
-    ----------
-    function: variable
-        Some function.
-        
-    Returns
-    -------
-    function: variable
-        The value of the function.
-    """
-    return "The value is {}".format(function_i)
-    
-    
-class Template:
-    """A template class"""
-    
-    
-    def __init__(self, name):
-        """
-        The name.
-
-        Parameters
-        ----------
-        name : variable
-            Another class.
-        
-
-        Returns
-        -------
-        the value of class_i.
-
-        """
-        self.name=name
-        
-    def value_return(self):
-        """
-        Parameters
-        ----------
-        name : variable
-            Another class.
-        
-
-        Returns
-        -------
-        the value of name
-        .
-
-        """
-        
-        
-        return "The name is {}".format(self.name)
-    
-    
     def readXML(self, i_file='input.xml') -> object:
         """
         Parses the XML file describing the project.
 
-        Parameters
-        ----------
-        i_file : file
-            The input XML file to be read. The default is 'input.xml'.
 
-        Returns
-        -------
-        object
-            The python object of the XML file.
 
         """
+        
+        from lxml import etree as et
         
         path_file=f'{self.workdir}\{i_file}'
         #TODO: fix this for unix
@@ -331,23 +273,17 @@ class Template:
         return root
         
         
-    def setParametersFromXML(self) -> dict:
+    def setParametersFromXML(self, params) -> dict:
         """
         
 
-        Raises
-        ------
-        ValueError
-            DESCRIPTION.
-
-        Returns
-        -------
-        dict
-            DESCRIPTION.
 
         """
+
+        import objectify
         
-        root=self.readXML()
+        
+        root=self.get_root()
         
         if root.tag != 'project':
             raise ValueError
@@ -380,6 +316,11 @@ class Template:
     
     
     def exportAs(self, format):
+        """
+        
+
+        """
+        
         if format == 'JSON':
             return self._serialize_to_json()
         elif format == 'XML':
@@ -389,6 +330,17 @@ class Template:
         
         
     def _serialize_to_json(self):
+        """
+        
+
+        Returns
+        -------
+        TYPE
+            DESCRIPTION.
+
+        """
+        import json
+        
         project_info = {
             'protein': self.protein,
             'ligand': self.ligand,
@@ -400,6 +352,18 @@ class Template:
         return json.dumps(project_info)
         
     def _serialize_to_xml(self):
+        """
+        
+
+        Returns
+        -------
+        TYPE
+            DESCRIPTION.
+
+        """
+        
+        from lxml import etree as et
+        
         project_info = et.Element('project', attrib={'name': self.name})
         ligand = et.SubElement(project_info, 'ligand')
         ligand.text = self.ligand
@@ -416,3 +380,70 @@ class Template:
         
         
         
+
+    
+    
+class Tasks:
+    """
+    
+    Base class to spwan multiproc (Jupyter and Pandas compatible)
+    
+    
+    """
+    
+    def parallel_task(input_function=None, collection=None):
+        """
+        
+        Core function for multiprocessing of a given task.Takes as input a function and an iterator.
+        Warning: Spawns as many threads as the number of elements in the iterator.
+            
+
+        """
+        
+        
+        from pathlib import Path
+        import multiprocessing
+        from multiprocessing import Manager, Process
+
+        n_cpus=multiprocessing.cpu_count()
+        temp_dir='/tmp'
+        
+        
+        
+        def task_exec(manager, input_function, idx, c) -> dict:
+            """
+            Execution of the input function. Output is stored in the manager, which is handled to the job
+
+            Parameters
+            ----------
+            manager : TYPE
+                DESCRIPTION.
+            input_function : TYPE
+                DESCRIPTION.
+            idx : TYPE
+                DESCRIPTION.
+            c : TYPE
+                DESCRIPTION.
+
+
+            """
+            
+            task=manager
+            function=input_function
+            task[idx]=function(c)           
+        
+        if input_function != None and collection != None:
+        
+            manager=Manager().list()
+            job=[Process(target=task_exec, args=(manager, input_function, idx, c)) for idx, c in enumerate(collection)]
+            _=[p.start() for p in job]
+            _=[p.join() for p in job]
+       
+            return manager
+        
+        else:
+            print('No input function or container provided')
+            
+            
+    
+    
