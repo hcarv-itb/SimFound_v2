@@ -1,6 +1,36 @@
 Analysis Modules
 ================
 
+Featurize
+---------
+
+
+Trajectories first need to be featurized with the ***Featurized*** module. 
+Two methods are available and both are based strictly on distance metrics (angles, dihedrals, others can be coded):
+Both methods accept an arbitrary number of **distances** and outputs a dataframe that can be used for discretization.
+
+Distance
+++++++++
+
+Distances are calculated between all atom reference*selection pairs 
+
+Collective Variable (NAC)
++++++++++++++++++++++++++
+
+The **Collective Variable** is a metric combinining two or more distances.
+
+The *Near Attack Conformation* concept is the average root mean squared value of all defined distances.
+
+.. image:: featurize.png
+  :width: 600
+  :alt: combinatorial
+
+
+.. automodule:: source.Featurize
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 Discretize
 ----------
@@ -11,6 +41,10 @@ Therefore, the module can take an externally-generated DataFrame, so long as the
 
 **Uniform spherical**
 +++++++++++++++++++++
+
+.. image:: uniform.png
+  :width: 300
+  :alt: uniform
 
 Discretization based in spherical shells generates spherical shells along a *feature* coordinate (*i.e.* if 1D).
 The module takes as input the **thickness** of the spherical shells and the **limits** of shell edges. 
@@ -23,6 +57,10 @@ Returns a *shell profile* DataFrame, containing the sampled frequency for each s
 
 **Combinatorial user-defined**
 ++++++++++++++++++++++++++++++
+
+.. image:: combinatorial_scheme.png
+  :width: 300
+  :alt: combinatorial
 
 Discretize, for each frame, which combinations of shells are occupied by all ligands in the system (one state per frame)
 
@@ -46,27 +84,8 @@ Labels *labels* of each region are optional but recommended (otherwise reverts t
    :members:
    :undoc-members:
    :show-inheritance:
-   
 
 
-Featurize
----------
-
-
-.. automodule:: source.Featurize
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   
-
-Trajectory
-----------
-
-
-.. automodule:: source.Trajectory
-   :members:
-   :undoc-members:
-   :show-inheritance:
    
    
 Markov State Models

@@ -10,6 +10,15 @@ Tools
    :undoc-members:
    :show-inheritance:
  
+
+Visualization
+-------------
+
+.. automodule:: source.Visualization
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
  
 Trajectory
 ----------

@@ -1,22 +1,25 @@
-Notebooks
-=========
+Usage
+=====
 
-Project notebooks can be seen here. 
+Tutorials and example usage are given here using Jupyter notebooks. 
 
 
-.. note:: This is a toy example of a working notebook!
+.. note:: These are static notebooks!
 
 .. toctree::
    :maxdepth: 3
    
    SimFound_v2.ipynb
+   density.ipynb
+   visualization.ipynb
+   discretized.ipynb
 
 .. toctree::
    :maxdepth: 3
    
    
 .. note::
-    * Another example note.
+    * TODO: Provide Python code cell examples.
 
 
 

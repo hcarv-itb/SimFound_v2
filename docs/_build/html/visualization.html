@@ -1,0 +1,1211 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Visualization tutorial &mdash; Simulation Foundry, v2 2.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Discretization tutorial" href="discretized.html" />
+    <link rel="prev" title="3D Analysis tutorial" href="density.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> Simulation Foundry, v2
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">TOPICS</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="projects.html">Notebooks</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="SimFound_v2.html">Simulation Foundry (v2) Usage Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="density.html">3D Analysis tutorial</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Visualization tutorial</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Density-descriptors">Density descriptors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Graphical-Interface">Graphical Interface</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="discretized.html">Discretization tutorial</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="documentation.html">Documentation</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Simulation Foundry, v2</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="projects.html">Notebooks</a> &raquo;</li>
+        
+      <li>Visualization tutorial</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/visualization.ipynb.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container,
+div.nbinput.container div.prompt,
+div.nbinput.container div.input_area,
+div.nbinput.container div[class*=highlight],
+div.nbinput.container div[class*=highlight] pre,
+div.nboutput.container,
+div.nboutput.container div.prompt,
+div.nboutput.container div.output_area,
+div.nboutput.container div[class*=highlight],
+div.nboutput.container div[class*=highlight] pre {
+    background: none;
+    border: none;
+    padding: 0 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    width: 4.5ex;
+    padding-top: 5px;
+    position: relative;
+    user-select: none;
+}
+
+div.nbinput.container div.prompt > div,
+div.nboutput.container div.prompt > div {
+    position: absolute;
+    right: 0;
+    margin-right: 0.3ex;
+}
+
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        width: unset;
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+
+    div.nbinput.container div.prompt > div,
+    div.nboutput.container div.prompt > div {
+        position: unset;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    background: #f5f5f5;
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 5px;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt a.copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="Visualization-tutorial">
+<h1>Visualization tutorial<a class="headerlink" href="#Visualization-tutorial" title="Permalink to this headline">¶</a></h1>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">path</span>
+<span class="kn">import</span> <span class="nn">nglview</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">importlib</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="c1">#%matplotlib notebook</span>
+
+<span class="n">base_path</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s1">&#39;C:/Users/hcarv/Desktop/figures&#39;</span><span class="p">)</span>
+<span class="n">data_path</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s1">&#39;C:/Users/hcarv/Documents/work/notebook_results&#39;</span><span class="p">)</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">base_path</span><span class="p">)</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data_path</span><span class="p">)</span>
+
+<span class="kn">import</span> <span class="nn">visual</span>
+<span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">visual</span><span class="p">)</span>
+<span class="n">results</span><span class="o">=</span><span class="n">base_path</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="Density-descriptors">
+<h2>Density descriptors<a class="headerlink" href="#Density-descriptors" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">visual</span><span class="p">)</span>
+<span class="n">stride</span><span class="o">=</span><span class="mi">1</span>
+
+
+<span class="n">figures</span><span class="o">=</span><span class="p">{</span>
+    <span class="s1">&#39;50mM&#39;</span><span class="p">:[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">17</span><span class="p">],</span>
+    <span class="s1">&#39;150mM&#39;</span><span class="p">:[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">19</span><span class="p">],</span>
+    <span class="s1">&#39;300mM&#39;</span><span class="p">:[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">19</span><span class="p">],</span>
+    <span class="s1">&#39;600mM&#39;</span><span class="p">:[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">27</span><span class="p">],</span>
+    <span class="s1">&#39;1M&#39;</span><span class="p">:[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">27</span><span class="p">],</span>
+    <span class="s1">&#39;2.5M&#39;</span><span class="p">:[</span><span class="mi">7</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">31</span><span class="p">],</span>
+    <span class="s1">&#39;5.5M&#39;</span><span class="p">:[</span><span class="mi">7</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">31</span><span class="p">]}</span>
+
+<span class="n">states</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;SB&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">&#39;PB&#39;</span><span class="p">,</span><span class="mi">9</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">&#39;AB&#39;</span><span class="p">,</span> <span class="mi">17</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">&#39;PSB&#39;</span><span class="p">,</span> <span class="mi">11</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">&#39;ASB&#39;</span><span class="p">,</span> <span class="mi">19</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">&#39;APSB&#39;</span><span class="p">,</span> <span class="mi">27</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">&#39;ESB&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">&#39;PESB&#39;</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">&#39;APESB&#39;</span><span class="p">,</span> <span class="mi">31</span><span class="p">)]</span>
+
+<span class="n">stride</span><span class="o">=</span><span class="mi">1</span>
+<span class="n">stat_dist</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">data_path</span><span class="si">}</span><span class="s1">\kNAC_hist2-calb-MeOH_5-4.5-24.0.csv&#39;</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="c1">#stat_dist</span>
+
+<span class="n">iso_levels</span><span class="o">=</span><span class="n">visual</span><span class="o">.</span><span class="n">plot_densityStats</span><span class="p">(</span><span class="n">figures</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="n">stride</span><span class="p">,</span> <span class="n">states</span><span class="p">,</span> <span class="n">stat_dist</span><span class="o">=</span><span class="n">stat_dist</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Stat Dist: 0.62884
+Mean: 0.041522123468194
+St. dev: 0.04089832803671933
+Max: 10.145238834062056
+Min: 0.0
+Extracting the -2 quantile
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "5c13dd5bee6e4c429b55bb5f2236829b", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Stat Dist: 0.010545
+Mean: 0.0
+St. dev: 0.2039265272461776
+Max: 65.53995741412416
+Min: 0.0
+Extracting the -2 quantile
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "002a96a94b5b4fc6b583bbb83ff02d33", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Stat Dist: 0.0009199999999999999
+Mean: 0.0
+St. dev: 0.7099729240005956
+Max: 181.47966350078576
+Min: 0.0
+Extracting the -2 quantile
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "0662084e520d475282b4fb9f08fe4836", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Stat Dist: 0.49827
+Mean: 0.10812677468086
+St. dev: 0.11449739516566719
+Max: 49.486020545606806
+Min: 0.0
+Extracting the -2 quantile
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "f73e570ecc284d6a85e7fcd22537e4f4", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Stat Dist: 0.23218000000000003
+Mean: 0.094372037871002
+St. dev: 0.15260317993075395
+Max: 51.181101872039946
+Min: 0.0
+Extracting the -2 quantile
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "735e22c898c74561a740b5a46dec346e", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Stat Dist: 0.133975
+Mean: 0.067427576279376
+St. dev: 0.5780907585549044
+Max: 367.6151458751573
+Min: 0.0
+Extracting the -2 quantile
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "7c2cc37a40114308ab0ce716e8f7ee74", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Stat Dist: 0.418295
+Mean: 0.211225676498378
+St. dev: 0.21972652510056292
+Max: 31.801199072811286
+Min: 0.0
+Extracting the -2 quantile
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "73572d2613ec423a96b19de0fe705aeb", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Stat Dist: 0.210135
+Mean: 0.212407215247886
+St. dev: 0.2971952615482304
+Max: 51.85770440837681
+Min: 0.0
+Extracting the -2 quantile
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "b6cbcc5fd0e549b0922662669a687cf8", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Stat Dist: 0.15514
+Mean: 0.192058630699999
+St. dev: 0.8784154780654011
+Max: 576.2399116435631
+Min: 0.0
+Extracting the -2 quantile
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "04663ed0f9b54dd983b52e452dca3097", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Stat Dist: 0.20524
+Mean: 0.453590718347988
+St. dev: 0.4125507876185012
+Max: 56.75553863329197
+Min: 0.0
+Extracting the -2 quantile
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "9065d5a832544f48bddfe42b6873c166", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Stat Dist: 0.24635500000000002
+Mean: 0.469989181919187
+St. dev: 0.4549648388949729
+Max: 61.165734961197025
+Min: 0.0
+Extracting the -2 quantile
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "bf8c6bebd35a491c9581809801b8e098", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Stat Dist: 0.13034
+Mean: 0.449117991624285
+St. dev: 0.7551439683691633
+Max: 345.0224215655896
+Min: 0.0
+Extracting the -2 quantile
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "266fa5a4fb57463a9ae36222ee878086", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Stat Dist: 0.038675
+Mean: 0.427753457246829
+St. dev: 0.8957322939846414
+Max: 133.88683211825744
+Min: 0.0
+Extracting the -2 quantile
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "44848d1fc86d4954949af0f2758fe7e5", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Stat Dist: 0.138795
+Mean: 0.79221277747508
+St. dev: 0.6785976948991842
+Max: 143.87802827835884
+Min: 0.0
+Extracting the -2 quantile
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "7d146606dbad4d8890651c3c8a1ff617", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Stat Dist: 0.258975
+Mean: 0.82030670329702
+St. dev: 0.9737748739439849
+Max: 651.5352144702974
+Min: 0.0
+Extracting the -2 quantile
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "c44b7a7d22e84416bc02fc1c23ad7bb5", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Stat Dist: 0.03603
+Mean: 1.69097649799612
+St. dev: 1.7595782908673112
+Max: 352.99134395669006
+Min: 0.0
+Extracting the -2 quantile
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "346bb4434dbe405188133b6fcc92ce7f", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Stat Dist: 0.203995
+Mean: 2.202340224986017
+St. dev: 1.311594307006413
+Max: 157.0063711556892
+Min: 0.0
+Extracting the -2 quantile
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "d0e2fc5e38be4405a753df75362d45e4", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Stat Dist: 0.26736
+Mean: 2.218856023347292
+St. dev: 1.460674796001296
+Max: 489.69541740956396
+Min: 0.0
+Extracting the -2 quantile
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "5de063b0032040e1966aecc762ac186d", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Stat Dist: 0.014995
+Mean: 0.0
+St. dev: 10.033445904551543
+Max: 622.7020953870712
+Min: 0.0
+Extracting the -2 quantile
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "f6acf43eeedb42339ed4d88923af278e", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Stat Dist: 0.27181500000000003
+Mean: 4.762077357231885
+St. dev: 2.6927775758104957
+Max: 251.2950767976697
+Min: 0.0
+Extracting the -2 quantile
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "4ca0cb5a6a004f3dac38929ce0f37cb2", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Stat Dist: 0.41686000000000006
+Mean: 4.731267455822119
+St. dev: 2.7323427095477952
+Max: 459.58553182934173
+Min: 0.0
+Extracting the -2 quantile
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "21eec9234bdd43d6a5a334c019be1d1e", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[29]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">iso_levels</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[29]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+{&#39;50mM&#39;: [0.096884954759119, 1.159999246267684, 9.073983175039288],
+ &#39;150mM&#39;: [0.252295807588673, 0.283116113613005, 0.337137881396879],
+ &#39;300mM&#39;: [0.469390392218617, 0.485502206280883, 0.576175892099996],
+ &#39;600mM&#39;: [0.963880276489474, 0.872837052135633, 0.89823598324857],
+ &#39;1M&#39;: [2.138767286234144, 1.462546666107841, 1.349536834456387],
+ &#39;2.5M&#39;: [4.650185369489329, 3.201075908409909, 3.155253978154407],
+ &#39;5.5M&#39;: [41.51347302580475, 6.824795356888476, 6.661842107335743]}
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">double</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;50mM&#39;</span><span class="p">,</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">]),</span>
+        <span class="p">(</span><span class="s1">&#39;150mM&#39;</span><span class="p">,[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">]),</span>
+        <span class="p">(</span><span class="s1">&#39;300mM&#39;</span><span class="p">,</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">]),</span>
+        <span class="p">(</span><span class="s1">&#39;600mM&#39;</span><span class="p">,</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">]),</span>
+        <span class="p">(</span><span class="s1">&#39;1M&#39;</span><span class="p">,</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">]),</span>
+        <span class="p">(</span><span class="s1">&#39;2.5M&#39;</span><span class="p">,</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">]),</span>
+        <span class="p">(</span><span class="s1">&#39;5.5M&#39;</span><span class="p">,</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">])]</span>
+
+<span class="n">iso_levels_mod</span><span class="o">=</span><span class="p">{}</span>
+
+<span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">double</span><span class="p">:</span>
+    <span class="n">mods</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="n">original</span><span class="o">=</span><span class="n">iso_levels</span><span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">new</span><span class="o">=</span><span class="n">original</span><span class="o">*</span><span class="mi">2</span>
+        <span class="k">if</span> <span class="n">y</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">mods</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mods</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">original</span><span class="p">)</span>
+
+        <span class="n">iso_levels_mod</span><span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">=</span><span class="n">mods</span>
+<span class="n">iso_levels_mod</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+{&#39;50mM&#39;: [0.193769909518238, 1.159999246267684, 9.073983175039288],
+ &#39;150mM&#39;: [0.504591615177346, 0.56623222722601, 0.674275762793758],
+ &#39;300mM&#39;: [0.938780784437234, 0.971004412561766, 1.152351784199992],
+ &#39;600mM&#39;: [1.927760552978948, 1.745674104271266, 1.79647196649714],
+ &#39;1M&#39;: [4.277534572468288, 2.925093332215682, 2.699073668912774],
+ &#39;2.5M&#39;: [9.300370738978659, 6.402151816819818, 6.310507956308814],
+ &#39;5.5M&#39;: [83.0269460516095, 13.649590713776952, 13.323684214671486]}
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Graphical-Interface">
+<h2>Graphical Interface<a class="headerlink" href="#Graphical-Interface" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[35]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">visual</span><span class="p">)</span>
+<span class="n">visualizations</span><span class="o">=</span><span class="n">visual</span><span class="o">.</span><span class="n">get_visualizations</span><span class="p">(</span><span class="n">figures</span><span class="p">,</span> <span class="n">iso_levels_mod</span><span class="p">,</span> <span class="n">states</span><span class="p">,</span> <span class="n">stride</span><span class="p">,</span> <span class="n">results</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[36]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1">#figures={</span>
+<span class="c1">#    &#39;50mM&#39;:[3, 9, 17],</span>
+<span class="c1">#    &#39;150mM&#39;:[3, 11, 19],</span>
+<span class="c1">#    &#39;300mM&#39;:[3, 11, 19],</span>
+<span class="c1">#    &#39;600mM&#39;:[3, 11, 27],</span>
+<span class="c1">#    &#39;1M&#39;:[3, 11, 27],</span>
+<span class="c1">#    &#39;2.5M&#39;:[7, 15, 31],</span>
+<span class="c1">#    &#39;5.5M&#39;:[7, 15, 31]}</span>
+<span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">visual</span><span class="p">)</span>
+<span class="n">view</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">visual</span><span class="o">.</span><span class="n">graphical</span><span class="p">(</span><span class="n">visualizations</span><span class="p">)</span>
+<span class="n">view</span>
+
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Concentration: 50mM
+iterable: 3
+Isolevel:  0.193769909518238
+Name:  SB
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "4fc6591d022a4291a38e99702f388f86", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[40]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">visual</span><span class="p">)</span>
+
+<span class="n">structures</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;50mM&#39;</span><span class="p">:[</span><span class="mi">17</span><span class="p">],</span> <span class="s1">&#39;150mM&#39;</span><span class="p">:[</span><span class="mi">19</span><span class="p">],</span> <span class="s1">&#39;300mM&#39;</span><span class="p">:[</span><span class="mi">19</span><span class="p">],</span> <span class="s1">&#39;1M&#39;</span><span class="p">:[</span><span class="mi">27</span><span class="p">],</span> <span class="s1">&#39;5.5M&#39;</span><span class="p">:[</span><span class="mi">31</span><span class="p">]}</span> <span class="c1">#,</span>
+<span class="c1">#    &#39;150mM&#39;:[3, 11, 19],</span>
+<span class="c1">#    &#39;300mM&#39;:[3, 11, 19],</span>
+<span class="c1">#    &#39;600mM&#39;:[3, 11, 27],</span>
+<span class="c1">#    &#39;1M&#39;:[3, 11, 27],</span>
+<span class="c1">#    &#39;2.5M&#39;:[7, 15, 31],</span>
+<span class="c1">#    &#39;5.5M&#39;:[7, 15, 31]}</span>
+
+
+
+<span class="n">visualizations_multiple</span><span class="o">=</span><span class="n">visual</span><span class="o">.</span><span class="n">get_visualizations_multiple</span><span class="p">(</span><span class="n">structures</span><span class="p">,</span> <span class="n">states</span><span class="p">,</span> <span class="n">stride</span><span class="p">,</span> <span class="n">results</span><span class="p">)</span>
+<span class="n">view_methanol</span><span class="p">,</span> <span class="n">file_methanol</span><span class="o">=</span><span class="n">visual</span><span class="o">.</span><span class="n">graphical_multiple</span><span class="p">(</span><span class="n">visualizations_multiple</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Concentration: 150mM
+iterable: 19
+Name:  ASB
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[41]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">view_methanol</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "8cac081297304ae4b04a76e9cbce544b", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">view_methanol</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">view_methanol</span><span class="o">.</span><span class="n">download_image</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">file_methanol</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">transparent</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">visual</span><span class="p">)</span>
+<span class="n">stride_full</span><span class="o">=</span><span class="mi">5</span>
+<span class="n">iso_levels_full</span><span class="o">=</span><span class="n">visual</span><span class="o">.</span><span class="n">plot_densityStats_full</span><span class="p">(</span><span class="n">figures</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="n">stride_full</span><span class="p">,</span> <span class="n">stat_dist</span><span class="o">=</span><span class="n">stat_dist</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">visual</span><span class="p">)</span>
+<span class="n">visualizations_full</span><span class="o">=</span><span class="n">visual</span><span class="o">.</span><span class="n">get_visualizations_full</span><span class="p">(</span><span class="n">figures</span><span class="p">,</span> <span class="n">iso_levels_full</span><span class="p">,</span> <span class="n">stride_full</span><span class="p">,</span> <span class="n">results</span><span class="p">)</span>
+<span class="n">visualizations_full</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">view_full</span><span class="p">,</span> <span class="n">file_full</span><span class="o">=</span><span class="n">visual</span><span class="o">.</span><span class="n">graphical_full</span><span class="p">(</span><span class="n">visualizations_full</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">struct</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s1">&#39;C:/Users/hcarv/Desktop/figures/superposed_5.5M-s5-clusters.pdb&#39;</span><span class="p">)</span>
+<span class="n">dens</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s1">&#39;C:/Users/hcarv/Desktop/figures/superposed_5.5M-s5-Molar.dx&#39;</span><span class="p">)</span>
+<span class="n">iso</span><span class="o">=</span><span class="mf">0.2</span>
+<span class="n">view</span><span class="o">=</span><span class="n">visual</span><span class="o">.</span><span class="n">view_presets</span><span class="p">(</span><span class="n">struct</span><span class="p">,</span> <span class="n">dens</span><span class="p">,</span> <span class="n">iso</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">view</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">view</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">view</span><span class="o">.</span><span class="n">download_image</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s1">&#39;superposed_2.5M-s5-iso0.2.png&#39;</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">transparent</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="discretized.html" class="btn btn-neutral float-right" title="Discretization tutorial" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="density.html" class="btn btn-neutral float-left" title="3D Analysis tutorial" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2021, Henrique F. Carvalho
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

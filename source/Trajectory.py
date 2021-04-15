@@ -24,6 +24,14 @@ class Trajectory:
     
   
     def start_simulations(self):
+        """
+        
+
+        Returns
+        -------
+        None.
+
+        """
         
         print(self.systems)
   
@@ -34,7 +42,7 @@ class Trajectory:
     @staticmethod
     def trj_filter(df, name, value):
         """
-        
+        Extract frames based on discretized trajectory dataframes.        
 
         Parameters
         ----------
@@ -49,6 +57,7 @@ class Trajectory:
         -------
         numpy.array
             An array of index values of the trajectory where value was found.
+        
         """
             
         #n=name.split('-') #alternative of n, ready for hierarchical operator     
@@ -70,7 +79,7 @@ class Trajectory:
     
     
     
-    def extractFrames_by_iterable(self, df, iterable, feature, t_start=20000, extract='not water') -> dict:
+    def extractFrames_by_iterable(self, df, iterable, feature, t_start=20000, extract='not water'):
         """
         
         Extract frames trajectories based on iterable and dataframe.

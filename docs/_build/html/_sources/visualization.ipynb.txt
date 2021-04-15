@@ -1,0 +1,939 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Visualization tutorial"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 26,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import os\n",
+    "import path\n",
+    "import nglview\n",
+    "import sys\n",
+    "import importlib\n",
+    "import pandas as pd\n",
+    "\n",
+    "import matplotlib.pyplot as plt\n",
+    "#%matplotlib notebook\n",
+    "\n",
+    "base_path=os.path.abspath('C:/Users/hcarv/Desktop/figures')\n",
+    "data_path=os.path.abspath('C:/Users/hcarv/Documents/work/notebook_results')\n",
+    "sys.path.append(base_path)\n",
+    "sys.path.append(data_path)\n",
+    "\n",
+    "import visual\n",
+    "importlib.reload(visual)\n",
+    "results=base_path"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Density descriptors"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 28,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Stat Dist: 0.62884\n",
+      "Mean: 0.041522123468194\n",
+      "St. dev: 0.04089832803671933\n",
+      "Max: 10.145238834062056\n",
+      "Min: 0.0\n",
+      "Extracting the -2 quantile\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "5c13dd5bee6e4c429b55bb5f2236829b",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "interactive(children=(IntSlider(value=30, description='iso'), Output()), _dom_classes=('widget-interact',))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Stat Dist: 0.010545\n",
+      "Mean: 0.0\n",
+      "St. dev: 0.2039265272461776\n",
+      "Max: 65.53995741412416\n",
+      "Min: 0.0\n",
+      "Extracting the -2 quantile\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "002a96a94b5b4fc6b583bbb83ff02d33",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "interactive(children=(IntSlider(value=30, description='iso'), Output()), _dom_classes=('widget-interact',))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Stat Dist: 0.0009199999999999999\n",
+      "Mean: 0.0\n",
+      "St. dev: 0.7099729240005956\n",
+      "Max: 181.47966350078576\n",
+      "Min: 0.0\n",
+      "Extracting the -2 quantile\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "0662084e520d475282b4fb9f08fe4836",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "interactive(children=(IntSlider(value=30, description='iso'), Output()), _dom_classes=('widget-interact',))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Stat Dist: 0.49827\n",
+      "Mean: 0.10812677468086\n",
+      "St. dev: 0.11449739516566719\n",
+      "Max: 49.486020545606806\n",
+      "Min: 0.0\n",
+      "Extracting the -2 quantile\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "f73e570ecc284d6a85e7fcd22537e4f4",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "interactive(children=(IntSlider(value=30, description='iso'), Output()), _dom_classes=('widget-interact',))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Stat Dist: 0.23218000000000003\n",
+      "Mean: 0.094372037871002\n",
+      "St. dev: 0.15260317993075395\n",
+      "Max: 51.181101872039946\n",
+      "Min: 0.0\n",
+      "Extracting the -2 quantile\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "735e22c898c74561a740b5a46dec346e",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "interactive(children=(IntSlider(value=30, description='iso'), Output()), _dom_classes=('widget-interact',))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Stat Dist: 0.133975\n",
+      "Mean: 0.067427576279376\n",
+      "St. dev: 0.5780907585549044\n",
+      "Max: 367.6151458751573\n",
+      "Min: 0.0\n",
+      "Extracting the -2 quantile\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "7c2cc37a40114308ab0ce716e8f7ee74",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "interactive(children=(IntSlider(value=30, description='iso'), Output()), _dom_classes=('widget-interact',))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Stat Dist: 0.418295\n",
+      "Mean: 0.211225676498378\n",
+      "St. dev: 0.21972652510056292\n",
+      "Max: 31.801199072811286\n",
+      "Min: 0.0\n",
+      "Extracting the -2 quantile\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "73572d2613ec423a96b19de0fe705aeb",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "interactive(children=(IntSlider(value=30, description='iso'), Output()), _dom_classes=('widget-interact',))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Stat Dist: 0.210135\n",
+      "Mean: 0.212407215247886\n",
+      "St. dev: 0.2971952615482304\n",
+      "Max: 51.85770440837681\n",
+      "Min: 0.0\n",
+      "Extracting the -2 quantile\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "b6cbcc5fd0e549b0922662669a687cf8",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "interactive(children=(IntSlider(value=30, description='iso'), Output()), _dom_classes=('widget-interact',))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Stat Dist: 0.15514\n",
+      "Mean: 0.192058630699999\n",
+      "St. dev: 0.8784154780654011\n",
+      "Max: 576.2399116435631\n",
+      "Min: 0.0\n",
+      "Extracting the -2 quantile\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "04663ed0f9b54dd983b52e452dca3097",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "interactive(children=(IntSlider(value=30, description='iso'), Output()), _dom_classes=('widget-interact',))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Stat Dist: 0.20524\n",
+      "Mean: 0.453590718347988\n",
+      "St. dev: 0.4125507876185012\n",
+      "Max: 56.75553863329197\n",
+      "Min: 0.0\n",
+      "Extracting the -2 quantile\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "9065d5a832544f48bddfe42b6873c166",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "interactive(children=(IntSlider(value=30, description='iso'), Output()), _dom_classes=('widget-interact',))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Stat Dist: 0.24635500000000002\n",
+      "Mean: 0.469989181919187\n",
+      "St. dev: 0.4549648388949729\n",
+      "Max: 61.165734961197025\n",
+      "Min: 0.0\n",
+      "Extracting the -2 quantile\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "bf8c6bebd35a491c9581809801b8e098",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "interactive(children=(IntSlider(value=30, description='iso'), Output()), _dom_classes=('widget-interact',))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Stat Dist: 0.13034\n",
+      "Mean: 0.449117991624285\n",
+      "St. dev: 0.7551439683691633\n",
+      "Max: 345.0224215655896\n",
+      "Min: 0.0\n",
+      "Extracting the -2 quantile\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "266fa5a4fb57463a9ae36222ee878086",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "interactive(children=(IntSlider(value=30, description='iso'), Output()), _dom_classes=('widget-interact',))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Stat Dist: 0.038675\n",
+      "Mean: 0.427753457246829\n",
+      "St. dev: 0.8957322939846414\n",
+      "Max: 133.88683211825744\n",
+      "Min: 0.0\n",
+      "Extracting the -2 quantile\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "44848d1fc86d4954949af0f2758fe7e5",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "interactive(children=(IntSlider(value=30, description='iso'), Output()), _dom_classes=('widget-interact',))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Stat Dist: 0.138795\n",
+      "Mean: 0.79221277747508\n",
+      "St. dev: 0.6785976948991842\n",
+      "Max: 143.87802827835884\n",
+      "Min: 0.0\n",
+      "Extracting the -2 quantile\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "7d146606dbad4d8890651c3c8a1ff617",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "interactive(children=(IntSlider(value=30, description='iso'), Output()), _dom_classes=('widget-interact',))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Stat Dist: 0.258975\n",
+      "Mean: 0.82030670329702\n",
+      "St. dev: 0.9737748739439849\n",
+      "Max: 651.5352144702974\n",
+      "Min: 0.0\n",
+      "Extracting the -2 quantile\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "c44b7a7d22e84416bc02fc1c23ad7bb5",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "interactive(children=(IntSlider(value=30, description='iso'), Output()), _dom_classes=('widget-interact',))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Stat Dist: 0.03603\n",
+      "Mean: 1.69097649799612\n",
+      "St. dev: 1.7595782908673112\n",
+      "Max: 352.99134395669006\n",
+      "Min: 0.0\n",
+      "Extracting the -2 quantile\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "346bb4434dbe405188133b6fcc92ce7f",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "interactive(children=(IntSlider(value=30, description='iso'), Output()), _dom_classes=('widget-interact',))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Stat Dist: 0.203995\n",
+      "Mean: 2.202340224986017\n",
+      "St. dev: 1.311594307006413\n",
+      "Max: 157.0063711556892\n",
+      "Min: 0.0\n",
+      "Extracting the -2 quantile\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "d0e2fc5e38be4405a753df75362d45e4",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "interactive(children=(IntSlider(value=30, description='iso'), Output()), _dom_classes=('widget-interact',))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Stat Dist: 0.26736\n",
+      "Mean: 2.218856023347292\n",
+      "St. dev: 1.460674796001296\n",
+      "Max: 489.69541740956396\n",
+      "Min: 0.0\n",
+      "Extracting the -2 quantile\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "5de063b0032040e1966aecc762ac186d",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "interactive(children=(IntSlider(value=30, description='iso'), Output()), _dom_classes=('widget-interact',))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Stat Dist: 0.014995\n",
+      "Mean: 0.0\n",
+      "St. dev: 10.033445904551543\n",
+      "Max: 622.7020953870712\n",
+      "Min: 0.0\n",
+      "Extracting the -2 quantile\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "f6acf43eeedb42339ed4d88923af278e",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "interactive(children=(IntSlider(value=30, description='iso'), Output()), _dom_classes=('widget-interact',))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Stat Dist: 0.27181500000000003\n",
+      "Mean: 4.762077357231885\n",
+      "St. dev: 2.6927775758104957\n",
+      "Max: 251.2950767976697\n",
+      "Min: 0.0\n",
+      "Extracting the -2 quantile\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "4ca0cb5a6a004f3dac38929ce0f37cb2",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "interactive(children=(IntSlider(value=30, description='iso'), Output()), _dom_classes=('widget-interact',))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Stat Dist: 0.41686000000000006\n",
+      "Mean: 4.731267455822119\n",
+      "St. dev: 2.7323427095477952\n",
+      "Max: 459.58553182934173\n",
+      "Min: 0.0\n",
+      "Extracting the -2 quantile\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "21eec9234bdd43d6a5a334c019be1d1e",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "interactive(children=(IntSlider(value=30, description='iso'), Output()), _dom_classes=('widget-interact',))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "importlib.reload(visual)\n",
+    "stride=1\n",
+    "\n",
+    "\n",
+    "figures={\n",
+    "    '50mM':[3, 9, 17], \n",
+    "    '150mM':[3, 11, 19], \n",
+    "    '300mM':[3, 11, 19], \n",
+    "    '600mM':[3, 11, 27], \n",
+    "    '1M':[3, 11, 27], \n",
+    "    '2.5M':[7, 15, 31], \n",
+    "    '5.5M':[7, 15, 31]}\n",
+    "\n",
+    "states=[('SB', 3), \n",
+    "        ('PB',9), \n",
+    "        ('AB', 17), \n",
+    "        ('PSB', 11), \n",
+    "        ('ASB', 19), \n",
+    "        ('APSB', 27), \n",
+    "        ('ESB', 7), \n",
+    "        ('PESB', 15), \n",
+    "        ('APESB', 31)]\n",
+    "\n",
+    "stride=1\n",
+    "stat_dist=pd.read_csv(f'{data_path}\\kNAC_hist2-calb-MeOH_5-4.5-24.0.csv', index_col=0)\n",
+    "#stat_dist\n",
+    "\n",
+    "iso_levels=visual.plot_densityStats(figures, results, stride, states, stat_dist=stat_dist)  "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 29,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "{'50mM': [0.096884954759119, 1.159999246267684, 9.073983175039288],\n",
+       " '150mM': [0.252295807588673, 0.283116113613005, 0.337137881396879],\n",
+       " '300mM': [0.469390392218617, 0.485502206280883, 0.576175892099996],\n",
+       " '600mM': [0.963880276489474, 0.872837052135633, 0.89823598324857],\n",
+       " '1M': [2.138767286234144, 1.462546666107841, 1.349536834456387],\n",
+       " '2.5M': [4.650185369489329, 3.201075908409909, 3.155253978154407],\n",
+       " '5.5M': [41.51347302580475, 6.824795356888476, 6.661842107335743]}"
+      ]
+     },
+     "execution_count": 29,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "iso_levels"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 30,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "{'50mM': [0.193769909518238, 1.159999246267684, 9.073983175039288],\n",
+       " '150mM': [0.504591615177346, 0.56623222722601, 0.674275762793758],\n",
+       " '300mM': [0.938780784437234, 0.971004412561766, 1.152351784199992],\n",
+       " '600mM': [1.927760552978948, 1.745674104271266, 1.79647196649714],\n",
+       " '1M': [4.277534572468288, 2.925093332215682, 2.699073668912774],\n",
+       " '2.5M': [9.300370738978659, 6.402151816819818, 6.310507956308814],\n",
+       " '5.5M': [83.0269460516095, 13.649590713776952, 13.323684214671486]}"
+      ]
+     },
+     "execution_count": 30,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "double=[('50mM', [True, False, False]), \n",
+    "        ('150mM',[True, True, True]), \n",
+    "        ('300mM', [True, True, True]), \n",
+    "        ('600mM', [True, True, True]), \n",
+    "        ('1M', [True, True, True]), \n",
+    "        ('2.5M', [True, True, True]), \n",
+    "        ('5.5M', [True, True, True])]\n",
+    "\n",
+    "iso_levels_mod={}\n",
+    "\n",
+    "for x in double:\n",
+    "    mods=[]\n",
+    "    for idx, y in enumerate(x[1]):\n",
+    "        original=iso_levels[x[0]][idx]\n",
+    "        new=original*2\n",
+    "        if y == True:\n",
+    "            mods.append(new)\n",
+    "        else:\n",
+    "            mods.append(original)\n",
+    "            \n",
+    "        iso_levels_mod[x[0]]=mods\n",
+    "iso_levels_mod"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Graphical Interface"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 35,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "importlib.reload(visual)\n",
+    "visualizations=visual.get_visualizations(figures, iso_levels_mod, states, stride, results)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 36,
+   "metadata": {
+    "scrolled": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Concentration: 50mM\n",
+      "iterable: 3\n",
+      "Isolevel:  0.193769909518238\n",
+      "Name:  SB\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "4fc6591d022a4291a38e99702f388f86",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "NGLWidget()"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "#figures={\n",
+    "#    '50mM':[3, 9, 17], \n",
+    "#    '150mM':[3, 11, 19], \n",
+    "#    '300mM':[3, 11, 19], \n",
+    "#    '600mM':[3, 11, 27], \n",
+    "#    '1M':[3, 11, 27], \n",
+    "#    '2.5M':[7, 15, 31], \n",
+    "#    '5.5M':[7, 15, 31]}\n",
+    "importlib.reload(visual)\n",
+    "view, file=visual.graphical(visualizations)\n",
+    "view\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 40,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Concentration: 150mM\n",
+      "iterable: 19\n",
+      "Name:  ASB\n"
+     ]
+    }
+   ],
+   "source": [
+    "importlib.reload(visual)\n",
+    "\n",
+    "structures={'50mM':[17], '150mM':[19], '300mM':[19], '1M':[27], '5.5M':[31]} #, \n",
+    "#    '150mM':[3, 11, 19], \n",
+    "#    '300mM':[3, 11, 19], \n",
+    "#    '600mM':[3, 11, 27], \n",
+    "#    '1M':[3, 11, 27], \n",
+    "#    '2.5M':[7, 15, 31], \n",
+    "#    '5.5M':[7, 15, 31]}\n",
+    "\n",
+    "\n",
+    "\n",
+    "visualizations_multiple=visual.get_visualizations_multiple(structures, states, stride, results)\n",
+    "view_methanol, file_methanol=visual.graphical_multiple(visualizations_multiple)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 41,
+   "metadata": {
+    "scrolled": false
+   },
+   "outputs": [
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "8cac081297304ae4b04a76e9cbce544b",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "NGLWidget()"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "view_methanol"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "view_methanol"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "view_methanol.download_image(filename=file_methanol, factor=5, transparent=True)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "importlib.reload(visual)\n",
+    "stride_full=5\n",
+    "iso_levels_full=visual.plot_densityStats_full(figures, results, stride_full, stat_dist=stat_dist)  "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "importlib.reload(visual)\n",
+    "visualizations_full=visual.get_visualizations_full(figures, iso_levels_full, stride_full, results)\n",
+    "visualizations_full"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "view_full, file_full=visual.graphical_full(visualizations_full)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "struct=os.path.abspath('C:/Users/hcarv/Desktop/figures/superposed_5.5M-s5-clusters.pdb')\n",
+    "dens=os.path.abspath('C:/Users/hcarv/Desktop/figures/superposed_5.5M-s5-Molar.dx')\n",
+    "iso=0.2\n",
+    "view=visual.view_presets(struct, dens, iso)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "view"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "view"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "view.download_image(filename='superposed_2.5M-s5-iso0.2.png', factor=5, transparent=True)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.8.3"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}

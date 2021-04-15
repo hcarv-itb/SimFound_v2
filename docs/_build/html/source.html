@@ -87,22 +87,25 @@
             
               <p class="caption"><span class="caption-text">TOPICS</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="projects.html">Notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="projects.html">Usage</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="documentation.html">Documentation</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Analysis Modules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#featurize">Featurize</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#distance">Distance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#collective-variable-nac">Collective Variable (NAC)</a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#discretize">Discretize</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#uniform-spherical"><strong>Uniform spherical</strong></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#combinatorial-user-defined"><strong>Combinatorial user-defined</strong></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#module-source.Featurize">Featurize</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#module-source.Trajectory">Trajectory</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#module-source.MSM">Markov State Models</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="main.html">Main</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deprecated.html">Legacy</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tools.html">Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tools.html">Operators</a></li>
 </ul>
 </li>
 </ul>
@@ -198,132 +201,21 @@
 </style>
 <div class="section" id="analysis-modules">
 <h1>Analysis Modules<a class="headerlink" href="#analysis-modules" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="discretize">
-<h2>Discretize<a class="headerlink" href="#discretize" title="Permalink to this headline">¶</a></h2>
-<p>Two discretization schemes are currently available, <strong>Uniform spherical shell discretization</strong> and <strong>Combinatorial user-defined spherical shell discretization</strong>.
-The <em>Discretize</em> object stores an internal copy of the provided feature <strong>data</strong> (DataFrame) and <strong>feature name</strong> (optional) to avoid passing project_system calls.
-Therefore, the module can take an externally-generated DataFrame, so long as the index information is consistent with the module operation.</p>
-<div class="section" id="uniform-spherical">
-<h3><strong>Uniform spherical</strong><a class="headerlink" href="#uniform-spherical" title="Permalink to this headline">¶</a></h3>
-<p>Discretization based in spherical shells generates spherical shells along a <em>feature</em> coordinate (<em>i.e.</em> if 1D).
-The module takes as input the <strong>thickness</strong> of the spherical shells and the <strong>limits</strong> of shell edges.
-Discretization can also be made for different subsets of the original <em>feature</em> DataFrame, by providing the controls of the <strong>start</strong>, <strong>stop</strong> and <strong>stride</strong> parameters.</p>
-<p>Returns a <em>shell profile</em> DataFrame, containing the sampled frequency for each spherical shell (index) and for each feature.</p>
-<p><strong>Note:</strong> Subset time requires the user to check what are the frames present in the <em>discretized</em> (original <em>featurized</em>) DataFrames.</p>
+<div class="section" id="featurize">
+<h2>Featurize<a class="headerlink" href="#featurize" title="Permalink to this headline">¶</a></h2>
+<p>Trajectories first need to be featurized with the <strong>*Featurized*</strong> module.
+Two methods are available and both are based strictly on distance metrics (angles, dihedrals, others can be coded):
+Both methods accept an arbitrary number of <strong>distances</strong> and outputs a dataframe that can be used for discretization.</p>
+<div class="section" id="distance">
+<h3>Distance<a class="headerlink" href="#distance" title="Permalink to this headline">¶</a></h3>
+<p>Distances are calculated between all atom reference*selection pairs</p>
 </div>
-<div class="section" id="combinatorial-user-defined">
-<h3><strong>Combinatorial user-defined</strong><a class="headerlink" href="#combinatorial-user-defined" title="Permalink to this headline">¶</a></h3>
-<p>Discretize, for each frame, which combinations of shells are occupied by all ligands in the system (one state per frame)</p>
-<p>The concept of regions is applied to the 1D $d_{NAC}$ reaction coordinate, whereby a region is defined as a <em>spherical shell</em> along the $d_{NAC}$ radius</p>
-<p>Set the shell boundaries (limits, thickness). The minimum (0) and maximum (max) value are implicit.</p>
-<p>E.g.: shells (4.5, 10, 12, 24) corresponds to:
-1. shell [0, 4.5[ (A)
-2. shell [4.5, 10[ (P)
-3. shell [10, 12[ (E)
-4. shell [10, 24[ (S)
-5. shell [24, max[ (B)</p>
-<p>Labels <em>labels</em> of each region are optional but recommended (otherwise reverts to numerical). Number of <em>labels</em> is plus one the number of defined <em>regions</em>.</p>
-<span class="target" id="module-source.Discretize"></span><p>Created on Fri Feb  5 11:59:08 2021</p>
-<p>&#64;author: hcarv</p>
-<dl class="py class">
-<dt id="source.Discretize.Discretize">
-<em class="property">class </em><code class="sig-prename descclassname">source.Discretize.</code><code class="sig-name descname">Discretize</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">feature_name</span><span class="o">=</span><span class="default_value">'feature'</span></em>, <em class="sig-param"><span class="n">results</span><span class="o">=</span><span class="default_value">'C:\\Users\\hcarv\\Documents\\GitHub\\SimFound_v2\\docs'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Discretize.Discretize" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Base class to discretize features. Takes as input a dictionary of features, 
-each containing a dictionary for each parameter and raw_data</p>
-<dl class="py method">
-<dt id="source.Discretize.Discretize.combinatorial">
-<code class="sig-name descname">combinatorial</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">shells</span></em>, <em class="sig-param"><span class="n">level</span><span class="o">=</span><span class="default_value">3</span></em>, <em class="sig-param"><span class="n">start</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">stop</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">stride</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">labels</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Discretize.Discretize.combinatorial" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function to generate combinatorial encoding of shells into states. Discretization is made based on combination of shells. 
-Not sensitive to which shell a given molecule is at each frame. Produces equal-sized strings for all parameters.
-Static methods defined in <em>tools.Functions</em>  are employed here.</p>
-<dl class="simple">
-<dt>shells<span class="classifier">array</span></dt><dd><p>The array of shell boundaries.</p>
-</dd>
-<dt>level<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is 3.</p>
-</dd>
-<dt>start<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is 0.</p>
-</dd>
-<dt>stop<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is -1.</p>
-</dd>
-<dt>stride<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is 1.</p>
-</dd>
-<dt>labels<span class="classifier">TYPE, optional</span></dt><dd><p>The shell labels (+1 shells). Method will resolve inconsistencies by reverting to numeric label.</p>
-</dd>
-</dl>
-<dl class="simple">
-<dt>feature_df<span class="classifier">dataframe</span></dt><dd><p>Dataframe of discretized features.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="source.Discretize.Discretize.dG_calculation">
-<em class="property">static </em><code class="sig-name descname">dG_calculation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_df</span></em>, <em class="sig-param"><span class="n">mol</span><span class="o">=</span><span class="default_value">'MeOH'</span></em>, <em class="sig-param"><span class="n">bulk</span><span class="o">=</span><span class="default_value">30, 41</span></em>, <em class="sig-param"><span class="n">level</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">resolution</span><span class="o">=</span><span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">feature_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">describe</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">quantiles</span><span class="o">=</span><span class="default_value">[0.01, 0.5, 0.75, 0.99]</span></em>, <em class="sig-param"><span class="n">results</span><span class="o">=</span><span class="default_value">'C:\\Users\\hcarv\\Documents\\GitHub\\SimFound_v2\\docs'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Discretize.Discretize.dG_calculation" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function to normalize NAC values according to theoretic distribution in a shpere with bulk concentration “c”. 
-Takes as inputs “c”, a NAC histogram with standard errors and number of frames where NAC was calculated “length”.
-Calculations are made with the  N_theo() function. 
-The probability of NAC for each bin is P_nac and P_nac_err. The theoretical distribution of NAC at “c” is P_t.
-The value of bulk “c” is adjusted by fitting the P_nac to the bulk region “ranges_bulk” using curve_fit(). 
-P_t_optimized uses the “c_opt” bulk concentration.
-dG is calculated from P_t_optimized.
-NOTE: The “ranges_bulk” should be carefully chosen for each system.</p>
-<p>TODO: Fix mol requirement. Ask project.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="source.Discretize.Discretize.plot">
-<em class="property">static </em><code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">level</span><span class="o">=</span><span class="default_value">2</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Discretize.Discretize.plot" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt id="source.Discretize.Discretize.shell_calculation">
-<em class="property">static </em><code class="sig-name descname">shell_calculation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series_value</span></em>, <em class="sig-param"><span class="n">specs</span><span class="o">=</span><span class="default_value">()</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Discretize.Discretize.shell_calculation" title="Permalink to this definition">¶</a></dt>
-<dd><p>The workhorse function for shell calculation.
-Returns a 1D histogram as a Series using parameters handed by specs (ranges, center of bins).</p>
-<dl class="simple">
-<dt>series_value<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
-</dd>
-<dt>specs<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is ().</p>
-</dd>
-</dl>
-<dl class="simple">
-<dt>hist_df<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="source.Discretize.Discretize.shell_profile">
-<code class="sig-name descname">shell_profile</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">thickness</span><span class="o">=</span><span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">limits</span><span class="o">=</span><span class="default_value">0, 150</span></em>, <em class="sig-param"><span class="n">level</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">start</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">stop</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">stride</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">n_cores</span><span class="o">=</span><span class="default_value">- 1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Discretize.Discretize.shell_profile" title="Permalink to this definition">¶</a></dt>
-<dd><p>Generate the discretization feature into shells=(min(“limits”), max(“limits”), “thickness”).</p>
-<dl class="simple">
-<dt>thickness<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is 0.5.</p>
-</dd>
-<dt>limits<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is (0,150).</p>
-</dd>
-<dt>level<span class="classifier">int, optional</span></dt><dd><p>The level for data agreggation. The default is 2 (molecule).</p>
-</dd>
-<dt>labels<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is None.</p>
-</dd>
-<dt>shells<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is None.</p>
-</dd>
-<dt>n_cores<span class="classifier">int</span></dt><dd><p>The number of processes.</p>
-</dd>
-</dl>
-<dl class="simple">
-<dt>TYPE</dt><dd><p>DESCRIPTION.</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-</div>
-</div>
-<div class="section" id="module-source.Featurize">
-<span id="featurize"></span><h2>Featurize<a class="headerlink" href="#module-source.Featurize" title="Permalink to this headline">¶</a></h2>
-<p>Created on Fri Feb 12 16:34:14 2021</p>
+<div class="section" id="collective-variable-nac">
+<h3>Collective Variable (NAC)<a class="headerlink" href="#collective-variable-nac" title="Permalink to this headline">¶</a></h3>
+<p>The <strong>Collective Variable</strong> is a metric combinining two or more distances.</p>
+<p>The <em>Near Attack Conformation</em> concept is the average root mean squared value of all defined distances.</p>
+<a class="reference internal image-reference" href="_images/featurize.png"><img alt="combinatorial" src="_images/featurize.png" style="width: 600px;" /></a>
+<span class="target" id="module-source.Featurize"></span><p>Created on Fri Feb 12 16:34:14 2021</p>
 <p>&#64;author: hcarv</p>
 <dl class="py class">
 <dt id="source.Featurize.Featurize">
@@ -458,190 +350,131 @@ Operation is adjusted for multiprocessing calls, hence the requirement for tuple
 </dd></dl>
 
 </div>
-<div class="section" id="module-source.Trajectory">
-<span id="trajectory"></span><h2>Trajectory<a class="headerlink" href="#module-source.Trajectory" title="Permalink to this headline">¶</a></h2>
-<p>Created on Thu Jan 21 18:50:14 2021</p>
+</div>
+<div class="section" id="discretize">
+<h2>Discretize<a class="headerlink" href="#discretize" title="Permalink to this headline">¶</a></h2>
+<p>Two discretization schemes are currently available, <strong>Uniform spherical shell discretization</strong> and <strong>Combinatorial user-defined spherical shell discretization</strong>.
+The <em>Discretize</em> object stores an internal copy of the provided feature <strong>data</strong> (DataFrame) and <strong>feature name</strong> (optional) to avoid passing project_system calls.
+Therefore, the module can take an externally-generated DataFrame, so long as the index information is consistent with the module operation.</p>
+<div class="section" id="uniform-spherical">
+<h3><strong>Uniform spherical</strong><a class="headerlink" href="#uniform-spherical" title="Permalink to this headline">¶</a></h3>
+<a class="reference internal image-reference" href="_images/uniform.png"><img alt="uniform" src="_images/uniform.png" style="width: 300px;" /></a>
+<p>Discretization based in spherical shells generates spherical shells along a <em>feature</em> coordinate (<em>i.e.</em> if 1D).
+The module takes as input the <strong>thickness</strong> of the spherical shells and the <strong>limits</strong> of shell edges.
+Discretization can also be made for different subsets of the original <em>feature</em> DataFrame, by providing the controls of the <strong>start</strong>, <strong>stop</strong> and <strong>stride</strong> parameters.</p>
+<p>Returns a <em>shell profile</em> DataFrame, containing the sampled frequency for each spherical shell (index) and for each feature.</p>
+<p><strong>Note:</strong> Subset time requires the user to check what are the frames present in the <em>discretized</em> (original <em>featurized</em>) DataFrames.</p>
+</div>
+<div class="section" id="combinatorial-user-defined">
+<h3><strong>Combinatorial user-defined</strong><a class="headerlink" href="#combinatorial-user-defined" title="Permalink to this headline">¶</a></h3>
+<a class="reference internal image-reference" href="_images/combinatorial_scheme.png"><img alt="combinatorial" src="_images/combinatorial_scheme.png" style="width: 300px;" /></a>
+<p>Discretize, for each frame, which combinations of shells are occupied by all ligands in the system (one state per frame)</p>
+<p>The concept of regions is applied to the 1D $d_{NAC}$ reaction coordinate, whereby a region is defined as a <em>spherical shell</em> along the $d_{NAC}$ radius</p>
+<p>Set the shell boundaries (limits, thickness). The minimum (0) and maximum (max) value are implicit.</p>
+<p>E.g.: shells (4.5, 10, 12, 24) corresponds to:
+1. shell [0, 4.5[ (A)
+2. shell [4.5, 10[ (P)
+3. shell [10, 12[ (E)
+4. shell [10, 24[ (S)
+5. shell [24, max[ (B)</p>
+<p>Labels <em>labels</em> of each region are optional but recommended (otherwise reverts to numerical). Number of <em>labels</em> is plus one the number of defined <em>regions</em>.</p>
+<span class="target" id="module-source.Discretize"></span><p>Created on Fri Feb  5 11:59:08 2021</p>
 <p>&#64;author: hcarv</p>
 <dl class="py class">
-<dt id="source.Trajectory.Trajectory">
-<em class="property">class </em><code class="sig-prename descclassname">source.Trajectory.</code><code class="sig-name descname">Trajectory</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">systems</span></em>, <em class="sig-param"><span class="n">results</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory" title="Permalink to this definition">¶</a></dt>
+<dt id="source.Discretize.Discretize">
+<em class="property">class </em><code class="sig-prename descclassname">source.Discretize.</code><code class="sig-name descname">Discretize</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">feature_name</span><span class="o">=</span><span class="default_value">'feature'</span></em>, <em class="sig-param"><span class="n">results</span><span class="o">=</span><span class="default_value">'C:\\Users\\hcarv\\Documents\\GitHub\\SimFound_v2\\docs'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Discretize.Discretize" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Class to perform operatoin on trajectories using MDTRAJ.</p>
+<p>Base class to discretize features. Takes as input a dictionary of features, 
+each containing a dictionary for each parameter and raw_data</p>
 <dl class="py method">
-<dt id="source.Trajectory.Trajectory.DensityMap_frames">
-<code class="sig-name descname">DensityMap_frames</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">frames</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">level</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">density_selection</span><span class="o">=</span><span class="default_value">'not protein'</span></em>, <em class="sig-param"><span class="n">convert</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">unit</span><span class="o">=</span><span class="default_value">'Molar'</span></em>, <em class="sig-param"><span class="n">stride</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">dists</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.DensityMap_frames" title="Permalink to this definition">¶</a></dt>
+<dt id="source.Discretize.Discretize.combinatorial">
+<code class="sig-name descname">combinatorial</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">shells</span></em>, <em class="sig-param"><span class="n">level</span><span class="o">=</span><span class="default_value">3</span></em>, <em class="sig-param"><span class="n">start</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">stop</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">stride</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">labels</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Discretize.Discretize.combinatorial" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to generate combinatorial encoding of shells into states. Discretization is made based on combination of shells. 
+Not sensitive to which shell a given molecule is at each frame. Produces equal-sized strings for all parameters.
+Static methods defined in <em>tools.Functions</em>  are employed here.</p>
+<dl class="simple">
+<dt>shells<span class="classifier">array</span></dt><dd><p>The array of shell boundaries.</p>
+</dd>
+<dt>level<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is 3.</p>
+</dd>
+<dt>start<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is 0.</p>
+</dd>
+<dt>stop<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is -1.</p>
+</dd>
+<dt>stride<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is 1.</p>
+</dd>
+<dt>labels<span class="classifier">TYPE, optional</span></dt><dd><p>The shell labels (+1 shells). Method will resolve inconsistencies by reverting to numeric label.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>feature_df<span class="classifier">dataframe</span></dt><dd><p>Dataframe of discretized features.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.Discretize.Discretize.dG_calculation">
+<em class="property">static </em><code class="sig-name descname">dG_calculation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_df</span></em>, <em class="sig-param"><span class="n">mol</span><span class="o">=</span><span class="default_value">'MeOH'</span></em>, <em class="sig-param"><span class="n">bulk</span><span class="o">=</span><span class="default_value">30, 41</span></em>, <em class="sig-param"><span class="n">level</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">resolution</span><span class="o">=</span><span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">feature_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">describe</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">quantiles</span><span class="o">=</span><span class="default_value">[0.01, 0.5, 0.75, 0.99]</span></em>, <em class="sig-param"><span class="n">results</span><span class="o">=</span><span class="default_value">'C:\\Users\\hcarv\\Documents\\GitHub\\SimFound_v2\\docs'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Discretize.Discretize.dG_calculation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to normalize NAC values according to theoretic distribution in a shpere with bulk concentration “c”. 
+Takes as inputs “c”, a NAC histogram with standard errors and number of frames where NAC was calculated “length”.
+Calculations are made with the  N_theo() function. 
+The probability of NAC for each bin is P_nac and P_nac_err. The theoretical distribution of NAC at “c” is P_t.
+The value of bulk “c” is adjusted by fitting the P_nac to the bulk region “ranges_bulk” using curve_fit(). 
+P_t_optimized uses the “c_opt” bulk concentration.
+dG is calculated from P_t_optimized.
+NOTE: The “ranges_bulk” should be carefully chosen for each system.</p>
+<p>TODO: Fix mol requirement. Ask project.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.Discretize.Discretize.plot">
+<em class="property">static </em><code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">level</span><span class="o">=</span><span class="default_value">2</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Discretize.Discretize.plot" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt id="source.Trajectory.Trajectory.DensityMap_fullTraj">
-<code class="sig-name descname">DensityMap_fullTraj</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">level</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">density_selection</span><span class="o">=</span><span class="default_value">'not protein'</span></em>, <em class="sig-param"><span class="n">convert</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">unit</span><span class="o">=</span><span class="default_value">'Molar'</span></em>, <em class="sig-param"><span class="n">filtered</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">stride</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span> &#x2192; dict<a class="headerlink" href="#source.Trajectory.Trajectory.DensityMap_fullTraj" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="simple">
-<dt>level<span class="classifier">int, optional</span></dt><dd><p>The hierarchy level to collect. The default is 2 (parameter).</p>
+<dt id="source.Discretize.Discretize.shell_calculation">
+<em class="property">static </em><code class="sig-name descname">shell_calculation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series_value</span></em>, <em class="sig-param"><span class="n">specs</span><span class="o">=</span><span class="default_value">()</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Discretize.Discretize.shell_calculation" title="Permalink to this definition">¶</a></dt>
+<dd><p>The workhorse function for shell calculation.
+Returns a 1D histogram as a Series using parameters handed by specs (ranges, center of bins).</p>
+<dl class="simple">
+<dt>series_value<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
 </dd>
-<dt>density_selection<span class="classifier">str, optional</span></dt><dd><p>The selection to calculate the density map (MDANALYSIS). The default is ‘not protein’ (water striped trj’s).</p>
-</dd>
-<dt>convert<span class="classifier">bool, optional</span></dt><dd><p>Whether to convert the density value into another unit. The default is True.</p>
-</dd>
-<dt>unit<span class="classifier">str, optional</span></dt><dd><p>The concentration unit (MDANALYSIS). The default is ‘Molar’.</p>
-</dd>
-<dt>filtered<span class="classifier">bool, optional</span></dt><dd><p>Whether to use a filtered trajectory or not. The default is False.</p>
-</dd>
-<dt>stride<span class="classifier">int, optional</span></dt><dd><p>The trajectory stride value (MDTRAJ). The default is 1.</p>
+<dt>specs<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is ().</p>
 </dd>
 </dl>
 <dl class="simple">
-<dt>dict</dt><dd><p>DESCRIPTION.</p>
+<dt>hist_df<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="source.Trajectory.Trajectory.clusterMDAnalysis">
-<em class="property">static </em><code class="sig-name descname">clusterMDAnalysis</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">base_name</span></em>, <em class="sig-param"><span class="n">trajectory</span></em>, <em class="sig-param"><span class="n">topology</span></em>, <em class="sig-param"><span class="n">select</span><span class="o">=</span><span class="default_value">'all'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.clusterMDAnalysis" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function to obtain cluster using the encore.cluster tool from MDAnalysis.</p>
+<dt id="source.Discretize.Discretize.shell_profile">
+<code class="sig-name descname">shell_profile</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">thickness</span><span class="o">=</span><span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">limits</span><span class="o">=</span><span class="default_value">0, 150</span></em>, <em class="sig-param"><span class="n">level</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">start</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">stop</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">stride</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">n_cores</span><span class="o">=</span><span class="default_value">- 1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Discretize.Discretize.shell_profile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate the discretization feature into shells=(min(“limits”), max(“limits”), “thickness”).</p>
 <dl class="simple">
-<dt>base_name<span class="classifier">str</span></dt><dd><p>The base name of the system to be processed (incl. path).</p>
+<dt>thickness<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is 0.5.</p>
 </dd>
-<dt>trajectory<span class="classifier">str</span></dt><dd><p>The trajectory file.</p>
+<dt>limits<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is (0,150).</p>
 </dd>
-<dt>topology<span class="classifier">str</span></dt><dd><p>The topology file.</p>
+<dt>level<span class="classifier">int, optional</span></dt><dd><p>The level for data agreggation. The default is 2 (molecule).</p>
 </dd>
-<dt>selection<span class="classifier">str, optional</span></dt><dd><p>The selection for calculation (MDAnalysis syntax). The default is ‘protein’.</p>
+<dt>labels<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is None.</p>
 </dd>
-</dl>
-<dl class="simple">
-<dt>cluster_file<span class="classifier">str</span></dt><dd><p>The name of the cluster files.</p>
+<dt>shells<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is None.</p>
 </dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="source.Trajectory.Trajectory.concatenate_superpose">
-<em class="property">static </em><code class="sig-name descname">concatenate_superpose</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">files_to_concatenate</span></em>, <em class="sig-param"><span class="n">trajectory</span></em>, <em class="sig-param"><span class="n">topology</span></em>, <em class="sig-param"><span class="n">ref_frame</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">stride</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">atom_set</span><span class="o">=</span><span class="default_value">'backbone'</span></em><span class="sig-paren">)</span> &#x2192; object<a class="headerlink" href="#source.Trajectory.Trajectory.concatenate_superpose" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="simple">
-<dt>files_to_concatenate<span class="classifier">tuple</span></dt><dd><p>A list of tuples (trajectory, topology).</p>
-</dd>
-<dt>trajectory<span class="classifier">path</span></dt><dd><p>The path (name) of the output trajectory file.</p>
-</dd>
-<dt>topology<span class="classifier">path</span></dt><dd><p>The path (name) of the output topology file.</p>
-</dd>
-<dt>ref_frame<span class="classifier">int, optional</span></dt><dd><p>Reference frame to superpose (MDTRAJ). The default is 0.</p>
-</dd>
-<dt>stride<span class="classifier">int, optional</span></dt><dd><p>The trajectory stride value (MDTRAJ). The default is 1.</p>
-</dd>
-<dt>atom_set<span class="classifier">str, optional</span></dt><dd><p>The selection used as reference atom group for superposing (MDTRAJ). The default is ‘backbone’.</p>
+<dt>n_cores<span class="classifier">int</span></dt><dd><p>The number of processes.</p>
 </dd>
 </dl>
 <dl class="simple">
-<dt>superposed<span class="classifier">object</span></dt><dd><p>A superposed MDTRAJ trajectory object.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="source.Trajectory.Trajectory.densityCalc">
-<em class="property">static </em><code class="sig-name descname">densityCalc</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">base_name</span></em>, <em class="sig-param"><span class="n">trajectory</span></em>, <em class="sig-param"><span class="n">topology</span></em>, <em class="sig-param"><span class="n">selection</span><span class="o">=</span><span class="default_value">'name OA'</span></em>, <em class="sig-param"><span class="n">convert</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">unit</span><span class="o">=</span><span class="default_value">'Molar'</span></em>, <em class="sig-param"><span class="n">start</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">stop</span><span class="o">=</span><span class="default_value">- 1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.densityCalc" title="Permalink to this definition">¶</a></dt>
-<dd><p>Method to calculate the spatial densities of atom selection. 
-Uses the ‘DensityAnalysis’ tool from MDAnalysis.</p>
-<dl class="simple">
-<dt>base_name<span class="classifier">str</span></dt><dd><p>The base name of the system to be processed (incl. path).</p>
-</dd>
-<dt>trajectory<span class="classifier">str</span></dt><dd><p>The trajectory file.</p>
-</dd>
-<dt>topology<span class="classifier">str</span></dt><dd><p>The topology file.</p>
-</dd>
-<dt>selection<span class="classifier">str, optional</span></dt><dd><p>The selection for calculation (MDAnalysis syntax). The default is ‘name OA’.</p>
-</dd>
-<dt>convert<span class="classifier">bool, optional</span></dt><dd><p>Wether to convert or not density values into another unit. The default is True.</p>
-</dd>
-<dt>unit<span class="classifier">str, optional</span></dt><dd><p>The density unit. The default is ‘Molar’.</p>
-</dd>
-<dt>start<span class="classifier">int, optional</span></dt><dd><p>The initial frame for calculation. The default is 0.</p>
-</dd>
-<dt>stop<span class="classifier">int, optional</span></dt><dd><p>The last frame for calculation. The default is -1 (last).</p>
-</dd>
-</dl>
-<dl class="simple">
-<dt>density_file<span class="classifier">str</span></dt><dd><p>The name of the grid file “.dx”.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="source.Trajectory.Trajectory.distances">
-<em class="property">static </em><code class="sig-name descname">distances</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">dists</span></em>, <em class="sig-param"><span class="n">trajectory</span></em>, <em class="sig-param"><span class="n">topology</span></em>, <em class="sig-param"><span class="n">stride</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">skip_frames</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.distances" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculates distances between pairs of atom groups (dist) for each set of selections “dists” using MDAnalysis D.distance_array method.
-Stores the distances in results_dir. Returns the distances as dataframes.</p>
-<blockquote>
-<div><p>Uses the NAC_frames files obtained in extract_frames(). 
-NOTE: Can only work for multiple trajectories if the number of atoms is the same (–noWater)</p>
-</div></blockquote>
-</dd></dl>
-
-<dl class="py method">
-<dt id="source.Trajectory.Trajectory.extractFrames_by_iterable">
-<code class="sig-name descname">extractFrames_by_iterable</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">iterable</span></em>, <em class="sig-param"><span class="n">feature</span></em>, <em class="sig-param"><span class="n">t_start</span><span class="o">=</span><span class="default_value">20000</span></em>, <em class="sig-param"><span class="n">extract</span><span class="o">=</span><span class="default_value">'not water'</span></em><span class="sig-paren">)</span> &#x2192; dict<a class="headerlink" href="#source.Trajectory.Trajectory.extractFrames_by_iterable" title="Permalink to this definition">¶</a></dt>
-<dd><p>Extract frames trajectories based on iterable and dataframe.
-Writes the corresponding frames as .xtc and the corresponding .pdb. 
-Legacy: option to save also the waters controlled with –noWater.</p>
-<dl class="simple">
-<dt>df<span class="classifier">DataFrame</span></dt><dd><p>A dataframe which contains featurized project trajectory values.</p>
-</dd>
-<dt>iterable<span class="classifier">list</span></dt><dd><p>A set of values to be used as criteria to filter the featurized trajectories.</p>
-</dd>
-<dt>feature<span class="classifier">str</span></dt><dd><p>The name of the feature.</p>
-</dd>
-<dt>t_start<span class="classifier">int, optional</span></dt><dd><p>The starting frame index.</p>
-</dd>
-<dt>extract<span class="classifier">str, optional</span></dt><dd><p>A string of atom selections (MDTRAJ). The default is ‘not water’.</p>
-</dd>
-</dl>
-<p>IMPORTANT: automate t_start definition (equilibration phase discarded)</p>
-<dl class="simple">
-<dt>dict</dt><dd><p>A dictionary of ‘names’: ‘extracted Frame Files’.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="source.Trajectory.Trajectory.filterTraj">
-<code class="sig-name descname">filterTraj</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t_start</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">extract</span><span class="o">=</span><span class="default_value">'not water'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.filterTraj" title="Permalink to this definition">¶</a></dt>
-<dd><p>Extract trajectory subsets.
-Writes the corresponding trajectories as .xtc and the corresponding .pdb. 
-Legacy: option to save also the waters controlled with –noWater.</p>
-<dl class="simple">
-<dt>t_start<span class="classifier">int, optional</span></dt><dd><p>The starting frame index.</p>
-</dd>
-<dt>extract<span class="classifier">str, optional</span></dt><dd><p>A string of atom selections (MDTRAJ). The default is ‘not water’.</p>
-</dd>
-</dl>
-<p>IMPORTANT: automate t_start definition (equilibration phase discarded)</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="source.Trajectory.Trajectory.start_simulations">
-<code class="sig-name descname">start_simulations</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.start_simulations" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt id="source.Trajectory.Trajectory.trj_filter">
-<em class="property">static </em><code class="sig-name descname">trj_filter</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.trj_filter" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="simple">
-<dt>df<span class="classifier">DataFrame</span></dt><dd><p>A dataframe which contains values of project trajectories (e.g. some feature).</p>
-</dd>
-<dt>name<span class="classifier">str</span></dt><dd><p>The name of the system of each trajectory, used to filter the DataFrame.</p>
-</dd>
-<dt>value<span class="classifier">The value to be searched in the dataframe. </span></dt><dd><p>DESCRIPTION.</p>
-</dd>
-</dl>
-<dl class="simple">
-<dt>numpy.array</dt><dd><p>An array of index values of the trajectory where value was found.</p>
+<dt>TYPE</dt><dd><p>DESCRIPTION.</p>
 </dd>
 </dl>
 </dd></dl>
 
 </dd></dl>
 
+</div>
 </div>
 <div class="section" id="module-source.MSM">
 <span id="markov-state-models"></span><h2>Markov State Models<a class="headerlink" href="#module-source.MSM" title="Permalink to this headline">¶</a></h2>
