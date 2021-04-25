@@ -12,6 +12,7 @@ Welcome to Simulation Foundry v2
    
    projects
    documentation
+   protein_design
    
    
 Indices and tables
