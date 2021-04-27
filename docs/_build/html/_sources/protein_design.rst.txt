@@ -154,7 +154,7 @@ As of April 2021, the following force fields are supported by the Toolkit:
 .. warning::
    When simulating proteins, it is typical to use the PDB file of the protein structure as starting input file.
    Some protein PDB files need to be "polished" before being suitable for usage. 
-   There are tools that can do this for you, such as `pdb-tools <https://github.com/haddocking/pdb-tools>`_.
+   There are tools that can do this for you, such as `pdb-tools <https://github.com/haddocking/pdb-tools>`_ (`Webserver <https://wenmr.science.uu.nl/pdbtools/>`_)
 
 
 2. **Force field**
@@ -179,11 +179,9 @@ As of April 2021, the following force fields are supported by the Toolkit:
     This can be made with a set of instructions that are executed on Jupyter, script or CLI. 
     The required steps are usually:
 
-       #. Define the simulation box.
-       
-       #. Which molecules and how many are in the simulation.
-       
-       #. how to simulate it.
+       * Define the simulation box.
+       * Which molecules and how many are in the simulation.
+       * How to simulate it.
 
     ...
     #TODO: AMBER to openMM import
