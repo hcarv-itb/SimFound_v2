@@ -82,8 +82,8 @@ It will open the JupyterLab interface as a (new) tab in user's default internet 
 .. note::
 	* TODO: Instructions for port 8089, --no-browser
 
-Data, files and folders
------------------------
+Project layout:  Files and folders
+----------------------------------
 
 Jupyter is launched in the local user folder. In linux, it is launched in the current workding directory. 
 The GUI of Jupyter is launched on your browser, but all operations are still being made in your local machine (not on the Web).
@@ -130,3 +130,60 @@ Example
 .. note:: 
   * Further commands can be executed by lauching a **Terminal**. 
     This will provide a bash-based interface to the machine, and endows the user to perform additional operations not restricted to those available under Jupyter GUI.
+    
+    
+Input files for openMM
+----------------------
+
+To setup simulation systems using openMM, a topology of the *System* needs to be provided, together with the selected force field input files.
+
+Force field files are dependent on the selected type (*e.g.* AMBER, CHARMM). 
+To facilitate transferability, there are tools such as  `Open Force Field Toolkit <https://github.com/openmm/openmmforcefields>`_ which allow users to work with different force fields.
+As of April 2021, the following force fields are supported by the Toolkit: 
+   1. AMBER
+   2. CHARMM 
+   3. Open Force Field Initiative 
+   
+   
+
+
+1. **Topology**
+
+   A `PDB <https://www.rcsb.org/>`_ file (or other openMM compatible format) containing molecule information and simulation box definitions.
+   
+.. warning::
+   When simulating proteins, it is typical to use the PDB file of the protein structure as starting input file.
+   Some protein PDB files need to be "polished" before being suitable for usage. 
+   There are tools that can do this for you, such as `pdb-tools <https://github.com/haddocking/pdb-tools>`_.
+
+
+2. **Force field**
+
+   * GAFF (group 1)
+      * XML-based 
+      * (extra_molecules_nb).xml
+      * (extra_molecules_bb).xml
+    
+
+
+   * CHARMM (group 2)
+
+     forcefield.top
+    ...
+    
+    #TODO: CHARMM to openMM import
+
+3. **System set up instructions**
+
+    Sytem up is the set of instructions (using openMM) that are required to put together the input files and define the simulation protocol.
+    This can be made with a set of instructions that are executed on Jupyter, script or CLI. 
+    The required steps are usually:
+
+       #. Define the simulation box.
+       
+       #. Which molecules and how many are in the simulation.
+       
+       #. how to simulate it.
+
+    ...
+    #TODO: AMBER to openMM import
