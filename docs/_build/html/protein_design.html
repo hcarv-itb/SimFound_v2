@@ -39,6 +39,7 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installation and Usage" href="protein_design_install.html" />
     <link rel="prev" title="Operators" href="tools.html" /> 
 </head>
 
@@ -89,12 +90,8 @@
 <li class="toctree-l1"><a class="reference internal" href="projects.html">Usage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="documentation.html">Documentation</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Protein Design 2021</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#install-instructions">Install instructions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#project-layout-files-and-folders">Project layout:  Files and folders</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#example">Example</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#input-files-for-openmm">Input files for openMM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="protein_design_install.html">Installation and Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="protein_design_SystemSetup.html">System Setup with openMM</a></li>
 </ul>
 </li>
 </ul>
@@ -197,165 +194,11 @@ This time, the laboratory will be <strong>Jupyter</strong>, a program that allow
 Anaconda allows one to install software packages and handles the dependencies, which is a valuable help when working on different computers.</p>
 <p>The programming languange used during the course will be <a class="reference external" href="https://www.python.org/">Python</a>.</p>
 <p>At the end of the course, your project will be a notebook containing a description of the tasks in <strong>Markdown</strong> and python code in <strong>Code</strong> cells, with no bugs, fully operational under your local anaconda environment.</p>
-<div class="section" id="install-instructions">
-<h2>Install instructions<a class="headerlink" href="#install-instructions" title="Permalink to this headline">¶</a></h2>
-<p>Install instructions for Jupyter and openMM.</p>
-<p><strong>1.    Install Anaconda</strong></p>
-<p><a class="reference external" href="https://www.anaconda.com/products/individual#Downloads">Anaconda</a> is a software package manager, which will be handling all the dependencies of your machine and the programs that run under it.
-Jupyter is one of such cases, but there are a lot more programs for scientific computation available.
-Programs running in python, R and other programming languages can be run the user’s own OS, even Windows.</p>
-<blockquote>
-<div><p>1.1. Use Anaconda to launch <a class="reference external" href="https://jupyterlab.readthedocs.io/en/latest/">JupyterLab</a> in Windows. Alternatively, in a CLI (command line interface in UNIX machines), type:</p>
-</div></blockquote>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>jupyter notebook
-</pre></div>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<ul class="simple">
-<li><p>You can modify launch settings (<em>e.g.</em> from ‘tree’ to ‘lab’) to open automatically the jupyterLab interface by modifying the <strong>conf.py</strong> file in you user installation.</p></li>
-</ul>
-</div>
-<p><strong>2.    Install openMM</strong></p>
-<p><a class="reference external" href="https://anaconda.org/omnia/openmm">OpenMM</a> is a MD simulation engine that runs under a python API, which can be conveniently used in a Jupyter Notebook (Python3 kernel).
-To open an anaconda powershell prompt, type on the Windows search tool:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>anaconda power shell
-</pre></div>
-</div>
-<blockquote>
-<div><p>In the powershell (or CLI), type:</p>
-</div></blockquote>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda install -c omnia openmm
-</pre></div>
-</div>
-<blockquote>
-<div><p>Confirm installation of all packages and dependencies (y/yes, enter). Read the output messages to confirm successful installation.</p>
-</div></blockquote>
-<p><strong>3.    Execute openMM in JupyterLab</strong></p>
-<p>Jupyter is included in the Anaconda environment.
-It can be launched through Anaconda Navigator OR through Windows search tool.
-It will open the JupyterLab interface as a (new) tab in user’s default internet browser.</p>
-<blockquote>
-<div><p>In a jupyterlab launcher, open a new notebook. Type:</p>
-</div></blockquote>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">simtk</span> <span class="kn">import</span> <span class="n">openmm</span>
-</pre></div>
-</div>
-<blockquote>
-<div><p>Execute the cell. If no errors are found, openMM is ready to be used.</p>
-</div></blockquote>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<ul class="simple">
-<li><p>TODO: Instructions for port 8089, –no-browser</p></li>
-</ul>
-</div>
-</div>
-<div class="section" id="project-layout-files-and-folders">
-<h2>Project layout:  Files and folders<a class="headerlink" href="#project-layout-files-and-folders" title="Permalink to this headline">¶</a></h2>
-<p>Jupyter is launched in the local user folder. In linux, it is launched in the current workding directory.
-The GUI of Jupyter is launched on your browser, but all operations are still being made in your local machine (not on the Web).</p>
-<p>The user can create, move, edit, copy, download etc. files and folders using Jupyter.
-It is convenient to have some kind of file organization, but this is left to the user to decide how to organize its data (at least while using your local working machine).</p>
-<div class="section" id="example">
-<h3>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h3>
-<blockquote>
-<div><p>One approach is to organize data within a <strong>Project</strong> in an hierarchical structure of <strong>Systems</strong>.
-Each system is defined by a set of attributes, for example: <em>protein</em>, <em>ligand</em>, <em>temperature</em>.</p>
-<p>Different systems may share some attributes, such as having the same <em>protein</em>.
-When defining a project, systems may grouped by their shared attributes, from least variable to most variable.</p>
-<p>Also, it is common in MD simulations that more than one simulation replicate is performed for each system to improve sampling.
-Replicates are two systems which have all attributes equal.</p>
-<p>Considering a MD simulation project of <strong>2 Proteins</strong>, <strong>3 Ligands</strong> and <strong>4 Temperatures</strong> in <strong>5 replicas</strong>.
-A file structure could be something like this (not fully expanded):</p>
-</div></blockquote>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>protein1
-├── ligand1
-       ├── temperature1
-               ├──replicate1
-               ├──replicate2
-               ├──replicate3
-               ├──replicate4
-               └──replicate5
-       ├── temperature2
-       ├── temperature3
-       └── temperature4
-├──ligand2
-└──ligand3
-protein2
-</pre></div>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<ul class="simple">
-<li><p>Further commands can be executed by lauching a <strong>Terminal</strong>.
-This will provide a bash-based interface to the machine, and endows the user to perform additional operations not restricted to those available under Jupyter GUI.</p></li>
-</ul>
-</div>
-</div>
-</div>
-<div class="section" id="input-files-for-openmm">
-<h2>Input files for openMM<a class="headerlink" href="#input-files-for-openmm" title="Permalink to this headline">¶</a></h2>
-<p>To setup simulation systems using openMM, a topology of the <em>System</em> needs to be provided, together with the selected force field input files.</p>
-<p>Force field files are dependent on the selected type (<em>e.g.</em> AMBER, CHARMM).
-To facilitate transferability, there are tools such as  <a class="reference external" href="https://github.com/openmm/openmmforcefields">Open Force Field Toolkit</a> which allow users to work with different force fields.
-As of April 2021, the following force fields are supported by the Toolkit:</p>
-<blockquote>
-<div><ol class="arabic simple">
-<li><p>AMBER</p></li>
-<li><p>CHARMM</p></li>
-<li><p>Open Force Field Initiative</p></li>
-</ol>
-</div></blockquote>
-<ol class="arabic">
-<li><p><strong>Topology</strong></p>
-<p>A <a class="reference external" href="https://www.rcsb.org/">PDB</a> file (or other openMM compatible format) containing molecule information and simulation box definitions.</p>
-</li>
-</ol>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>When simulating proteins, it is typical to use the PDB file of the protein structure as starting input file.
-Some protein PDB files need to be “polished” before being suitable for usage.
-There are tools that can do this for you, such as <a class="reference external" href="https://github.com/haddocking/pdb-tools">pdb-tools</a> (<a class="reference external" href="https://wenmr.science.uu.nl/pdbtools/">Webserver</a>)</p>
-</div>
-<ol class="arabic" start="2">
-<li><p><strong>Force field</strong></p>
+<div class="toctree-wrapper compound">
 <ul>
-<li><dl class="simple">
-<dt>GAFF (group 1)</dt><dd><ul class="simple">
-<li><p>XML-based</p></li>
-<li><p>(extra_molecules_nb).xml</p></li>
-<li><p>(extra_molecules_bb).xml</p></li>
+<li class="toctree-l1"><a class="reference internal" href="protein_design_install.html">Installation and Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="protein_design_SystemSetup.html">System Setup with openMM</a></li>
 </ul>
-</dd>
-</dl>
-</li>
-<li><p>CHARMM (group 2)</p>
-<p>forcefield.top</p>
-</li>
-</ul>
-<blockquote>
-<div><p>…</p>
-<p>#TODO: CHARMM to openMM import</p>
-</div></blockquote>
-</li>
-<li><p><strong>System set up instructions</strong></p>
-<blockquote>
-<div><p>Sytem up is the set of instructions (using openMM) that are required to put together the input files and define the simulation protocol.
-This can be made with a set of instructions that are executed on Jupyter, script or CLI.
-The required steps are usually:</p>
-<blockquote>
-<div><ul class="simple">
-<li><p>Define the simulation box.</p></li>
-<li><p>Which molecules and how many are in the simulation.</p></li>
-<li><p>How to simulate it.</p></li>
-</ul>
-</div></blockquote>
-<p>…
-#TODO: AMBER to openMM import</p>
-</div></blockquote>
-</li>
-</ol>
 </div>
 </div>
 
@@ -366,6 +209,8 @@ The required steps are usually:</p>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="protein_design_install.html" class="btn btn-neutral float-right" title="Installation and Usage" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="tools.html" class="btn btn-neutral float-left" title="Operators" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>

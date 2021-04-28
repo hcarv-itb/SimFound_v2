@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Documentation &mdash; Simulation Foundry, v2 2.0 documentation</title>
+  <title>System Setup with openMM &mdash; Simulation Foundry, v2 2.0 documentation</title>
   
 
   
@@ -39,8 +39,7 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Analysis Modules" href="source.html" />
-    <link rel="prev" title="Discretization tutorial" href="discretized.html" /> 
+    <link rel="prev" title="Installation and Usage" href="protein_design_install.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -88,14 +87,16 @@
               <p class="caption"><span class="caption-text">TOPICS</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="projects.html">Usage</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Documentation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="source.html">Analysis Modules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="main.html">Main</a></li>
-<li class="toctree-l2"><a class="reference internal" href="deprecated.html">Legacy</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tools.html">Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="documentation.html">Documentation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="protein_design.html">Protein Design 2021</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="protein_design_install.html">Installation and Usage</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">System Setup with openMM</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#input-files">Input files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#system-setup">System setup</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="protein_design.html">Protein Design 2021</a></li>
+</ul>
+</li>
 </ul>
 
             
@@ -142,13 +143,15 @@
     
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
-      <li>Documentation</li>
+          <li><a href="protein_design.html">Protein Design 2021</a> &raquo;</li>
+        
+      <li>System Setup with openMM</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="_sources/documentation.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/protein_design_SystemSetup.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -185,36 +188,73 @@
     text-align: unset;
 }
 </style>
-<div class="section" id="documentation">
-<h1>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h1>
-<p><em>Simulation Foundry (SFv2)</em> base objects are constructed with the <strong>Project</strong> and <strong>Systems</strong> modules.
-The <strong>Analysis</strong> module performs tasks on single systems and agreggate results based on project hierarchy definitions.
-The <strong>Operators</strong> modules perform actions on the system trajectories (<strong>Trajectory</strong>) and tasks (<strong>Tools</strong>) used by other modules.</p>
-<p>Functionality is being imported from <strong>Legacy</strong>, a previous workflow for analysis (and submission) of GROMACS jobs.</p>
-<a class="reference internal image-reference" href="_images/source.png"><img alt="Source_SFv2" src="_images/source.png" style="width: 600px;" /></a>
-<div class="toctree-wrapper compound">
+<div class="section" id="system-setup-with-openmm">
+<h1>System Setup with openMM<a class="headerlink" href="#system-setup-with-openmm" title="Permalink to this headline">¶</a></h1>
+<p>These are instructions for system setup using <strong>openMM</strong>.</p>
+<div class="section" id="input-files">
+<h2>Input files<a class="headerlink" href="#input-files" title="Permalink to this headline">¶</a></h2>
+<p>To setup simulation systems using openMM, a topology of the <em>System</em> needs to be provided, together with the selected force field input files.</p>
+<p>Force field files are dependent on the selected type (<em>e.g.</em> AMBER, CHARMM).
+To facilitate transferability, there are tools such as  <a class="reference external" href="https://github.com/openmm/openmmforcefields">Open Force Field Toolkit</a> which allow users to work with different force fields.
+As of April 2021, the following force fields are supported by the Toolkit:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>AMBER</p></li>
+<li><p>CHARMM</p></li>
+<li><p>Open Force Field Initiative</p></li>
+</ol>
+</div></blockquote>
+<ol class="arabic">
+<li><p><strong>Topology</strong></p>
+<p>A <a class="reference external" href="https://www.rcsb.org/">PDB</a> file (or other openMM compatible format) containing molecule information and simulation box definitions.</p>
+</li>
+</ol>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>When simulating proteins, it is typical to use the PDB file of the protein structure as starting input file.
+Some protein PDB files need to be “polished” before being suitable for usage.
+There are tools that can do this for you, such as <a class="reference external" href="https://github.com/haddocking/pdb-tools">pdb-tools</a> (<a class="reference external" href="https://wenmr.science.uu.nl/pdbtools/">Webserver</a>)</p>
+</div>
+<ol class="arabic" start="2">
+<li><p><strong>Force field</strong></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="source.html">Analysis Modules</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="source.html#featurize">Featurize</a></li>
-<li class="toctree-l2"><a class="reference internal" href="source.html#discretize">Discretize</a></li>
-<li class="toctree-l2"><a class="reference internal" href="source.html#module-source.MSM">Markov State Models</a></li>
+<li><dl class="simple">
+<dt>GAFF (group 1)</dt><dd><ul class="simple">
+<li><p>XML-based</p></li>
+<li><p>(extra_molecules_nb).xml</p></li>
+<li><p>(extra_molecules_bb).xml</p></li>
 </ul>
+</dd>
+</dl>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="main.html">Main</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="main.html#project">Project</a></li>
-<li class="toctree-l2"><a class="reference internal" href="main.html#system">System</a></li>
-<li class="toctree-l2"><a class="reference internal" href="main.html#hierarchy">Hierarchy</a></li>
-<li class="toctree-l2"><a class="reference internal" href="main.html#replicates">Replicates</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="deprecated.html">Legacy</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tools.html">Operators</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tools.html#module-source.tools">Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tools.html#module-source.Visualization">Visualization</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tools.html#module-source.Trajectory">Trajectory</a></li>
-</ul>
+<li><p>CHARMM (group 2)</p>
+<p>forcefield.top</p>
 </li>
 </ul>
+<blockquote>
+<div><p>…</p>
+<p>#TODO: CHARMM to openMM import</p>
+</div></blockquote>
+</li>
+</ol>
+</div>
+<div class="section" id="system-setup">
+<h2>System setup<a class="headerlink" href="#system-setup" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><p>Sytem up is the set of instructions (using openMM) that are required to put together the input files and define the simulation protocol.
+This can be made with a set of instructions that are executed on Jupyter, script or CLI.
+The required steps are usually:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Define the simulation box.</p></li>
+<li><p>Which molecules and how many are in the simulation.</p></li>
+<li><p>How to simulate it.</p></li>
+</ul>
+</div></blockquote>
+<p>OpenMM provides <a class="reference external" href="http://openmm.org/tutorials/index.html">cookbooks and tutorials</a> that can used as templates of these instructions.
+…
+#TODO: AMBER to openMM import</p>
+</div></blockquote>
 </div>
 </div>
 
@@ -226,10 +266,8 @@ The <strong>Operators</strong> modules perform actions on the system trajectorie
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="source.html" class="btn btn-neutral float-right" title="Analysis Modules" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
-      
-        <a href="discretized.html" class="btn btn-neutral float-left" title="Discretization tutorial" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="protein_design_install.html" class="btn btn-neutral float-left" title="Installation and Usage" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

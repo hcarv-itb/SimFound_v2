@@ -39,8 +39,8 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Deprecated" href="deprecated.html" />
-    <link rel="prev" title="Analysis Module" href="source.html" /> 
+    <link rel="next" title="Legacy" href="deprecated.html" />
+    <link rel="prev" title="Analysis Modules" href="source.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -87,13 +87,24 @@
             
               <p class="caption"><span class="caption-text">TOPICS</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="projects.html">Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="projects.html">Usage</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="documentation.html">Documentation</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="source.html">Analysis Module</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Main</a></li>
-<li class="toctree-l2"><a class="reference internal" href="deprecated.html">Deprecated</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source.html">Analysis Modules</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Main</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#project">Project</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#system">System</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#hierarchy">Hierarchy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#replicates">Replicates</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#example">Example</a></li>
 </ul>
 </li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="deprecated.html">Legacy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tools.html">Operators</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="protein_design.html">Protein Design 2021</a></li>
 </ul>
 
             
@@ -185,9 +196,100 @@
     text-align: unset;
 }
 </style>
-<div class="section" id="module-source.main">
-<span id="main"></span><h1>Main<a class="headerlink" href="#module-source.main" title="Permalink to this headline">¶</a></h1>
-<p>The core python classes of the package.
+<div class="section" id="main">
+<h1>Main<a class="headerlink" href="#main" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="project">
+<h2>Project<a class="headerlink" href="#project" title="Permalink to this headline">¶</a></h2>
+<p>A project is defined using the <strong>Project</strong> class.
+Defining a <em>project</em> spawns all the simulation <em>systems</em> (with the help of <strong>Systems</strong> generator class).</p>
+<p>The file structure and file names of the <em>project</em> are generated under the <strong>workdir</strong> using a hierarquical nomenclature that is used for system setup, simulation, and analysis.
+The <strong>results</strong> folder defines where results from the analysis will be outputed.</p>
+<p>The <strong>*Project*</strong> module accept an arbitrary number of combination of elements, and generates a tree structure of the Cartesian product of ordered set of elements in <em>hierarchy</em> (in its current implementation, can be changed to other combinatronics schemes).
+The limitation resides on the required input files upon simulation execution for all the requested combinations.</p>
+<p>For a protein-ligand simulation setup, with variation of some atribute of a ligand, the elements then become <strong>protein(s)</strong>, <strong>ligand(s)</strong> and ligand <strong>parameter(s)</strong>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>Other parameters can be coded.</p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="system">
+<h2>System<a class="headerlink" href="#system" title="Permalink to this headline">¶</a></h2>
+<p>Each system is defined by a set of attributes, for example: <em>protein</em>.
+Each attribute can have a undefined number of elements, for example: <a href="#id1"><span class="problematic" id="id2">*</span></a>protein*=(protein1, protein2).</p>
+<p>The <strong>System</strong> class work as a system generator, and accepts requests from the <strong>Project</strong> class.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The number of attributes is not fixed, so the user can set as many as necessary.
+Given the combinatorial generation of systems based, the number of attributes is recommended to be low.</p>
+</div>
+</div>
+<div class="section" id="hierarchy">
+<h2>Hierarchy<a class="headerlink" href="#hierarchy" title="Permalink to this headline">¶</a></h2>
+<p>The hierarchy refers to the way systems are grouped based on the shared elements of some attribute.
+By specifying the hierarchy, a tree-like structure of systems is generated.
+The order of provided attributes sets the tree <strong>levels</strong>: the first attribute will be the root, and the remaining attributes will be branching points.</p>
+</div>
+<div class="section" id="replicates">
+<h2>Replicates<a class="headerlink" href="#replicates" title="Permalink to this headline">¶</a></h2>
+<p>The replicate value defines how many times each system is to be simulated.
+This is an optional attribute, which when not defined reverts to the default value.</p>
+<div class="section" id="example">
+<h3>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h3>
+<p>A concrete example of a project is the following.</p>
+<dl class="simple">
+<dt>Attributes:</dt><dd><ul class="simple">
+<li><p>protein = protein1, protein2</p></li>
+<li><p>ligand = ligand1, ligand2, ligand3</p></li>
+<li><p>parameter = parameter1, parameter2, parameter3, parameter4</p></li>
+<li><p>replicates (optional) = 5</p></li>
+</ul>
+</dd>
+</dl>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">workdir</span><span class="o">=</span><span class="n">base_path</span><span class="o">+</span><span class="s1">&#39;Root&#39;</span>
+<span class="n">results</span><span class="o">=</span><span class="n">workdir</span><span class="o">+</span><span class="s2">&quot;/project_results&quot;</span>
+
+<span class="c1">#Check for project folders and creates them if not found)</span>
+<span class="n">tools</span><span class="o">.</span><span class="n">Functions</span><span class="o">.</span><span class="n">fileHandler</span><span class="p">([</span><span class="n">workdir</span><span class="p">,</span> <span class="n">results</span><span class="p">],</span> <span class="n">confirmation</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="n">protein</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;protein1&#39;</span><span class="p">,</span> <span class="s1">&#39;protein2&#39;</span><span class="p">]</span>
+<span class="n">ligand</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;ligand1&#39;</span><span class="p">,</span> <span class="s1">&#39;ligand2&#39;</span><span class="p">,</span> <span class="s1">&#39;ligand3&#39;</span><span class="p">]</span>
+<span class="n">parameters</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;parameter1&#39;</span><span class="p">,</span> <span class="s1">&#39;parameter2&#39;</span><span class="p">,</span> <span class="s1">&#39;parameter3&#39;</span><span class="p">,</span> <span class="p">]</span>
+
+
+
+<span class="n">project</span><span class="o">=</span><span class="n">main</span><span class="o">.</span><span class="n">Project</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;projectTutorial&#39;</span><span class="p">,</span>
+                  <span class="n">hierarchy</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;protein&#39;</span><span class="p">,</span> <span class="s1">&#39;ligand&#39;</span><span class="p">,</span> <span class="s1">&#39;parameter&#39;</span><span class="p">),</span>
+                  <span class="n">workdir</span><span class="o">=</span><span class="n">workdir</span><span class="p">,</span>
+                  <span class="n">parameter</span><span class="o">=</span><span class="n">parameters</span><span class="p">,</span>
+                  <span class="n">replicas</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                  <span class="n">timestep</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                  <span class="n">protein</span><span class="o">=</span><span class="n">protein</span><span class="p">,</span>
+                  <span class="n">ligand</span><span class="o">=</span><span class="n">ligand</span><span class="p">,</span>
+                  <span class="n">results</span><span class="o">=</span><span class="n">results</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>project_systems=project.setSystems()</p>
+<p>Which yields the following tree:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>Root
+├── protein1
+    ├── ligand1
+       ├── parameter1
+               ├──replicate1
+               ├──replicate2
+               ├──replicate3
+               ├──replicate4
+               └──replicate5
+       ├── parameter2
+       ├── parameter3
+       └── parameter4
+    ├──ligand2
+    └──ligand3
+└──protein2
+</pre></div>
+</div>
+<span class="target" id="module-source.main"></span><p>The core python classes of the package.
 Classes are implemented in jupyter notebooks or in offline runs (optional).</p>
 <p>Created on Fri Jul  3 11:30:16 2020
 &#64;author: hca</p>
@@ -250,7 +352,7 @@ Note: For default value, folders will be protein-ligand-parameter/replicaN, with
 
 <dl class="py class">
 <dt id="source.main.System">
-<em class="property">class </em><code class="sig-prename descclassname">source.main.</code><code class="sig-name descname">System</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">system</span></em>, <em class="sig-param"><span class="n">timestep</span></em>, <em class="sig-param"><span class="n">workdir</span><span class="o">=</span><span class="default_value">'C:\\Users\\hcarv\\Documents\\GitHub\\SimFound_v2\\docs'</span></em>, <em class="sig-param"><span class="n">replica_name</span><span class="o">=</span><span class="default_value">'sim'</span></em>, <em class="sig-param"><span class="n">linker</span><span class="o">=</span><span class="default_value">'-'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.main.System" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">source.main.</code><code class="sig-name descname">System</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">system</span></em>, <em class="sig-param"><span class="n">timestep</span></em>, <em class="sig-param"><span class="n">workdir</span><span class="o">=</span><span class="default_value">'C:\\Users\\hcarv\\Documents\\GitHub\\SimFound_v2'</span></em>, <em class="sig-param"><span class="n">replica_name</span><span class="o">=</span><span class="default_value">'sim'</span></em>, <em class="sig-param"><span class="n">linker</span><span class="o">=</span><span class="default_value">'-'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.main.System" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>The base class to define a system. Takes as input a system tuple.
 The system tuple can be accepted as a instance of the parent class or given manually.
@@ -290,6 +392,8 @@ See parent class method <cite>setSystems</cite> for details of tuple generation.
 </dd></dl>
 
 </div>
+</div>
+</div>
 
 
            </div>
@@ -299,10 +403,10 @@ See parent class method <cite>setSystems</cite> for details of tuple generation.
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="deprecated.html" class="btn btn-neutral float-right" title="Deprecated" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="deprecated.html" class="btn btn-neutral float-right" title="Legacy" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="source.html" class="btn btn-neutral float-left" title="Analysis Module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="source.html" class="btn btn-neutral float-left" title="Analysis Modules" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
