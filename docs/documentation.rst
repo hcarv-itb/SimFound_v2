@@ -21,6 +21,7 @@ Functionality is being imported from **Legacy**, a previous workflow for analysi
    main
    deprecated
    tools
+   SETD2_protocols
 
 
 

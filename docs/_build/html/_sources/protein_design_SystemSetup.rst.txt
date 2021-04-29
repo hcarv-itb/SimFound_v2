@@ -27,23 +27,12 @@ As of April 2021, the following force fields are supported by the Toolkit:
    When simulating proteins, it is typical to use the PDB file of the protein structure as starting input file.
    Some protein PDB files need to be "polished" before being suitable for usage. 
    There are tools that can do this for you, such as `pdb-tools <https://github.com/haddocking/pdb-tools>`_ (`Webserver <https://wenmr.science.uu.nl/pdbtools/>`_)
+   openMM has included 
 
 
 2. **Force field**
-
-   * GAFF (group 1)
-      * XML-based 
-      * (extra_molecules_nb).xml
-      * (extra_molecules_bb).xml
     
-
-
-   * CHARMM (group 2)
-
-     forcefield.top
-    ...
-    
-    #TODO: CHARMM to openMM import
+    #TODO: redirect to openMM docs
 
 System setup
 ------------
@@ -58,5 +47,7 @@ System setup
 
 
     OpenMM provides `cookbooks and tutorials <http://openmm.org/tutorials/index.html>`_ that can used as templates of these instructions.
+    
+    
     ...
     #TODO: AMBER to openMM import
