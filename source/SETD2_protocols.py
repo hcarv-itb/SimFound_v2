@@ -70,13 +70,14 @@ class Protocols:
     
         xml_list = ff_files
         for lig_xml_file in extra_ff_files:
-            xml_list.append(lig_xml_file)
+            print(f'{self.workdir}/{lig_xml_file}')
+            xml_list.append(f'{self.workdir}/{lig_xml_file}')
     
         forcefield = app.ForceField(*xml_list)
                     
 
         #definition of additional residues (for ligands or novel residues); bonds extracted from ligand xml files
-        additional_residue_definitions_file = 'add_residue_def.xml'       
+        additional_residue_definitions_file = f'{self.workdir}/add_residue_def.xml'       
 
         system.addHydrogens(forcefield, 
                              pH = app.SimulationParameters().sim_ph, 
