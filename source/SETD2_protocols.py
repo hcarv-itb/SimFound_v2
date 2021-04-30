@@ -21,6 +21,8 @@ traj_folder = 'trajectories_SETD2_{}_{}'.format(peptide, sim_time)
 
 
 
+
+
 class Protocols:
 
     def __init__(self, workdir=os.getcwd()):
@@ -46,26 +48,11 @@ class Protocols:
         #self.gpu_index = '0'
         #self.platformProperties = {'Precision': 'single','DeviceIndex': self.gpu_index}
 
-
-    def pre_setup(self, input_omm_ff='InputsFromGroup2'):
-        """
-        
-        Do your thing here.
-        
-        #TODO: Spit out the topology, chains, segId of the sytem.
-        
-        """
-
-        return 'forcefield'        
-
-
-
-
     def setup(self, 
               input_pdb='SETD2_complexed_H3K36.pdb',
               extra_input_pdb=['SAM_H3K36.pdb', 'ZNB_H3K36.pdb'],
               ff_files=['amber14-all.xml', 'amber14/tip4pew.xml', 'gaff.xml'],
-              extra_ff_files=['SAM.xml', 'ZNB.xml'],
+              extra_ff_files=[], #['SAM.xml', 'ZNB.xml']
               extra_names=['SAM', 'ZNB'],
               solvate=True,
               protonate=True,
@@ -83,9 +70,11 @@ class Protocols:
         
     
         xml_list = ff_files
-        for lig_xml_file in extra_ff_files:
-            print(f'{self.workdir}/{lig_xml_file}')
-            xml_list.append(f'{self.workdir}/{lig_xml_file}')
+        
+        if extra_ff_files != None:
+            for lig_xml_file in extra_ff_files:
+                print(f'{self.workdir}/{lig_xml_file}')
+                xml_list.append(f'{self.workdir}/{lig_xml_file}')
     
     
         #TODO: Get other forcefield instances from somewhere else. e.g. forcefield2
@@ -132,6 +121,17 @@ class Protocols:
         
         return (positions, simulation)
 
+
+    def pre_setup(self, input_omm_ff='InputsFromGroup2'):
+        """
+        
+        Do your thing here.
+        
+        #TODO: Spit out the topology, chains, segId of the sytem.
+        
+        """
+
+        return 'forcefield'     
 
     def minimization(self,
                      positions_simulation):
