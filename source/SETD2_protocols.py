@@ -71,7 +71,7 @@ class Protocols:
     
         xml_list = ff_files
         
-        if extra_ff_files != None:
+        if len(extra_ff_files) > 0:
             for lig_xml_file in extra_ff_files:
                 print(f'{self.workdir}/{lig_xml_file}')
                 xml_list.append(f'{self.workdir}/{lig_xml_file}')
