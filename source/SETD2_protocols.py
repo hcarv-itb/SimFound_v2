@@ -90,7 +90,7 @@ class Protocols:
         additional_residue_definitions_file = f'{self.workdir}/add_residue_def.xml'       
 
         system.addHydrogens(forcefield, 
-                             pH = self.SimulationParameters().sim_ph, 
+                             pH = self.sim_ph, 
                              variants = app.SetProtonationState(system.topology.chains())) 
         #variants = protonation_list
 
