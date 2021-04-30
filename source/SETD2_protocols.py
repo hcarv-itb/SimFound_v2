@@ -42,9 +42,9 @@ class Protocols:
 
         #Hardware specs
         self.workdir=workdir
-        self.platform = app.Platform.getPlatformByName('CUDA')
-        self.gpu_index = '0'
-        self.platformProperties = {'Precision': 'single','DeviceIndex': self.gpu_index}
+        #self.platform = app.Platform.getPlatformByName('CUDA')
+        #self.gpu_index = '0'
+        #self.platformProperties = {'Precision': 'single','DeviceIndex': self.gpu_index}
 
 
 
