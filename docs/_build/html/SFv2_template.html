@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Protein-DES protocol &mdash; Simulation Foundry, v2 2.0 documentation</title>
+  <title>SFv2 Template notebook &mdash; Simulation Foundry, v2 2.0 documentation</title>
   
 
   
@@ -38,7 +38,9 @@
 
     
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" /> 
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Documentation" href="documentation.html" />
+    <link rel="prev" title="Discretization tutorial" href="discretized.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -84,8 +86,19 @@
             
             
               <p class="caption"><span class="caption-text">TOPICS</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="projects.html">Usage</a></li>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="projects.html">Usage</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="SimFound_v2.html">SFv2 Walkthrough</a></li>
+<li class="toctree-l2"><a class="reference internal" href="density.html">3D Analysis tutorial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visualization.html">Visualization tutorial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="discretized.html">Discretization tutorial</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">SFv2 Template notebook</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Import-modules">Import modules</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#Protocol">Protocol</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="documentation.html">Documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="protein_design.html">Protein Design 2021</a></li>
 </ul>
@@ -134,13 +147,15 @@
     
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
-      <li>Protein-DES protocol</li>
+          <li><a href="projects.html">Usage</a> &raquo;</li>
+        
+      <li>SFv2 Template notebook</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="_sources/Untitled.ipynb.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/SFv2_template.ipynb.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -408,57 +423,58 @@ div.rendered_html tbody tr:hover {
     text-align: unset;
 }
 </style>
-<div class="section" id="Protein-DES-protocol">
-<h1>Protein-DES protocol<a class="headerlink" href="#Protein-DES-protocol" title="Permalink to this headline">¶</a></h1>
-</div>
+<div class="section" id="SFv2-Template-notebook">
+<h1>SFv2 Template notebook<a class="headerlink" href="#SFv2-Template-notebook" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="Import-modules">
-<h1>Import modules<a class="headerlink" href="#Import-modules" title="Permalink to this headline">¶</a></h1>
+<h2>Import modules<a class="headerlink" href="#Import-modules" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[33]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="n">data_path</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s1">&#39;C:/Users/hcarv/Documents/work/Protein Design 2021/Group1&#39;</span><span class="p">)</span>
-<span class="n">base_path</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s1">&#39;C:/Users/hcarv/Documents/GitHub/SimFound_v2/source/&#39;</span><span class="p">)</span> <span class="c1">#THE SETD2_protocols.py should be there</span>
+<span class="n">data_path</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s1">&#39;C:/Users/hcarv/Documents/work/Protein Design 2021/Group1&#39;</span><span class="p">)</span> <span class="c1">#Where your group data is</span>
+<span class="n">base_path</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s1">&#39;C:/Users/hcarv/Documents/GitHub/SimFound_v2/source/&#39;</span><span class="p">)</span> <span class="c1">#Where your source code is (SFv2)</span>
 
 <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">base_path</span><span class="p">)</span>
 <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data_path</span><span class="p">)</span>
 
 <span class="kn">import</span> <span class="nn">importlib</span>
 
-<span class="kn">import</span> <span class="nn">SETD2_protocols</span>
+<span class="kn">import</span> <span class="nn">SETD2_protocols</span> <span class="k">as</span> <span class="nn">P</span>
 
 </pre></div>
+</div>
 </div>
 </div>
 </div>
 <div class="section" id="Protocol">
 <h1>Protocol<a class="headerlink" href="#Protocol" title="Permalink to this headline">¶</a></h1>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[53]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">SETD2_protocols</span><span class="p">)</span>
-<span class="n">protocol</span><span class="o">=</span><span class="n">SETD2_protocols</span><span class="o">.</span><span class="n">Protocols</span><span class="p">(</span><span class="n">workdir</span><span class="o">=</span><span class="n">data_path</span><span class="p">)</span>
+<span></span><span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">P</span><span class="p">)</span>
+<span class="n">protocol</span><span class="o">=</span><span class="n">P</span><span class="o">.</span><span class="n">Protocols</span><span class="p">(</span><span class="n">workdir</span><span class="o">=</span><span class="n">data_path</span><span class="p">)</span> <span class="c1">#This is an instance of the Protocols class reference</span>
 </pre></div>
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[56]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">pdb</span><span class="o">=</span><span class="s1">&#39;5a71_a_fixed.pdb&#39;</span>
 <span class="n">pdbs</span><span class="o">=</span><span class="p">[</span><span class="n">pdb</span><span class="p">,</span> <span class="s1">&#39;5a71_a.pdb&#39;</span><span class="p">]</span>
 
-
+<span class="n">pdb_des</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;alltheDES&#39;</span><span class="p">]</span>
 
 
 <span class="n">protocol</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">input_pdb</span><span class="o">=</span><span class="n">pdb</span><span class="p">,</span>
+               <span class="n">extra_input_pdb</span><span class="o">=</span><span class="n">pdb_des</span><span class="p">,</span>
            <span class="n">ff_files</span><span class="o">=</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">data_path</span><span class="si">}</span><span class="s1">\protein.ff14SB.xml&#39;</span><span class="p">,</span>
                      <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">data_path</span><span class="si">}</span><span class="s1">\gaff-2.11modv3_1.xml&#39;</span><span class="p">,</span>
                      <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">data_path</span><span class="si">}</span><span class="se">\t</span><span class="s1">ip3p_standard.xml&#39;</span><span class="p">])</span> <span class="c1">#As long as you have 5a71_a_fixed.pdb on your data_path</span>
@@ -481,19 +497,19 @@ C:\Users\hcarv\Documents\work\Protein Design 2021\Group1/ZNB.xml
 <div class="highlight"><pre>
 <span class="ansi-red-intense-fg ansi-bold">---------------------------------------------------------------------------</span>
 <span class="ansi-red-intense-fg ansi-bold">ValueError</span>                                Traceback (most recent call last)
-<span class="ansi-green-intense-fg ansi-bold">&lt;ipython-input-56-4783a39d5a59&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span>
+<span class="ansi-green-intense-fg ansi-bold">&lt;ipython-input-11-4783a39d5a59&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span>
 <span class="ansi-green-fg">      5</span>
 <span class="ansi-green-fg">      6</span>
 <span class="ansi-green-intense-fg ansi-bold">----&gt; 7</span><span class="ansi-yellow-intense-fg ansi-bold"> protocol.setup(input_pdb=pdb,
 </span><span class="ansi-green-fg">      8</span>            ff_files=[f&#39;{data_path}\protein.ff14SB.xml&#39;,
 <span class="ansi-green-fg">      9</span>                      <span class="ansi-blue-intense-fg ansi-bold">f&#39;{data_path}\gaff-2.11modv3_1.xml&#39;</span><span class="ansi-yellow-intense-fg ansi-bold">,</span>
 
-<span class="ansi-green-intense-fg ansi-bold">~\Documents\GitHub\SimFound_v2\source\SETD2_protocols.py</span> in <span class="ansi-cyan-fg">setup</span><span class="ansi-blue-intense-fg ansi-bold">(self, input_pdb, extra_input_pdb, ff_files, extra_ff_files, extra_names, solvate, protonate)</span>
-<span class="ansi-green-fg">     74</span>             xml_list<span class="ansi-yellow-intense-fg ansi-bold">.</span>append<span class="ansi-yellow-intense-fg ansi-bold">(</span><span class="ansi-blue-intense-fg ansi-bold">f&#39;{self.workdir}/{lig_xml_file}&#39;</span><span class="ansi-yellow-intense-fg ansi-bold">)</span>
-<span class="ansi-green-fg">     75</span>
-<span class="ansi-green-intense-fg ansi-bold">---&gt; 76</span><span class="ansi-yellow-intense-fg ansi-bold">         </span>forcefield <span class="ansi-yellow-intense-fg ansi-bold">=</span> app<span class="ansi-yellow-intense-fg ansi-bold">.</span>ForceField<span class="ansi-yellow-intense-fg ansi-bold">(</span><span class="ansi-yellow-intense-fg ansi-bold">*</span>xml_list<span class="ansi-yellow-intense-fg ansi-bold">)</span>
-<span class="ansi-green-fg">     77</span>
-<span class="ansi-green-fg">     78</span>
+<span class="ansi-green-intense-fg ansi-bold">~\Documents\GitHub\SimFound_v2\source\SETD2_protocols.py</span> in <span class="ansi-cyan-fg">setup</span><span class="ansi-blue-intense-fg ansi-bold">(self, input_pdb, extra_input_pdb, ff_files, extra_ff_files, extra_names, solvate, protonate, other_ff_instance)</span>
+<span class="ansi-green-fg">     92</span>         <span class="ansi-red-intense-fg ansi-bold">#This some</span>
+<span class="ansi-green-fg">     93</span>
+<span class="ansi-green-intense-fg ansi-bold">---&gt; 94</span><span class="ansi-yellow-intense-fg ansi-bold">         </span>forcefield <span class="ansi-yellow-intense-fg ansi-bold">=</span> app<span class="ansi-yellow-intense-fg ansi-bold">.</span>ForceField<span class="ansi-yellow-intense-fg ansi-bold">(</span><span class="ansi-yellow-intense-fg ansi-bold">*</span>xml_list<span class="ansi-yellow-intense-fg ansi-bold">)</span>
+<span class="ansi-green-fg">     95</span>
+<span class="ansi-green-fg">     96</span>         <span class="ansi-green-intense-fg ansi-bold">if</span> other_ff_instance<span class="ansi-yellow-intense-fg ansi-bold">:</span>
 
 <span class="ansi-green-intense-fg ansi-bold">~\anaconda3\lib\site-packages\simtk\openmm\app\forcefield.py</span> in <span class="ansi-cyan-fg">__init__</span><span class="ansi-blue-intense-fg ansi-bold">(self, *files)</span>
 <span class="ansi-green-fg">    211</span>         self<span class="ansi-yellow-intense-fg ansi-bold">.</span>_scripts <span class="ansi-yellow-intense-fg ansi-bold">=</span> <span class="ansi-yellow-intense-fg ansi-bold">[</span><span class="ansi-yellow-intense-fg ansi-bold">]</span>
@@ -528,6 +544,15 @@ C:\Users\hcarv\Documents\work\Protein Design 2021\Group1/ZNB.xml
            
           </div>
           <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="documentation.html" class="btn btn-neutral float-right" title="Documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="discretized.html" class="btn btn-neutral float-left" title="Discretization tutorial" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
   
 
   <hr/>

@@ -13,6 +13,7 @@ Tutorials and example usage are given here using Jupyter notebooks.
    density.ipynb
    visualization.ipynb
    discretized.ipynb
+   SFv2_template.ipynb
 
 .. toctree::
    :maxdepth: 3

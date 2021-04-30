@@ -47,6 +47,19 @@ class Protocols:
         #self.platformProperties = {'Precision': 'single','DeviceIndex': self.gpu_index}
 
 
+    def pre_setup(self, input_omm_ff='InputsFromGroup2'):
+        """
+        
+        Do your thing here.
+        
+        #TODO: Spit out the topology, chains, segId of the sytem.
+        
+        """
+
+        return 'forcefield'        
+
+
+
 
     def setup(self, 
               input_pdb='SETD2_complexed_H3K36.pdb',
@@ -55,7 +68,8 @@ class Protocols:
               extra_ff_files=['SAM.xml', 'ZNB.xml'],
               extra_names=['SAM', 'ZNB'],
               solvate=True,
-              protonate=True):
+              protonate=True,
+              other_ff_instance=False):
 
         #TODO: Automate further. Link with tools.fileHandler
     
@@ -66,15 +80,22 @@ class Protocols:
         pdb = app.PDBFile(input_pdb)
         system = app.Modeller(pdb.topology, pdb.positions)
     
-   
+        
     
         xml_list = ff_files
         for lig_xml_file in extra_ff_files:
             print(f'{self.workdir}/{lig_xml_file}')
             xml_list.append(f'{self.workdir}/{lig_xml_file}')
     
+    
+        #TODO: Get other forcefield instances from somewhere else. e.g. forcefield2
+        #This some
+    
         forcefield = app.ForceField(*xml_list)
-                    
+
+        if other_ff_instance:
+            
+            forcefield=self.pre-setup('InputsFromGroup2')
 
         #definition of additional residues (for ligands or novel residues); bonds extracted from ligand xml files
         additional_residue_definitions_file = f'{self.workdir}/add_residue_def.xml'       
@@ -140,6 +161,7 @@ class Protocols:
 
         return (min_pos, simulation)
 
+    @classmethod
     def setRestraints(positions_system,
                       restrained_sets=('protein and name CA and not chainid 1', 'chainid 3 and resid 0'),
                       forces=[100, 150],
