@@ -67,7 +67,7 @@ class Protocols:
         pdb = app.PDBFile(input_pdb)
         system = app.Modeller(pdb.topology, pdb.positions)
     
-        
+ 
     
         xml_list = ff_files
         
@@ -90,7 +90,7 @@ class Protocols:
         additional_residue_definitions_file = f'{self.workdir}/add_residue_def.xml'       
 
         system.addHydrogens(forcefield, 
-                             pH = app.SimulationParameters().sim_ph, 
+                             pH = self.SimulationParameters().sim_ph, 
                              variants = app.SetProtonationState(system.topology.chains())) 
         #variants = protonation_list
 
