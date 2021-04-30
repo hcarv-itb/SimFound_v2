@@ -27,3 +27,12 @@ Trajectory
    :members:
    :undoc-members:
    :show-inheritance:
+   
+   
+Protocols
+---------
+
+.. automodule:: source.SETD2_protocols
+   :members:
+   :undoc-members:
+   :show-inheritance:

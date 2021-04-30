@@ -286,7 +286,7 @@ class Protocols:
 
 
 
-    def SetProtonationState(system):
+    def SetProtonationState(self, system):
         """
     
         Method to get a dictionary of residue types:
@@ -323,10 +323,10 @@ class Protocols:
 
         """
     
-    #only for manual protonation
-    #TODO: Outsource residue protonation states.
+        #only for manual protonation
+        #TODO: Outsource residue protonation states.
     
-    protonation_dict = {('A',1499): 'CYX', 
+        protonation_dict = {('A',1499): 'CYX', 
                     ('A',1501): 'CYX', 
                     ('A',1516):'CYX', 
                     ('A',1520): 'CYX', 
@@ -340,38 +340,38 @@ class Protocols:
                     ('B',36):'LYN'} 
 
 
-    protonation_list = []
-    key_list=[]
+        protonation_list = []
+        key_list=[]
 
-    for chain in system:
+        for chain in system:
         
-        id = chain.id
-        protonations_in_chain_dict = {}
+            id = chain.id
+            protonations_in_chain_dict = {}
             
-        for protonation_tuple in protonation_dict:
+            for protonation_tuple in protonation_dict:
                 
-            if chain_id == protonation_tuple[0]:
+                if chain_id == protonation_tuple[0]:
 				
-                residue_number = protonation_tuple[1]			
-                protonations_in_chain_dict[int(residue_number)] = protonation_dict[protonation_tuple]
-                key_list.append(int(residue_number))
+                    residue_number = protonation_tuple[1]			
+                    protonations_in_chain_dict[int(residue_number)] = protonation_dict[protonation_tuple]
+                    key_list.append(int(residue_number))
         
-        for residue in chain.residues():
-            with open("log_protonation.txt", "a") as myfile:
+            for residue in chain.residues():
+                with open("log_protonation.txt", "a") as myfile:
                 
-                residue_id = residue.id
-                myfile.write(residue_id)
-                
-                if int(residue_id) in key_list:
-                    myfile.write(': Protonated')
+                    residue_id = residue.id
                     myfile.write(residue_id)
-                    protonation_list.append(protonations_in_chain_dict[int(residue_id)])
+                
+                    if int(residue_id) in key_list:
+                        myfile.write(': Protonated')
+                        myfile.write(residue_id)
+                        protonation_list.append(protonations_in_chain_dict[int(residue_id)])
 			
-                else:
-                    protonation_list.append(None)
-                    myfile.write('-')
+                    else:
+                        protonation_list.append(None)
+                        myfile.write('-')
 
-    return protonation_list
+        return protonation_list
 
 
 # =============================================================================
