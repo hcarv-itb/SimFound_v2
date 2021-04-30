@@ -59,9 +59,10 @@ class Protocols:
 
         #TODO: Automate further. Link with tools.fileHandler
     
-        os.makedirs(self.workdir)
+        if not os.makedirs:
+            os.makedirs(self.workdir)
        
-        input_pdb=self.workdir+input_pdb
+        input_pdb=f'{self.workdir}/{input_pdb}'
         pdb = app.PDBFile(input_pdb)
         system = app.Modeller(pdb.topology, pdb.positions)
     
