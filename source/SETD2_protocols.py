@@ -23,6 +23,8 @@ traj_folder = 'trajectories_SETD2_{}_{}'.format(peptide, sim_time)
 
 
 
+
+
 class Protocols:
 
     def __init__(self, workdir=os.getcwd()):
