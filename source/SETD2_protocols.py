@@ -31,6 +31,19 @@ traj_folder = 'trajectories_SETD2_{}_{}'.format(peptide, sim_time)
 class Protocols:
 
     def __init__(self, workdir=os.getcwd()):
+        """
+        
+
+        Parameters
+        ----------
+        workdir : TYPE, optional
+            DESCRIPTION. The default is os.getcwd().
+
+        Returns
+        -------
+        None.
+
+        """
 
         # Integration Options
 
@@ -63,6 +76,40 @@ class Protocols:
               extra_ff_files=[], #['SAM.xml', 'ZNB.xml']
               extra_names=[], #['SAM', 'ZNB'],
               other_ff_instance=False):
+        """
+        
+
+        Parameters
+        ----------
+        input_pdb : TYPE, optional
+            DESCRIPTION. The default is None.
+        solvate : TYPE, optional
+            DESCRIPTION. The default is True.
+        protonate : TYPE, optional
+            DESCRIPTION. The default is True.
+        fix_pdb : TYPE, optional
+            DESCRIPTION. The default is True.
+        extra_input_pdb : TYPE, optional
+            DESCRIPTION. The default is [].
+        #['SAM_H3K36.pdb', 'ZNB_H3K36.pdb']              ff_files : TYPE, optional
+            DESCRIPTION. The default is [].
+        #['amber14-all.xml', 'amber14/tip4pew.xml', 'gaff.xml'] : TYPE
+            DESCRIPTION.
+        extra_ff_files : TYPE, optional
+            DESCRIPTION. The default is [].
+        #['SAM.xml', 'ZNB.xml']              extra_names : TYPE, optional
+            DESCRIPTION. The default is [].
+        #['SAM', 'ZNB'] : TYPE
+            DESCRIPTION.
+        other_ff_instance : TYPE, optional
+            DESCRIPTION. The default is False.
+
+        Returns
+        -------
+        system : TYPE
+            DESCRIPTION.
+
+        """
         
         tools.Functions.fileHandler(self.workdir)
        
@@ -119,6 +166,15 @@ class Protocols:
         return system
     
     def setSimulation(self):
+        """
+        
+
+        Returns
+        -------
+        simulation : TYPE
+            DESCRIPTION.
+
+        """
         
         #TODO: make it classmethod maybe
         #TODO: Set integrator types
@@ -151,6 +207,22 @@ class Protocols:
 
     def minimization(self,
                      positions_simulation):
+        """
+        
+
+        Parameters
+        ----------
+        positions_simulation : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        min_pos : TYPE
+            DESCRIPTION.
+        simulation : TYPE
+            DESCRIPTION.
+
+        """
 
         (positions, simulation)=positions_simulation        
 
@@ -183,7 +255,18 @@ class Protocols:
                          omm_ff=None,
                          ff_path=None,
                          defaults=('amber14-all.xml', 'amber14/tip4pew.xml'), 
-                         add_residue_file=None): #add_residue_file='add_residue_def.xml'
+                         add_residue_file=None):
+        """
+        
+        
+        
+        
+        
+        
+        
+        """
+        #add_residue_file='add_residue_def.xml'
+        
                         
         #TODO: make more checks             
         #definition of additional residues (for ligands or novel residues); bonds extracted from ligand xml files
@@ -434,6 +517,26 @@ class Protocols:
 
     @classmethod
     def box_padding(system, box_padding=1.0):
+        """
+        
+
+        Parameters
+        ----------
+        system : TYPE
+            DESCRIPTION.
+        box_padding : TYPE, optional
+            DESCRIPTION. The default is 1.0.
+
+        Returns
+        -------
+        system_shifted : TYPE
+            DESCRIPTION.
+        d : TYPE
+            DESCRIPTION.
+        d_x : TYPE
+            DESCRIPTION.
+
+        """
         
         x_list, y_list, z_list = [], [], []
 
