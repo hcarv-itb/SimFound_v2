@@ -223,6 +223,22 @@ class Visualization:
             print(f'File not found for {concentration} and state {state_name} ({iterable}).')
         
 
+    def viewer_inspect(self, concentration, stride, results, iso=1):
+
+        struct=os.path.abspath(f'{results}/superposed_{concentration}-s{stride}-clusters.pdb')
+        dens=os.path.abspath(f'{results}/superposed_{concentration}-s{stride}-Molar.dx')
+
+        if (os.path.exists(struct) and os.path.exists(dens)):
+        
+            view=self.view_presets_density(struct, dens, iso)
+
+            return view
+    
+        else:
+            print(f'File not found for {concentration}.')
+
+
+
     def viewer_full(self, concentration, stride, results, iso=1):
 
         struct=os.path.abspath(f'{results}/superposed_{concentration}-s{stride}-clusters.pdb')
@@ -432,3 +448,20 @@ class Visualization:
     
             visualizations[concentration]=[iso_, view, file]
         return visualizations
+    
+    
+    def get_visualizations_inspect(self, input_files=[], out_path=os.getcwd()):
+    
+        visualizations={}
+
+        for f in input_files:
+    
+            view=self.view_presets_density(f)
+            
+            view
+            
+            out_image=out_path+'test.png'
+    
+            visualizations[f'{f}']=[view, out_image]
+    
+        return view

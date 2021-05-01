@@ -11,7 +11,7 @@ import tools
 
 #legacy
 from simtk.openmm.app import *
-import simtk.openmm as mm
+import simtk.openmm as omm
 from simtk.unit import picoseconds, kelvin, nanometers, molar
 from simtk.openmm import app
 from simtk import unit
@@ -53,12 +53,9 @@ class Protocols:
 
         """
 
-        # Integration Options
 
-        self.dt = 0.002*picoseconds
-        self.temperature = 300*kelvin
-        self.friction = 1/picoseconds
-        self.sim_ph = 7.0
+        self.workdir=os.path.abspath(workdir)
+
 
         # Simulation Options
 
@@ -68,22 +65,20 @@ class Protocols:
         self.SAM_free_eq_Steps = 5e6   
 
 
-        #Hardware specs
-        self.workdir=os.path.abspath(workdir)
-        self.platform = Platform.getPlatformByName('CUDA')
-        self.gpu_index = '0'
-        self.platformProperties = {'Precision': 'single','DeviceIndex': self.gpu_index}
 
-    def setSystem(self, 
-              input_pdb=None,
+
+    def pdb2omm(self, 
+              input_pdbs=None,
               solvate=True,
               protonate=True,
               fix_pdb=True,
-              extra_input_pdb=[], #['SAM_H3K36.pdb', 'ZNB_H3K36.pdb']
-              ff_files=[], #['amber14-all.xml', 'amber14/tip4pew.xml', 'gaff.xml'],
-              extra_ff_files=[], #['SAM.xml', 'ZNB.xml']
-              extra_names=[], #['SAM', 'ZNB'],
-              other_ff_instance=False):
+              inspect=False,
+              extra_input_pdb=[],
+              ff_files=[],
+              extra_ff_files=[],
+              extra_names=[],
+              other_ff_instance=False,
+              pH = 7.0):
         """
         
 
@@ -99,29 +94,34 @@ class Protocols:
             DESCRIPTION. The default is True.
         extra_input_pdb : TYPE, optional
             DESCRIPTION. The default is [].
-        #['SAM_H3K36.pdb', 'ZNB_H3K36.pdb']              ff_files : TYPE, optional
+        ff_files : TYPE, optional
             DESCRIPTION. The default is [].
-        #['amber14-all.xml', 'amber14/tip4pew.xml', 'gaff.xml'] : TYPE
-            DESCRIPTION.
         extra_ff_files : TYPE, optional
             DESCRIPTION. The default is [].
-        #['SAM.xml', 'ZNB.xml']              extra_names : TYPE, optional
+        extra_names : TYPE, optional
             DESCRIPTION. The default is [].
-        #['SAM', 'ZNB'] : TYPE
-            DESCRIPTION.
         other_ff_instance : TYPE, optional
             DESCRIPTION. The default is False.
+        pH : TYPE, optional
+            DESCRIPTION. The default is 7.0.
 
         Returns
         -------
-        system : TYPE
-            DESCRIPTION.
+        None.
 
         """
-        
+
+# =============================================================================
+#         
+#                       extra_input_pdb=[], #['SAM_H3K36.pdb', 'ZNB_H3K36.pdb']
+#               ff_files=[], #['amber14-all.xml', 'amber14/tip4pew.xml', 'gaff.xml'],
+#               extra_ff_files=[], #['SAM.xml', 'ZNB.xml']
+#               extra_names=[], #['SAM', 'ZNB'],
+#         
+# =============================================================================
         tools.Functions.fileHandler(self.workdir)
        
-        input_pdb=f'{self.workdir}/{input_pdb}'
+        input_pdb=f'{self.workdir}/{input_pdbs}'
         
         if fix_pdb:
             
@@ -142,7 +142,7 @@ class Protocols:
     
         if protonate:
             pre_system.addHydrogens(forcefield, 
-                             pH = self.sim_ph, 
+                             pH = pH, 
                              variants = self.setProtonationState(pre_system.topology.chains(), 
                                                                  protonation_dict={('A',187): 'ASP', ('A',224): 'HID'}) )
 
@@ -165,17 +165,36 @@ class Protocols:
                                          constraints='HBonds', 
                                          rigidWater=True)
         
-        #Update attribute
+        #Update attributes
+        self.input_pdb=input_pdb
         self.system=system
         self.topology=pre_system.topology
         self.positions=pre_system.positions
-    
+        
+        
+            
+        #TODO: A lot. Link to Visualization
+        self.system_pdb=self.writePDB(pre_system.topology,
+                              pre_system.positions,
+                              name='system')
         
         return system
     
-    def setSimulation(self):
+    def setSimulation(self, 
+                      dt = 0.002*picoseconds, 
+                      temperature = 300*kelvin, 
+                      friction = 1/picoseconds):
         """
         
+
+        Parameters
+        ----------
+        dt : TYPE, optional
+            DESCRIPTION. The default is 0.002*picoseconds.
+        temperature : TYPE, optional
+            DESCRIPTION. The default is 300*kelvin.
+        friction : TYPE, optional
+            DESCRIPTION. The default is 1/picoseconds.
 
         Returns
         -------
@@ -183,18 +202,22 @@ class Protocols:
             DESCRIPTION.
 
         """
+
+        platform = omm.Platform.getPlatformByName('CUDA')
+        gpu_index = '0'
+        platformProperties = {'Precision': 'single','DeviceIndex': gpu_index}
         
         #TODO: make it classmethod maybe
         #TODO: Set integrator types
-        integrator = mm.LangevinIntegrator(self.temperature, 
-                                            self.friction, 
-                                            self.dt)
+        integrator = omm.LangevinIntegrator(temperature, 
+                                            friction, 
+                                            dt)
         
         simulation = app.Simulation(self.topology, 
                                     self.system, 
                                     integrator, 
-                                    self.platform, 
-                                    self.platformProperties)
+                                    platform, 
+                                    platformProperties)
         
         simulation.context.setPositions(self.positions)
         
@@ -241,6 +264,7 @@ class Protocols:
                               positions, 
                               open(self.workdir+'preMin.pdb', 'w'), 
                               keepIds=True)
+        
         
         simulation.minimizeEnergy()
         
@@ -318,10 +342,42 @@ class Protocols:
         return forcefield    
     
     
+    
+    def writePDB(self,
+                 topology, 
+                 positions,
+                 name='test'):
+        """
+        Generates the pdb of provided OpenMM system with given "name" and on class workdir.
+        
+
+        Parameters
+        ----------
+        topology : TYPE
+            DESCRIPTION.
+        positions : TYPE
+            DESCRIPTION.
+        name : TYPE, optional
+            DESCRIPTION. The default is 'test'.
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        
+        #TODO: allow other extensions
+        
+        out_pdb=f'{self.workdir}/{name}.pdb'
+        app.PDBFile.writeFile(topology, positions, open(out_pdb, 'w'))
+            
+        print(f'PDB file generated: {out_pdb}')
+        
+        return out_pdb
 
 
-
-    @classmethod
+    @staticmethod
     def setRestraints(positions_system,
                       restrained_sets=('protein and name CA and not chainid 1', 'chainid 3 and resid 0'),
                       forces=[100, 150],
@@ -363,7 +419,7 @@ class Protocols:
         forces_list=[]
         for idx, f in enumerate(forces):
         
-            force = mm.CustomExternalForce("(k/2)*periodicdistance(x, y, z, x0, y0, z0)^2")
+            force = omm.CustomExternalForce("(k/2)*periodicdistance(x, y, z, x0, y0, z0)^2")
             force.addGlobalParameter("k", f*unit.kilojoules_per_mole/unit.angstroms**2)
         
             force.addPerParticleParameter("x0")
@@ -417,7 +473,7 @@ class Protocols:
                                      neutralize=True, 
                                      ionicStrength=ionicStrength, #0.1 M for SETD2
                                      padding=None, 
-                                     boxSize=mm.Vec3(box_size, box_size, box_size))
+                                     boxSize=omm.Vec3(box_size, box_size, box_size))
             
         return system
 
@@ -694,8 +750,19 @@ class Protocols:
 #  del(simulation)
 # =============================================================================
 
-
-
-
-
+# ============================================================================= DES GOLD
+# 
+# # Create OpenFF topology with 1 ethanol and 2 benzenes.
+# ethanol = Molecule.from_smiles('CCO')
+# benzene = Molecule.from_smiles('c1ccccc1')
+# off_topology = Topology.from_molecules(molecules=[ethanol, benzene, benzene])
+# 
+# # Convert to OpenMM Topology.
+# omm_topology = off_topology.to_openmm()
+# 
+# # Convert back to OpenFF Topology.
+# off_topology_copy = Topology.from_openmm(omm_topology, unique_molecules=[ethanol, benzene])
+# 
+# 
+# =============================================================================
 
