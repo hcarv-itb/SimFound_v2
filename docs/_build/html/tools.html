@@ -96,7 +96,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#module-source.tools">Tools</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#module-source.Visualization">Visualization</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#module-source.Trajectory">Trajectory</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#module-source.SETD2_protocols">Protocols</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#protocols">Protocols</a></li>
 </ul>
 </li>
 </ul>
@@ -562,94 +562,8 @@ Legacy: option to save also the waters controlled with –noWater.</p>
 </dd></dl>
 
 </div>
-<div class="section" id="module-source.SETD2_protocols">
-<span id="protocols"></span><h2>Protocols<a class="headerlink" href="#module-source.SETD2_protocols" title="Permalink to this headline">¶</a></h2>
-<dl class="py class">
-<dt id="source.SETD2_protocols.Protocols">
-<em class="property">class </em><code class="sig-prename descclassname">source.SETD2_protocols.</code><code class="sig-name descname">Protocols</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">workdir</span><span class="o">=</span><span class="default_value">'C:\\Users\\hcarv\\Documents\\GitHub\\SimFound_v2'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.SETD2_protocols.Protocols" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<dl class="py method">
-<dt id="source.SETD2_protocols.Protocols.SetProtonationState">
-<code class="sig-name descname">SetProtonationState</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">system</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.SETD2_protocols.Protocols.SetProtonationState" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="simple">
-<dt>Method to get a dictionary of residue types:</dt><dd><p>(chain_name, residue number): restype</p>
-</dd>
-</dl>
-<p>Residue definitions for titratable residues:</p>
-<blockquote>
-<div><p>Histidine: HIE, HID, HIP, HIN; 
-Glutamate: GLU, GLH; 
-Aspartate: ASP, ASH; 
-Lysine: LYN, LYS; 
-Cysteine: CYS, CYX</p>
-</div></blockquote>
-<dl class="simple">
-<dt>system: object</dt><dd><p>Modeller instance</p>
-</dd>
-</dl>
-<dl class="simple">
-<dt>protonation_list: list</dt><dd><p>list of modified residues, used as “variants” by addHydrogens (openMM).</p>
-</dd>
-</dl>
-<p>state Histidine:</p>
-<blockquote>
-<div><p>protonation_dict = {(‘A’,84): ‘HIP’, (‘A’,86): ‘HID’}</p>
-</div></blockquote>
-</dd></dl>
-
-<dl class="py method">
-<dt id="source.SETD2_protocols.Protocols.minimization">
-<code class="sig-name descname">minimization</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">positions_simulation</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.SETD2_protocols.Protocols.minimization" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt id="source.SETD2_protocols.Protocols.pre_setup">
-<code class="sig-name descname">pre_setup</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_omm_ff</span><span class="o">=</span><span class="default_value">'InputsFromGroup2'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.SETD2_protocols.Protocols.pre_setup" title="Permalink to this definition">¶</a></dt>
-<dd><p>Do your thing here.</p>
-<p>#TODO: Spit out the topology, chains, segId of the sytem.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="source.SETD2_protocols.Protocols.setRestraints">
-<em class="property">classmethod </em><code class="sig-name descname">setRestraints</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">restrained_sets</span><span class="o">=</span><span class="default_value">'protein and name CA and not chainid 1', 'chainid 3 and resid 0'</span></em>, <em class="sig-param"><span class="n">forces</span><span class="o">=</span><span class="default_value">[100, 150]</span></em>, <em class="sig-param"><span class="n">restrained_set</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.SETD2_protocols.Protocols.setRestraints" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set position restraints on atom set(s).</p>
-<dl class="simple">
-<dt>positions_system<span class="classifier">tuple</span></dt><dd><p>A tuple of positions and system object</p>
-</dd>
-<dt>restrained_sets<span class="classifier">list, optional</span></dt><dd><p>Selection(s) (MDTraj). The default ‘protein and name CA and not chainid 1’ and ‘chainid 3 and resid 0’.
-Backbone and Restrained peptide, cofactor, and metal-dummy atoms</p>
-</dd>
-<dt>forces<span class="classifier">list, optional</span></dt><dd><p>The force applied in kilojoules_per_mole/angstroms. Has to be same size as the restrained_sets. The default is [100,150].</p>
-</dd>
-</dl>
-<dl class="simple">
-<dt>System: object</dt><dd><p>A modified version of the system with costumized forces.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="source.SETD2_protocols.Protocols.setup">
-<code class="sig-name descname">setup</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_pdb</span><span class="o">=</span><span class="default_value">'SETD2_complexed_H3K36.pdb'</span></em>, <em class="sig-param"><span class="n">extra_input_pdb</span><span class="o">=</span><span class="default_value">['SAM_H3K36.pdb', 'ZNB_H3K36.pdb']</span></em>, <em class="sig-param"><span class="n">ff_files</span><span class="o">=</span><span class="default_value">['amber14-all.xml', 'amber14/tip4pew.xml', 'gaff.xml']</span></em>, <em class="sig-param"><span class="n">extra_ff_files</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">extra_names</span><span class="o">=</span><span class="default_value">['SAM', 'ZNB']</span></em>, <em class="sig-param"><span class="n">solvate</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">protonate</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">other_ff_instance</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.SETD2_protocols.Protocols.setup" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt id="source.SETD2_protocols.Protocols.solvate">
-<code class="sig-name descname">solvate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">forcefield</span></em>, <em class="sig-param"><span class="n">boxtype</span><span class="o">=</span><span class="default_value">'cubic'</span></em>, <em class="sig-param"><span class="n">box_padding</span><span class="o">=</span><span class="default_value">1.0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.SETD2_protocols.Protocols.solvate" title="Permalink to this definition">¶</a></dt>
-<dd><p>Generation of box parameters and solvation.</p>
-<dl class="simple">
-<dt>system<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
-</dd>
-<dt>boxtype<span class="classifier">str, optional</span></dt><dd><p>Box type, either ‘cubic’ or ‘rectangular’. The default is ‘cubic’.</p>
-</dd>
-<dt>box_padding<span class="classifier">float, optional</span></dt><dd><p>Box padding. The default is 1.0.</p>
-</dd>
-</dl>
-<p>None.</p>
-</dd></dl>
-
-</dd></dl>
-
+<div class="section" id="protocols">
+<h2>Protocols<a class="headerlink" href="#protocols" title="Permalink to this headline">¶</a></h2>
 </div>
 </div>
 
