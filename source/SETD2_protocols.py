@@ -1,18 +1,21 @@
-from __future__ import print_function
+#SFv2
+import tools
+
+#legacy
 from simtk.openmm.app import *
-from simtk.openmm import *
 import simtk.openmm as mm
-from simtk.unit import *
+from simtk.unit import picoseconds, kelvin, nanometers, molar
 from simtk.openmm import app
 from simtk import unit
 from sys import stdout
-import parmed as pmd
+#import parmed as pmd
 from pdbfixer import PDBFixer
 from mdtraj.reporters import HDF5Reporter
 import mdtraj as md
 import os
 import re
 import numpy as np
+from pdbfixer.pdbfixer import PDBFixer
 
 peptide = 'H3K36'
 sim_time = '100ns'
@@ -31,9 +34,9 @@ class Protocols:
 
         # Integration Options
 
-        self.dt = 0.002*unit.picoseconds
-        self.temperature = 300*unit.kelvin
-        self.friction = 1/unit.picosecond
+        self.dt = 0.002*picoseconds
+        self.temperature = 300*kelvin
+        self.friction = 1/picoseconds
         self.sim_ph = 7.0
 
         # Simulation Options
@@ -41,87 +44,97 @@ class Protocols:
         self.Simulate_Steps = 5e7  # 100ns
         self.npt_eq_Steps = 5e6    # 10ns
         self.SAM_restr_eq_Steps = 5e6          
-        self.SAM_free_eq_Steps = 5e6    
+        self.SAM_free_eq_Steps = 5e6   
 
 
         #Hardware specs
-        self.workdir=workdir
-        #self.platform = app.Platform.getPlatformByName('CUDA')
-        #self.gpu_index = '0'
-        #self.platformProperties = {'Precision': 'single','DeviceIndex': self.gpu_index}
+        self.workdir=os.path.abspath(workdir)
+        self.platform = Platform.getPlatformByName('CUDA')
+        self.gpu_index = '0'
+        self.platformProperties = {'Precision': 'single','DeviceIndex': self.gpu_index}
 
-    def setup(self, 
-              input_pdb='SETD2_complexed_H3K36.pdb',
-              extra_input_pdb=['SAM_H3K36.pdb', 'ZNB_H3K36.pdb'],
-              ff_files=['amber14-all.xml', 'amber14/tip4pew.xml', 'gaff.xml'],
-              extra_ff_files=[], #['SAM.xml', 'ZNB.xml']
-              extra_names=['SAM', 'ZNB'],
+    def setSystem(self, 
+              input_pdb=None,
               solvate=True,
               protonate=True,
+              fix_pdb=True,
+              extra_input_pdb=[], #['SAM_H3K36.pdb', 'ZNB_H3K36.pdb']
+              ff_files=[], #['amber14-all.xml', 'amber14/tip4pew.xml', 'gaff.xml'],
+              extra_ff_files=[], #['SAM.xml', 'ZNB.xml']
+              extra_names=[], #['SAM', 'ZNB'],
               other_ff_instance=False):
-
-        #TODO: Automate further. Link with tools.fileHandler
-    
-        if not os.makedirs:
-            os.makedirs(self.workdir)
+        
+        tools.Functions.fileHandler(self.workdir)
        
         input_pdb=f'{self.workdir}/{input_pdb}'
-        pdb = app.PDBFile(input_pdb)
-        system = app.Modeller(pdb.topology, pdb.positions)
-    
- 
-    
-        xml_list = ff_files
         
-        if len(extra_ff_files) > 0:
-            for lig_xml_file in extra_ff_files:
-                print(f'{self.workdir}/{lig_xml_file}')
-                xml_list.append(f'{self.workdir}/{lig_xml_file}')
-    
-    
-        #TODO: Get other forcefield instances from somewhere else. e.g. forcefield2
-        #This some
-    
-        forcefield = app.ForceField(*xml_list)
-
-        if other_ff_instance:
+        if fix_pdb:
             
-            forcefield=self.pre-setup('InputsFromGroup2')
-
-        #definition of additional residues (for ligands or novel residues); bonds extracted from ligand xml files
-        additional_residue_definitions_file = f'{self.workdir}/add_residue_def.xml'       
-
-        system.addHydrogens(forcefield, 
+            pdb=PDBFixer(input_pdb)
+            
+            pdb.findMissingResidues()
+            pdb.findMissingAtoms()
+            pdb.addMissingAtoms()
+        
+        else:
+            pdb = app.PDBFile(input_pdb)
+        
+        pre_system = app.Modeller(pdb.topology, pdb.positions)
+    
+        forcefield=self.setForceFields(ff_files=ff_files, 
+                                         extra_ff_files=extra_ff_files,
+                                         omm_ff=False)
+    
+        if protonate:
+            pre_system.addHydrogens(forcefield, 
                              pH = self.sim_ph, 
-                             variants = app.SetProtonationState(system.topology.chains())) 
-        #variants = protonation_list
+                             variants = self.setProtonationState(pre_system.topology.chains(), 
+                                                                 protonation_dict={('A',187): 'ASP', ('A',224): 'HID'}) )
 
-
+        
         # add ligand structures to the model
         for extra_pdb_file in extra_input_pdb:
             extra_pdb = app.PDBFile(extra_pdb_file)
-            system.add(extra_pdb.topology, extra_pdb.positions)
+            pre_system.add(extra_pdb.topology, extra_pdb.positions)
 
+
+        #Call to static solvate
         if solvate:
-            
-            system=self.solvate(system, forcefield)
+            pre_system=self.solvate(pre_system, forcefield)
     
-        
-        topology = system.topology
-        positions = system.positions
-
-        omm_system = forcefield.createSystem(topology, 
+        #Create a openMM topology instance
+        system = forcefield.createSystem(pre_system.topology, 
                                          nonbondedMethod=app.PME, 
-                                         nonbondedCutoff=1.0*unit.nanometers,
+                                         nonbondedCutoff=1.0*nanometers,
                                          ewaldErrorTolerance=0.0005, 
                                          constraints='HBonds', 
                                          rigidWater=True)
         
-        integrator = app.LangevinIntegrator(self.temperature, self.friction, self.dt)
-        simulation = app.Simulation(topology, omm_system, integrator, self.platform, self.platformProperties)
-        simulation.context.setPositions(positions)
+        #Update attribute
+        self.system=system
+        self.topology=pre_system.topology
+        self.positions=pre_system.positions
+    
         
-        return (positions, simulation)
+        return system
+    
+    def setSimulation(self):
+        
+        #TODO: make it classmethod maybe
+        #TODO: Set integrator types
+        integrator = mm.LangevinIntegrator(self.temperature, 
+                                            self.friction, 
+                                            self.dt)
+        
+        simulation = app.Simulation(self.topology, 
+                                    self.system, 
+                                    integrator, 
+                                    self.platform, 
+                                    self.platformProperties)
+        
+        simulation.context.setPositions(self.positions)
+        
+        return simulation
 
 
     def pre_setup(self, input_omm_ff='InputsFromGroup2'):
@@ -133,7 +146,8 @@ class Protocols:
         
         """
 
-        return 'forcefield'     
+        pass
+
 
     def minimization(self,
                      positions_simulation):
@@ -162,6 +176,59 @@ class Protocols:
 
 
         return (min_pos, simulation)
+
+    def setForceFields(self,
+                         ff_files=[], 
+                         extra_ff_files=[],
+                         omm_ff=None,
+                         ff_path=None,
+                         defaults=('amber14-all.xml', 'amber14/tip4pew.xml'), 
+                         add_residue_file=None): #add_residue_file='add_residue_def.xml'
+                        
+        #TODO: make more checks             
+        #definition of additional residues (for ligands or novel residues); bonds extracted from ligand xml files
+    
+        if ff_path == None:
+            
+            ff_path=self.workdir
+    
+        if len(extra_ff_files) > 0:
+                           
+            for ff in extra_ff_files:
+                ff_files.append(ff)
+            
+            #TODO: probably remove this
+            if add_residue_file != None:
+                ff_files.append(add_residue_file)
+            
+   
+        for idx, ff in enumerate(ff_files):
+            
+            print(f'Extra force field file {idx+1}: {ff_path}/{ff}')
+            ff_files[idx]=os.path.abspath(f'{ff_path}/{ff}') 
+ 
+        #Wrap up what was defined
+        if len(ff_files) > 0:
+            
+            print(f'Using default force fields: {defaults}')
+            ff_files=defaults   
+            forcefield = app.ForceField(*defaults)
+        
+        elif omm_ff:
+            print(f'Other openMM force field instance has been passed: {omm_ff}')
+            pass
+            #TODO: get this from somewhere else    
+            #forcefield=self.pre-setup('InputsFromGroup2')
+        
+        else:
+            forcefield = app.ForceField(*ff_files)
+        
+        
+        return forcefield    
+    
+    
+
+
 
     @classmethod
     def setRestraints(positions_system,
@@ -226,8 +293,13 @@ class Protocols:
     
         return system
 
-
-    def solvate(system, forcefield, boxtype='cubic', box_padding=1.0):
+    @staticmethod
+    def solvate(system, 
+                forcefield,
+                box_size=9.0,
+                boxtype='cubic',
+                padding=None,
+                ionicStrength=0*molar):
         """
         
         Generation of box parameters and solvation.
@@ -246,73 +318,23 @@ class Protocols:
         None.
 
         """
-        
-        box_padding = 1.0 #nanometers
-
-        x_list, y_list, z_list = [], [], []
-
-        # get atom indices for protein plus ligands
-        for index in range(len(system.positions)):
-            x_list.append(system.positions[index][0]._value)
-            y_list.append(system.positions[index][1]._value)
-            z_list.append(system.positions[index][2]._value)
-        x_span = (max(x_list) - min(x_list))
-        y_span = (max(y_list) - min(y_list))
-        z_span = (max(z_list) - min(z_list))
-
-        # build box and add solvent
-        d =  max(x_span, y_span, z_span) + (2 * box_padding)
-
-        d_x = x_span + (2 * box_padding)
-        d_y = y_span + (2 * box_padding)
-        d_z = z_span + (2 * box_padding)
-
-        prot_x_mid = min(x_list) + (0.5 * x_span)
-        prot_y_mid = min(y_list) + (0.5 * y_span)
-        prot_z_mid = min(z_list) + (0.5 * z_span)
-
-        box_x_mid = d_x * 0.5
-        box_y_mid = d_y * 0.5
-        box_z_mid = d_z * 0.5
-
-        shift_x = box_x_mid - prot_x_mid
-        shift_y = box_y_mid - prot_y_mid
-        shift_z = box_z_mid - prot_z_mid
-        
-        solvated_system = app.Modeller(system.topology, system.positions)
-
-        # shift coordinates to the middle of the box
-        for index in range(len(solvated_system.positions)):
-            
-            solvated_system.positions[index] = (solvated_system.positions[index][0]._value + shift_x,
-                                                solvated_system.positions[index][1]._value + shift_y,
-                                                solvated_system.positions[index][2]._value + shift_z)*unit.nanometers
 
         # add box vectors and solvate
-        if boxtype == 'cubic':
-            solvated_system.addSolvent(forcefield, 
+        #TODO: Allow other box definitions. Use method padding to get prot sized+padding distance
+        system.addSolvent(forcefield, 
                                      model='tip4pew', 
                                      neutralize=True, 
-                                     ionicStrength=0.1*unit.molar, 
-                                     boxVectors=(mm.Vec3(d, 0., 0.), 
-                                                 mm.Vec3(0., d, 0.), 
-                                                 mm.Vec3(0, 0, d)))
-
-        elif boxtype == 'rectangular':
-            solvated_system.addSolvent(forcefield, 
-                                     model='tip4pew', 
-                                     neutralize=True, 
-                                     ionicStrength=0.1*unit.molar, 
-                                     boxVectors=(mm.Vec3(d_x, 0., 0.), 
-                                                 mm.Vec3(0., d_y, 0.), 
-                                                 mm.Vec3(0, 0, d_z)))
+                                     ionicStrength=ionicStrength, #0.1 M for SETD2
+                                     padding=None, 
+                                     boxSize=mm.Vec3(box_size, box_size, box_size))
             
-        return solvated_system
+        return system
 
 
-
-
-    def SetProtonationState(self, system):
+        
+    @staticmethod
+    def setProtonationState(system, 
+                            protonation_dict={}):
         """
     
         Method to get a dictionary of residue types:
@@ -352,9 +374,13 @@ class Protocols:
         #only for manual protonation
         #TODO: Outsource residue protonation states.
     
-        protonation_dict = {('A',1499): 'CYX', 
+        if not bool(protonation_dict):
+            
+            print('No protonation dictionary provided. Using default.')
+    
+            protonation_dict = {('A',1499): 'CYX', 
                     ('A',1501): 'CYX', 
-                    ('A',1516):'CYX', 
+                    ('A',1516): 'CYX', 
                     ('A',1520): 'CYX', 
                     ('A',1529): 'CYX', 
                     ('A',1533):'CYX', 
@@ -363,15 +389,20 @@ class Protocols:
                     ('A',1678):'CYX', 
                     ('A',1680):'CYX', 
                     ('A',1685):'CYX', 
-                    ('B',36):'LYN'} 
+                    ('B',36): 'LYN'} 
+        else:
+            
+            protonation_dict= {('A',187): 'ASP', 
+                    ('A',224): 'HID'} 
 
 
         protonation_list = []
         key_list=[]
 
+
         for chain in system:
         
-            id = chain.id
+            chain_id = chain.id
             protonations_in_chain_dict = {}
             
             for protonation_tuple in protonation_dict:
@@ -400,6 +431,55 @@ class Protocols:
         return protonation_list
 
 
+
+    @classmethod
+    def box_padding(system, box_padding=1.0):
+        
+        x_list, y_list, z_list = [], [], []
+
+        # get atom indices for protein plus ligands
+        for index in range(len(system.positions)):
+            x_list.append(system.positions[index][0]._value)
+            y_list.append(system.positions[index][1]._value)
+            z_list.append(system.positions[index][2]._value)
+        x_span = (max(x_list) - min(x_list))
+        y_span = (max(y_list) - min(y_list))
+        z_span = (max(z_list) - min(z_list))
+
+        # build box and add solvent
+        d =  max(x_span, y_span, z_span) + (2 * box_padding)
+
+        d_x = x_span + (2 * box_padding)
+        d_y = y_span + (2 * box_padding)
+        d_z = z_span + (2 * box_padding)
+
+        prot_x_mid = min(x_list) + (0.5 * x_span)
+        prot_y_mid = min(y_list) + (0.5 * y_span)
+        prot_z_mid = min(z_list) + (0.5 * z_span)
+
+        box_x_mid = d_x * 0.5
+        box_y_mid = d_y * 0.5
+        box_z_mid = d_z * 0.5
+
+        shift_x = box_x_mid - prot_x_mid
+        shift_y = box_y_mid - prot_y_mid
+        shift_z = box_z_mid - prot_z_mid
+            
+            
+        system_shifted=app.Modeller(system.topology, system.positions)
+        
+        # shift coordinates to the middle of the box
+        for index in range(len(system_shifted.positions)):
+            
+            system_shifted.positions[index] = (system_shifted.positions[index][0]._value + shift_x,
+                                               system_shifted.positions[index][1]._value + shift_y,
+                                               system_shifted.positions[index][2]._value + shift_z)*nanometers
+            
+        return system_shifted, d, d_x
+    
+    
+    
+    
 # =============================================================================
 # ###########################################
 # #####################LEGACY################
