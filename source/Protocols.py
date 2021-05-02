@@ -12,7 +12,7 @@ import tools
 #legacy
 from simtk.openmm.app import *
 import simtk.openmm as omm
-from simtk.unit import picoseconds, kelvin, nanometers, molar, atmospheres
+from simtk.unit import picoseconds, picosecond, kelvin, nanometers, molar, atmospheres, nanoseconds, nanosecond #* 
 from simtk.openmm import app
 from simtk import unit
 from sys import stdout
@@ -78,7 +78,7 @@ class Protocols:
               extra_ff_files=[],
               extra_names=[],
               other_ff_instance=False,
-              pH = 7.0):
+              pH_protein = 7.0):
         """
         
 
@@ -142,7 +142,7 @@ class Protocols:
     
         if protonate:
             pre_system.addHydrogens(forcefield, 
-                             pH = pH, 
+                             pH = pH_protein, 
                              variants = self.setProtonationState(pre_system.topology.chains(), 
                                                                  protonation_dict={('A',187): 'ASP', ('A',224): 'HID'}) )
 
@@ -178,12 +178,13 @@ class Protocols:
         
         return self
     
-    def setSimulation(self, 
+    def setSimulations(self, 
                       dt = 0.002*picoseconds, 
                       temperature = 300*kelvin, 
-                      friction = 1/picoseconds,
-                      equilibrations=[('NPT', 5e6, 100)],
-                      pressure=1*atmospheres):
+                      friction = 1/picosecond,
+                      equilibrations=[('NPT', 1*nanoseconds, 100)],
+                      pressure=1*atmospheres,
+                      pH=7.0):
         """
         
 
@@ -207,6 +208,12 @@ class Protocols:
 
         """
 
+        self.dt=dt
+        self.temperature=temperature
+        self.friction=friction
+        self.pressure=pressure
+        self.pH=pH
+        #TODO: make pressure, temperature protocol specific
 
         #TODO: convert times and steps into physical.
 
@@ -230,31 +237,44 @@ class Protocols:
         
         simulation.context.setPositions(self.positions)
         
-        self.trj_subset='protein'
-        #trajectory_out_atoms = 'protein or resname SAM or resname ZNB'
+
         
         self.trj_write={}
         self.steps={}
         selection_reference_topology = md.Topology().from_openmm(self.topology)
+        
+        self.trj_subset='protein'
+        #trajectory_out_atoms = 'protein or resname SAM or resname ZNB'
         self.trj_indices = selection_reference_topology.select(self.trj_subset)
         
-        self.protocols=[]
+        self.eq_protocols=[]
         
         #TODO: make it protocol-specific
         
         for eq in equilibrations:
             
             ensemble, steps, save_steps=eq
+            
+            #TODO: convert units to steps for steps
+
+            if type(steps) != int:
+                print(f'Steps is not unitless: {steps}')
+                steps=steps/self.dt 
+                print(f'Converted to unitless using integration time of {self.dt}: {steps}')
+            
+            print(steps)
+                
+            
             self.steps[ensemble]=steps
             self.trj_write[ensemble] = save_steps #10000
-            self.protocols.append(ensemble)
+            self.eq_protocols.append(ensemble)
             
         self.simulation=simulation
         
         return simulation
 
 
-    def energyMinimization(self,
+    def run_energyMinimization(self,
                      *args):
         """
         
@@ -302,62 +322,74 @@ class Protocols:
         return simulation
 
 
-
-    def equilibration_NPT(self, *args):
-
-        if not args:
-            simulation=self.simulation
-            positions=self.positions        
-
-
-        print(self.simulation)
-
-
-        print(simulation.pressure)
+    def run_equilibrations(self, *args):
+        
+        
+        protocols=self.eq_protocols
+        
+        for p in protocols:
+            
+            if p == 'NPT':
+                
+                print(f'Run: {p}')
+                run=self.equilibration_NPT()
+            
+            else:
+                print('TODO')
+                
+                #TODO: expand.
+        
+        return run
+                
+        
+        
+    def equilibration_NPT(self, *args):      
         
         # add MC barostat for NPT
-        self.system.addForce(omm.MonteCarloBarostat(simulation.pressure, 
-                                                    simulation.temperature, 
-                                                    25))
-        simulation.context.setPositions(positions)
-        simulation.context.setVelocitiesToTemperature(simulation.temperature*kelvin)
+        self.system.addForce(omm.MonteCarloBarostat(self.pressure, 
+                                                    self.temperature, 
+                                                    25)) 
+        #TODO: force is hardcoded, make it go away. Check units throughout!
         
+        
+        self.simulation.context.setPositions(self.positions)
+        self.simulation.context.setVelocitiesToTemperature(self.temperature)
         
         # Define reporters
-        simulation.reporters.append(app.StateDataReporter(self.workdir, 
-                                                          simulation.trj_write['NPT'], 
+        self.simulation.reporters.append(app.StateDataReporter(f'{self.workdir}/report.csv', 
+                                                          self.trj_write['NPT'], 
                                                           step=True, 
                                                           potentialEnergy=True, 
                                                           temperature=True, 
                                                           progress=True, 
                                                           remainingTime=True, 
                                                           speed=True, 
-                                                          totalSteps=simulation.steps['NPT'], 
+                                                          totalSteps=self.steps['NPT'], 
                                                           separator='\t'))
         #TODO: Decide on wether same extent as steps for reporter
         #TODO: Link to streamz
         
-        simulation.reporters.append(HDF5Reporter(f'{self.workdir}/equilibration_NPT.h5', 
-                                                 simulation.trj_write['NPT'], 
-                                                 atomSubset=simulation.trj_indices))
+        self.simulation.reporters.append(HDF5Reporter(f'{self.workdir}/equilibration_NPT.h5', 
+                                                 self.trj_write['NPT'], 
+                                                 atomSubset=self.trj_indices))
         
         
-        print(simulation)
         
-        print('Restrained NPT equilibration...')
+        trj_time=self.steps['NPT']*self.dt
+        print(f'Restrained NPT equilibration ({trj_time})...')
+        self.simulation.step(self.steps['NPT'])
         
-        simulation.steps['NPT']
-        state_npt_EQ = simulation.context.getState(getPositions=True, getVelocities=True)
+        state_npt_EQ = self.simulation.context.getState(getPositions=True, getVelocities=True)
         
         positions = state_npt_EQ.getPositions()
         
-        app.PDBFile.writeFile(simulation.topology, 
+        app.PDBFile.writeFile(self.simulation.topology, 
                               positions, 
                               open(f'{self.workdir}/equilibration_NPT.pdb', 'w'), 
                               keepIds=True)
         
         
-        Eo=simulation.context.getState(getEnergy=True).getPotentialEnergy()
+        Eo=self.simulation.context.getState(getEnergy=True).getPotentialEnergy()
 
         
         print('NPT equilibration finished.')

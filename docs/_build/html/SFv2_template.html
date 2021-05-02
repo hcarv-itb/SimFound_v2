@@ -428,7 +428,7 @@ div.rendered_html tbody tr:hover {
 <div class="section" id="Import-modules">
 <h2>Import modules<a class="headerlink" href="#Import-modules" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -443,7 +443,7 @@ div.rendered_html tbody tr:hover {
 
 <span class="kn">import</span> <span class="nn">importlib</span>
 
-<span class="kn">import</span> <span class="nn">SETD2_protocols</span> <span class="k">as</span> <span class="nn">P</span>
+<span class="kn">import</span> <span class="nn">Protocols</span> <span class="k">as</span> <span class="nn">P</span>
 
 </pre></div>
 </div>
@@ -453,19 +453,21 @@ div.rendered_html tbody tr:hover {
 <div class="section" id="Protocols">
 <h1>Protocols<a class="headerlink" href="#Protocols" title="Permalink to this headline">¶</a></h1>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[178]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">pdb</span><span class="o">=</span><span class="s1">&#39;5a71a.pdb&#39;</span>
 
 <span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">P</span><span class="p">)</span>
-<span class="n">protocol</span><span class="o">=</span><span class="n">P</span><span class="o">.</span><span class="n">Protocols</span><span class="p">(</span><span class="n">workdir</span><span class="o">=</span><span class="n">data_path</span><span class="p">)</span>
+<span class="n">sim_tools</span><span class="o">=</span><span class="n">P</span><span class="o">.</span><span class="n">Protocols</span><span class="p">(</span><span class="n">workdir</span><span class="o">=</span><span class="n">data_path</span><span class="p">)</span>
 
-<span class="n">system</span><span class="o">=</span><span class="n">protocol</span><span class="o">.</span><span class="n">setSystem</span><span class="p">(</span><span class="n">input_pdb</span><span class="o">=</span><span class="n">pdb</span><span class="p">,</span>
-                          <span class="n">extra_ff_files</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;gaff-2.11modv3_1.xml&#39;</span><span class="p">],</span>
-                          <span class="n">protonate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                          <span class="n">solvate</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">system_omm</span><span class="o">=</span><span class="n">sim_tools</span><span class="o">.</span><span class="n">pdb2omm</span><span class="p">(</span><span class="n">input_pdbs</span><span class="o">=</span><span class="n">pdb</span><span class="p">,</span>
+                            <span class="n">extra_ff_files</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;gaff-2.11modv3_1.xml&#39;</span><span class="p">],</span>
+                            <span class="n">protonate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">solvate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">inspect</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">pH</span><span class="o">=</span><span class="mf">8.0</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -476,16 +478,99 @@ div.rendered_html tbody tr:hover {
 <div class="highlight"><pre>
 Extra force field file 1: C:\Users\hcarv\Documents\work\Protein Design 2021\Group1/gaff-2.11modv3_1.xml
 Using default force fields: (&#39;amber14-all.xml&#39;, &#39;amber14/tip4pew.xml&#39;)
+PDB file generated: C:\Users\hcarv\Documents\work\Protein Design 2021\Group1/system.pdb
 </pre></div></div>
 </div>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[179]:
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">simulation</span><span class="o">=</span><span class="n">protocol</span><span class="o">.</span><span class="n">setSimulation</span><span class="p">()</span>
+<span></span><span class="n">system_omm</span><span class="o">.</span><span class="n">setSimulation</span><span class="p">()</span>
 </pre></div>
 </div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;simtk.openmm.openmm.Platform; proxy of &lt;Swig Object of type &#39;OpenMM::Platform *&#39; at 0x000001FB92BFE990&gt; &gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;simtk.openmm.app.simulation.Simulation at 0x1fb92c66df0&gt;
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">system_omm</span><span class="o">.</span><span class="n">energyMinimization</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Performing energy minimization: -786575.7661969243 kJ/mol
+System is now minimized: -1269544.7661969243 kJ/mol
+PDB file generated: C:\Users\hcarv\Documents\work\Protein Design 2021\Group1/Emin.pdb
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;simtk.openmm.app.simulation.Simulation at 0x1fb92c66df0&gt;
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">system_omm</span><span class="o">.</span><span class="n">equilibration_NPT</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;simtk.openmm.app.simulation.Simulation object at 0x000001FB92C66DF0&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-intense-fg ansi-bold">---------------------------------------------------------------------------</span>
+<span class="ansi-red-intense-fg ansi-bold">AttributeError</span>                            Traceback (most recent call last)
+<span class="ansi-green-intense-fg ansi-bold">&lt;ipython-input-5-0ff993f55cfc&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span>
+<span class="ansi-green-intense-fg ansi-bold">----&gt; 1</span><span class="ansi-yellow-intense-fg ansi-bold"> </span>system_omm<span class="ansi-yellow-intense-fg ansi-bold">.</span>equilibration_NPT<span class="ansi-yellow-intense-fg ansi-bold">(</span><span class="ansi-yellow-intense-fg ansi-bold">)</span>
+
+<span class="ansi-green-intense-fg ansi-bold">~\Documents\GitHub\SimFound_v2\source\Protocols.py</span> in <span class="ansi-cyan-fg">equilibration_NPT</span><span class="ansi-blue-intense-fg ansi-bold">(self, *args)</span>
+<span class="ansi-green-fg">    314</span>
+<span class="ansi-green-fg">    315</span>
+<span class="ansi-green-intense-fg ansi-bold">--&gt; 316</span><span class="ansi-yellow-intense-fg ansi-bold">         </span>print<span class="ansi-yellow-intense-fg ansi-bold">(</span>simulation<span class="ansi-yellow-intense-fg ansi-bold">.</span>pressure<span class="ansi-yellow-intense-fg ansi-bold">)</span>
+<span class="ansi-green-fg">    317</span>
+<span class="ansi-green-fg">    318</span>         <span class="ansi-red-intense-fg ansi-bold"># add MC barostat for NPT</span>
+
+<span class="ansi-red-intense-fg ansi-bold">AttributeError</span>: &#39;Simulation&#39; object has no attribute &#39;pressure&#39;
+</pre></div></div>
 </div>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
