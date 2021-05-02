@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>SFv2 Template notebook &mdash; Simulation Foundry, v2 2.0 documentation</title>
+  <title>Import modules &mdash; Simulation Foundry, v2 2.0 documentation</title>
   
 
   
@@ -92,11 +92,10 @@
 <li class="toctree-l2"><a class="reference internal" href="density.html">3D Analysis tutorial</a></li>
 <li class="toctree-l2"><a class="reference internal" href="visualization.html">Visualization tutorial</a></li>
 <li class="toctree-l2"><a class="reference internal" href="discretized.html">Discretization tutorial</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">SFv2 Template notebook</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#Import-modules">Import modules</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Import modules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Protocols">Protocols</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#Protocols">Protocols</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="documentation.html">Documentation</a></li>
@@ -149,7 +148,7 @@
         
           <li><a href="projects.html">Usage</a> &raquo;</li>
         
-      <li>SFv2 Template notebook</li>
+      <li>Import modules</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -423,10 +422,8 @@ div.rendered_html tbody tr:hover {
     text-align: unset;
 }
 </style>
-<div class="section" id="SFv2-Template-notebook">
-<h1>SFv2 Template notebook<a class="headerlink" href="#SFv2-Template-notebook" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="Import-modules">
-<h2>Import modules<a class="headerlink" href="#Import-modules" title="Permalink to this headline">¶</a></h2>
+# SFv2 Template notebook<div class="section" id="Import-modules">
+<h1>Import modules<a class="headerlink" href="#Import-modules" title="Permalink to this headline">¶</a></h1>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
@@ -450,10 +447,8 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-</div>
-</div>
 <div class="section" id="Protocols">
-<h1>Protocols<a class="headerlink" href="#Protocols" title="Permalink to this headline">¶</a></h1>
+<h2>Protocols<a class="headerlink" href="#Protocols" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
@@ -470,6 +465,23 @@ div.rendered_html tbody tr:hover {
                             <span class="n">solvate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                             <span class="n">inspect</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                             <span class="n">pH_protein</span><span class="o">=</span><span class="mf">7.0</span><span class="p">)</span>
+
+<span class="c1">#TODO: make dictionary of groups</span>
+<span class="c1">#CALB-DES</span>
+<span class="c1">#</span>
+<span class="n">std_report</span><span class="o">=</span><span class="mi">100</span>
+
+<span class="n">CALB_defaults</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;ensemble&#39;</span><span class="p">:</span> <span class="s1">&#39;NPT&#39;</span><span class="p">,</span>
+               <span class="s1">&#39;step&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="o">*</span><span class="n">picoseconds</span><span class="p">,</span>
+               <span class="s1">&#39;report&#39;</span><span class="p">:</span> <span class="n">std_report</span><span class="p">,</span>
+               <span class="s1">&#39;restrained_sets&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;selections&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;protein and backbone&#39;</span><span class="p">],</span>
+                                   <span class="s1">&#39;forces&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">100</span><span class="o">*</span><span class="n">kilojoules_per_mole</span><span class="o">/</span><span class="n">angstroms</span><span class="p">]}}</span>
+
+<span class="n">SETD2_defaults</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;ensemble&#39;</span><span class="p">:</span> <span class="s1">&#39;NPT&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;step&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="o">*</span><span class="n">picoseconds</span><span class="p">,</span>
+                <span class="s1">&#39;report&#39;</span><span class="p">:</span> <span class="n">std_report</span><span class="p">,</span>
+                <span class="s1">&#39;restrained_sets&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;selections&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;protein and name CA and not chainid 1&#39;</span><span class="p">,</span> <span class="s1">&#39;chainid 3 and resid 0&#39;</span><span class="p">],</span>
+                                    <span class="s1">&#39;forces&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">100</span><span class="o">*</span><span class="n">kilojoules_per_mole</span><span class="o">/</span><span class="n">angstroms</span><span class="p">,</span> <span class="mi">150</span><span class="o">*</span><span class="n">kilojoules_per_mole</span><span class="o">/</span><span class="n">angstroms</span><span class="p">]}}</span>
 </pre></div>
 </div>
 </div>
@@ -491,7 +503,7 @@ PDB file generated: C:\Users\hcarv\Documents\work\Protein Design 2021\Group1/sys
 <span></span><span class="n">system_omm</span><span class="o">.</span><span class="n">setSimulations</span><span class="p">(</span><span class="n">dt</span> <span class="o">=</span> <span class="mf">0.002</span><span class="o">*</span><span class="n">picoseconds</span><span class="p">,</span>
                           <span class="n">temperature</span> <span class="o">=</span> <span class="mi">300</span><span class="o">*</span><span class="n">kelvin</span><span class="p">,</span>
                           <span class="n">friction</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="n">picosecond</span><span class="p">,</span>
-                          <span class="n">equilibrations</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;NPT&#39;</span><span class="p">,</span> <span class="mi">100</span><span class="o">*</span><span class="n">picosecond</span><span class="p">,</span> <span class="mi">100</span><span class="p">)],</span>
+                          <span class="n">equilibrations</span><span class="o">=</span><span class="p">[</span><span class="n">CALB_defaults</span><span class="p">],</span>
                           <span class="n">pressure</span><span class="o">=</span><span class="mi">1</span><span class="o">*</span><span class="n">atmospheres</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -501,10 +513,13 @@ PDB file generated: C:\Users\hcarv\Documents\work\Protein Design 2021\Group1/sys
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;simtk.openmm.openmm.Platform; proxy of &lt;Swig Object of type &#39;OpenMM::Platform *&#39; at 0x000001DA2C315690&gt; &gt;
-Steps is not a unitless: 100 ps
-Converted to unitless using integration time of 0.002 ps: 50000.0
-50000.0
+Setting equilibration protocol:
+        ensemble: NPT
+        step: 1 ps
+        report: 100
+        restrained_sets: {&#39;selections&#39;: [&#39;protein and backbone&#39;], &#39;forces&#39;: [Quantity(value=100, unit=kilojoule/(angstrom*mole))]}
+Steps is not unitless: 1 ps
+Converted to unitless using integration time of 0.002 ps: 500
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -513,7 +528,7 @@ Converted to unitless using integration time of 0.002 ps: 50000.0
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;simtk.openmm.app.simulation.Simulation at 0x1da36bcdeb0&gt;
+&lt;simtk.openmm.app.simulation.Simulation at 0x1dbc414fb20&gt;
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -530,8 +545,8 @@ Converted to unitless using integration time of 0.002 ps: 50000.0
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Performing energy minimization: -996073.9013136635 kJ/mol
-System is now minimized: -1270882.4013136635 kJ/mol
+Performing energy minimization: 315807424.6216891 kJ/mol
+System is now minimized: -1271343.878310915 kJ/mol
 PDB file generated: C:\Users\hcarv\Documents\work\Protein Design 2021\Group1/Emin.pdb
 </pre></div></div>
 </div>
@@ -541,7 +556,7 @@ PDB file generated: C:\Users\hcarv\Documents\work\Protein Design 2021\Group1/Emi
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;simtk.openmm.app.simulation.Simulation at 0x1da36bcdeb0&gt;
+&lt;simtk.openmm.app.simulation.Simulation at 0x1dbc414fb20&gt;
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -553,16 +568,52 @@ PDB file generated: C:\Users\hcarv\Documents\work\Protein Design 2021\Group1/Emi
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
+<div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
 Run: NPT
-Restrained NPT equilibration (100.0 ps)...
+Restrained NPT equilibration (1.0 ps)...
 NPT equilibration finished.
-System is now equilibrated (?): -1035605.9013136635 kJ/mol
 </pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-intense-fg ansi-bold">---------------------------------------------------------------------------</span>
+<span class="ansi-red-intense-fg ansi-bold">NameError</span>                                 Traceback (most recent call last)
+<span class="ansi-green-intense-fg ansi-bold">&lt;ipython-input-5-1b1b6ab102fb&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span>
+<span class="ansi-green-intense-fg ansi-bold">----&gt; 1</span><span class="ansi-yellow-intense-fg ansi-bold"> </span>system_omm<span class="ansi-yellow-intense-fg ansi-bold">.</span>run_equilibrations<span class="ansi-yellow-intense-fg ansi-bold">(</span><span class="ansi-yellow-intense-fg ansi-bold">)</span>
+
+<span class="ansi-green-intense-fg ansi-bold">~\Documents\GitHub\SimFound_v2\source\Protocols.py</span> in <span class="ansi-cyan-fg">run_equilibrations</span><span class="ansi-blue-intense-fg ansi-bold">(self, *args)</span>
+<span class="ansi-green-fg">    361</span>
+<span class="ansi-green-fg">    362</span>                 print<span class="ansi-yellow-intense-fg ansi-bold">(</span><span class="ansi-blue-intense-fg ansi-bold">f&#34;Run: {p[&#39;ensemble&#39;]}&#34;</span><span class="ansi-yellow-intense-fg ansi-bold">)</span>
+<span class="ansi-green-intense-fg ansi-bold">--&gt; 363</span><span class="ansi-yellow-intense-fg ansi-bold">                 </span>run<span class="ansi-yellow-intense-fg ansi-bold">=</span>self<span class="ansi-yellow-intense-fg ansi-bold">.</span>equilibration_NPT<span class="ansi-yellow-intense-fg ansi-bold">(</span>p<span class="ansi-yellow-intense-fg ansi-bold">)</span>
+<span class="ansi-green-fg">    364</span>
+<span class="ansi-green-fg">    365</span>             <span class="ansi-green-intense-fg ansi-bold">else</span><span class="ansi-yellow-intense-fg ansi-bold">:</span>
+
+<span class="ansi-green-intense-fg ansi-bold">~\Documents\GitHub\SimFound_v2\source\Protocols.py</span> in <span class="ansi-cyan-fg">equilibration_NPT</span><span class="ansi-blue-intense-fg ansi-bold">(self, protocol)</span>
+<span class="ansi-green-fg">    426</span>         print<span class="ansi-yellow-intense-fg ansi-bold">(</span><span class="ansi-blue-intense-fg ansi-bold">&#39;NPT equilibration finished.&#39;</span><span class="ansi-yellow-intense-fg ansi-bold">)</span>
+<span class="ansi-green-fg">    427</span>
+<span class="ansi-green-intense-fg ansi-bold">--&gt; 428</span><span class="ansi-yellow-intense-fg ansi-bold">         </span>self<span class="ansi-yellow-intense-fg ansi-bold">.</span>EQ_NPT<span class="ansi-yellow-intense-fg ansi-bold">=</span>self<span class="ansi-yellow-intense-fg ansi-bold">.</span>writePDB<span class="ansi-yellow-intense-fg ansi-bold">(</span>self<span class="ansi-yellow-intense-fg ansi-bold">.</span>simulation<span class="ansi-yellow-intense-fg ansi-bold">.</span>topology<span class="ansi-yellow-intense-fg ansi-bold">,</span> positions_new<span class="ansi-yellow-intense-fg ansi-bold">,</span> name<span class="ansi-yellow-intense-fg ansi-bold">=</span><span class="ansi-blue-intense-fg ansi-bold">&#39;EQ_NPT&#39;</span><span class="ansi-yellow-intense-fg ansi-bold">)</span>
+<span class="ansi-green-fg">    429</span>         Eo<span class="ansi-yellow-intense-fg ansi-bold">=</span>self<span class="ansi-yellow-intense-fg ansi-bold">.</span>simulation<span class="ansi-yellow-intense-fg ansi-bold">.</span>context<span class="ansi-yellow-intense-fg ansi-bold">.</span>getState<span class="ansi-yellow-intense-fg ansi-bold">(</span>getEnergy<span class="ansi-yellow-intense-fg ansi-bold">=</span><span class="ansi-green-intense-fg ansi-bold">True</span><span class="ansi-yellow-intense-fg ansi-bold">)</span><span class="ansi-yellow-intense-fg ansi-bold">.</span>getPotentialEnergy<span class="ansi-yellow-intense-fg ansi-bold">(</span><span class="ansi-yellow-intense-fg ansi-bold">)</span>
+<span class="ansi-green-fg">    430</span>
+
+<span class="ansi-red-intense-fg ansi-bold">NameError</span>: name &#39;positions_new&#39; is not defined
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>
+</pre></div>
+</div>
+</div>
 </div>
 </div>
 

@@ -421,7 +421,7 @@ class Protocols:
         
         #state_npt_EQ = self.simulation.context.getState(getPositions=True, getVelocities=True)
         
-        position_new = self.simulation.context.getState(getPositions=True, getVelocities=True).getPositions()
+        positions_new = self.simulation.context.getState(getPositions=True, getVelocities=True).getPositions()
         
         print('NPT equilibration finished.')
         
@@ -430,17 +430,20 @@ class Protocols:
         
         print(f'System is now equilibrated (?): {Eo}')
         
-        import subprocess
-        cmd="mdconvert equilibration_NPT.h5 -o equilibration_NPT.xtc"
-        
-        process=subprocess.Popen(cmd.split(), stdout=self.workdir, cwd=self.workdir)
-        
-        output, error = process.comunicate()
-        
-        print(output, error)
+# =============================================================================
+#         
+#         import subprocess
+#         cmd="mdconvert equilibration_NPT.h5 -o equilibration_NPT.xtc"
+#         
+#         process=subprocess.Popen(cmd.split(), stdout=self.workdir, cwd=self.workdir)
+#         
+#         output, error = process.comunicate()
+#         
+#         print(output, error)
+#     
+# =============================================================================
     
-    
-        return output
+        return self.simulation
 
     def setRestraints(self, restrained_sets):
                       
@@ -467,9 +470,6 @@ class Protocols:
         
         
         #('protein and name CA and not chainid 1', 'chainid 3 and resid 0')
-        
-        #TODO: Fix difference of positions_system as inputs and only system as out.
-        
         #trajectory_out_atoms = 'protein or resname SAM or resname ZNB'
         
 
@@ -694,8 +694,7 @@ class Protocols:
 
         
     @staticmethod
-    def setProtonationState(system, 
-                            protonation_dict={}):
+    def setProtonationState(system, protonation_dict=()):
         """
     
         Method to get a dictionary of residue types:
@@ -751,11 +750,6 @@ class Protocols:
                     ('A',1680):'CYX', 
                     ('A',1685):'CYX', 
                     ('B',36): 'LYN'} 
-        else:
-            
-            protonation_dict= {('A',187): 'ASP', 
-                    ('A',224): 'HID'} 
-
 
         protonation_list = []
         key_list=[]

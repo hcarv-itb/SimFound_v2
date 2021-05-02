@@ -217,7 +217,7 @@
 
 <dl class="py method">
 <dt id="source.Protocols.Protocols.equilibration_NPT">
-<code class="sig-name descname">equilibration_NPT</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.equilibration_NPT" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">equilibration_NPT</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">protocol</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.equilibration_NPT" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -281,7 +281,7 @@ TODO: include “extra_input_pdb” methods to build boxes on the fly.</p>
 
 <dl class="py method">
 <dt id="source.Protocols.Protocols.setProtonationState">
-<em class="property">static </em><code class="sig-name descname">setProtonationState</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">system</span></em>, <em class="sig-param"><span class="n">protonation_dict</span><span class="o">=</span><span class="default_value">{}</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.setProtonationState" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="sig-name descname">setProtonationState</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">system</span></em>, <em class="sig-param"><span class="n">protonation_dict</span><span class="o">=</span><span class="default_value">()</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.setProtonationState" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="simple">
 <dt>Method to get a dictionary of residue types:</dt><dd><p>(chain_name, residue number): restype</p>
 </dd>
@@ -310,26 +310,23 @@ Cysteine: CYS, CYX</p>
 
 <dl class="py method">
 <dt id="source.Protocols.Protocols.setRestraints">
-<em class="property">static </em><code class="sig-name descname">setRestraints</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">positions_system</span></em>, <em class="sig-param"><span class="n">restrained_sets</span><span class="o">=</span><span class="default_value">'protein and name CA and not chainid 1', 'chainid 3 and resid 0'</span></em>, <em class="sig-param"><span class="n">forces</span><span class="o">=</span><span class="default_value">[100, 150]</span></em>, <em class="sig-param"><span class="n">restrained_set</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.setRestraints" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">setRestraints</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">restrained_sets</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.setRestraints" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set position restraints on atom set(s).</p>
 <dl class="simple">
-<dt>positions_system<span class="classifier">tuple</span></dt><dd><p>A tuple of positions and system object</p>
+<dt>restrained_sets<span class="classifier">list of str, optional</span></dt><dd><p>Selection(s) (MDTraj). The default is [‘protein and backbone’].</p>
 </dd>
-<dt>restrained_sets<span class="classifier">list, optional</span></dt><dd><p>Selection(s) (MDTraj). The default ‘protein and name CA and not chainid 1’ and ‘chainid 3 and resid 0’.
-Backbone and Restrained peptide, cofactor, and metal-dummy atoms</p>
-</dd>
-<dt>forces<span class="classifier">list, optional</span></dt><dd><p>The force applied in kilojoules_per_mole/angstroms. Has to be same size as the restrained_sets. The default is [100,150].</p>
+<dt>forces<span class="classifier">list of int, optional</span></dt><dd><p>The force applied in kilojoules_per_mole/angstroms. The default is 100.</p>
 </dd>
 </dl>
 <dl class="simple">
-<dt>System: object</dt><dd><p>A modified version of the system with costumized forces.</p>
+<dt>system<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt id="source.Protocols.Protocols.setSimulations">
-<code class="sig-name descname">setSimulations</code><span class="sig-paren">(</span><em class="sig-param">dt=Quantity(value=0.002, unit=picosecond), temperature=Quantity(value=300, unit=kelvin), friction=Quantity(value=1, unit=/picosecond), equilibrations=[('NPT', Quantity(value=1, unit=nanosecond), 100)], pressure=Quantity(value=1, unit=atmosphere), pH=7.0</em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.setSimulations" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">setSimulations</code><span class="sig-paren">(</span><em class="sig-param">dt=Quantity(value=0.002, unit=picosecond), temperature=Quantity(value=300, unit=kelvin), friction=Quantity(value=1, unit=/picosecond), pressure=Quantity(value=1, unit=atmosphere), pH=7.0, equilibrations=[{'ensemble': 'NPT', 'step': Quantity(value=1, unit=nanosecond), 'report': 1000, 'restrained_sets': {'selections': ['protein and backbone'], 'forces': [Quantity(value=100, unit=kilojoule/(angstrom*mole))]}}]</em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.setSimulations" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to setup simulation protocols.
 Returns a simulation object.
 Updates openMM instance with simulation and some self attributes to make simulation hyperparameters more acessible (HPCsim)</p>
