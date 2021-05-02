@@ -182,7 +182,7 @@ class Protocols:
                       dt = 0.002*picoseconds, 
                       temperature = 300*kelvin, 
                       friction = 1/picoseconds,
-                      equilibrations=('NPT', 5e6, 100),
+                      equilibrations=[('NPT', 5e6, 100)],
                       pressure=1*atmospheres):
         """
         
@@ -195,8 +195,10 @@ class Protocols:
             DESCRIPTION. The default is 300*kelvin.
         friction : TYPE, optional
             DESCRIPTION. The default is 1/picoseconds.
-        npt_eq_steps: int, optional
-            DESCRIPTION. The default is 5e6 (10 ns if int. time 2 fs).
+        equilibrations : TYPE, optional
+            DESCRIPTION. The default is [('NPT', 5e6, 100)].
+        pressure : TYPE, optional
+            DESCRIPTION. The default is 1*atmospheres.
 
         Returns
         -------
@@ -204,6 +206,7 @@ class Protocols:
             DESCRIPTION.
 
         """
+
 
         #TODO: convert times and steps into physical.
 
@@ -229,21 +232,18 @@ class Protocols:
         #trajectory_out_atoms = 'protein or resname SAM or resname ZNB'
         
         self.trj_write={}
+        self.steps={}
         selection_reference_topology = md.Topology().from_openmm(self.topology)
         self.trj_indices = selection_reference_topology.select(self.trj_subset)
         
+        self.protocols=[]
+        
         for eq in equilibrations:
             
-            (ensemble, steps, save_steps)=eq #This hardcodes the definitions of equilibrations tuples
-            
-            print(ensemble, steps, save_steps)
-            
+            ensemble, steps, save_steps=eq
             self.steps[ensemble]=steps
             self.trj_write[ensemble] = save_steps #10000
-            
-            if ensemble == 'NPT':
-                
-                self.protocol='self.equilibration_NPT()'
+            self.protocols.append(ensemble)
             
         self.simulation=simulation
         
@@ -322,6 +322,8 @@ class Protocols:
                                                           speed=True, 
                                                           totalSteps=simulation.steps['NPT'], 
                                                           separator='\t'))
+        #TODO: Decide on wether same extent as steps for reporter
+        #TODO: Link to streamz
         
         simulation.reporters.append(HDF5Reporter(f'{self.workdir}/equilibration_NPT.h5', 
                                                  simulation.trj_write['NPT'], 
@@ -332,12 +334,22 @@ class Protocols:
         
         print('Restrained NPT equilibration...')
         
-        #simulation.step(self.npt_eq_steps)
-        # state_npt_EQ = simulation.context.getState(getPositions=True, getVelocities=True)
-        # positions = state_npt_EQ.getPositions()
-        # app.PDBFile.writeFile(simulation.topology, positions, open(traj_folder + '/' + 'post_NPT_EQ.pdb', 'w'), keepIds=True)
-        # print(simulation.context.getState(getEnergy=True).getPotentialEnergy())
-        # print('Successful NPT equilibration!')
+        simulation.steps['NPT']
+        state_npt_EQ = simulation.context.getState(getPositions=True, getVelocities=True)
+        
+        positions = state_npt_EQ.getPositions()
+        
+        app.PDBFile.writeFile(simulation.topology, 
+                              positions, 
+                              open(f'{self.workdir}/equilibration_NPT.pdb', 'w'), 
+                              keepIds=True)
+        
+        
+        Eo=simulation.context.getState(getEnergy=True).getPotentialEnergy()
+
+        
+        print('NPT equilibration finished.')
+        print(f'System is now equilibrated (?): {Eo}')
         # 
         # 
         # # Free Equilibration
