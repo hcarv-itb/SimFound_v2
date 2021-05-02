@@ -216,29 +216,20 @@
 </dd></dl>
 
 <dl class="py method">
-<dt id="source.Protocols.Protocols.energyMinimization">
-<code class="sig-name descname">energyMinimization</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.energyMinimization" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="simple">
-<dt>simulation<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
-</dd>
-<dt>topology<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
-</dd>
-</dl>
-<dl class="simple">
-<dt>simulation<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
 <dt id="source.Protocols.Protocols.equilibration_NPT">
 <code class="sig-name descname">equilibration_NPT</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.equilibration_NPT" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt id="source.Protocols.Protocols.pdb2omm">
-<code class="sig-name descname">pdb2omm</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_pdbs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">solvate</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">protonate</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">fix_pdb</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">inspect</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">extra_input_pdb</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">ff_files</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">extra_ff_files</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">extra_names</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">other_ff_instance</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">pH</span><span class="o">=</span><span class="default_value">7.0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.pdb2omm" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="simple">
+<code class="sig-name descname">pdb2omm</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_pdbs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">solvate</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">protonate</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">fix_pdb</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">inspect</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">extra_input_pdb</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">ff_files</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">extra_ff_files</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">extra_names</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">other_ff_instance</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">pH_protein</span><span class="o">=</span><span class="default_value">7.0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.pdb2omm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to prepare an openMM system from PDB and XML/other force field definitions.
+Returns self, so that other methods can act on it.
+Requires input PDB file(s) handled by “input_pdbs”. 
+Uses default AMBER force fields if none are provide by “ff_files”.
+Includes to provided force fields (or defaults) additional XML/other definitions with “extra_ff_files”.
+TODO: include “extra_input_pdb” methods to build boxes on the fly.</p>
+<dl class="simple">
 <dt>input_pdb<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is None.</p>
 </dd>
 <dt>solvate<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is True.</p>
@@ -257,11 +248,31 @@
 </dd>
 <dt>other_ff_instance<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is False.</p>
 </dd>
-<dt>pH<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is 7.0.</p>
+<dt>pH_protein<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is 7.0.</p>
 </dd>
 </dl>
 <p>None.</p>
 </dd></dl>
+
+<dl class="py method">
+<dt id="source.Protocols.Protocols.run_energyMinimization">
+<code class="sig-name descname">run_energyMinimization</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.run_energyMinimization" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>simulation<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>topology<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>simulation<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.Protocols.Protocols.run_equilibrations">
+<code class="sig-name descname">run_equilibrations</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.run_equilibrations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt id="source.Protocols.Protocols.setForceFields">
@@ -317,18 +328,23 @@ Backbone and Restrained peptide, cofactor, and metal-dummy atoms</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="source.Protocols.Protocols.setSimulation">
-<code class="sig-name descname">setSimulation</code><span class="sig-paren">(</span><em class="sig-param">dt=Quantity(value=0.002, unit=picosecond), temperature=Quantity(value=300, unit=kelvin), friction=Quantity(value=1, unit=/picosecond), equilibrations=[('NPT', 5000000.0, 100)], pressure=Quantity(value=1, unit=atmosphere)</em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.setSimulation" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="simple">
+<dt id="source.Protocols.Protocols.setSimulations">
+<code class="sig-name descname">setSimulations</code><span class="sig-paren">(</span><em class="sig-param">dt=Quantity(value=0.002, unit=picosecond), temperature=Quantity(value=300, unit=kelvin), friction=Quantity(value=1, unit=/picosecond), equilibrations=[('NPT', Quantity(value=1, unit=nanosecond), 100)], pressure=Quantity(value=1, unit=atmosphere), pH=7.0</em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.setSimulations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to setup simulation protocols.
+Returns a simulation object.
+Updates openMM instance with simulation and some self attributes to make simulation hyperparameters more acessible (HPCsim)</p>
+<dl class="simple">
 <dt>dt<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is 0.002*picoseconds.</p>
 </dd>
 <dt>temperature<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is 300*kelvin.</p>
 </dd>
-<dt>friction<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is 1/picoseconds.</p>
+<dt>friction<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is 1/picosecond.</p>
 </dd>
-<dt>equilibrations<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is [(‘NPT’, 5e6, 100)].</p>
+<dt>equilibrations<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is [(‘NPT’, 1*nanoseconds, 100)].</p>
 </dd>
 <dt>pressure<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is 1*atmospheres.</p>
+</dd>
+<dt>pH<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is 7.0.</p>
 </dd>
 </dl>
 <dl class="simple">

@@ -445,6 +445,8 @@ div.rendered_html tbody tr:hover {
 
 <span class="kn">import</span> <span class="nn">Protocols</span> <span class="k">as</span> <span class="nn">P</span>
 
+<span class="kn">from</span> <span class="nn">simtk.unit</span> <span class="kn">import</span> <span class="o">*</span>
+
 </pre></div>
 </div>
 </div>
@@ -467,7 +469,7 @@ div.rendered_html tbody tr:hover {
                             <span class="n">protonate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                             <span class="n">solvate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                             <span class="n">inspect</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                            <span class="n">pH</span><span class="o">=</span><span class="mf">8.0</span><span class="p">)</span>
+                            <span class="n">pH_protein</span><span class="o">=</span><span class="mf">7.0</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -486,7 +488,11 @@ PDB file generated: C:\Users\hcarv\Documents\work\Protein Design 2021\Group1/sys
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">system_omm</span><span class="o">.</span><span class="n">setSimulation</span><span class="p">()</span>
+<span></span><span class="n">system_omm</span><span class="o">.</span><span class="n">setSimulations</span><span class="p">(</span><span class="n">dt</span> <span class="o">=</span> <span class="mf">0.002</span><span class="o">*</span><span class="n">picoseconds</span><span class="p">,</span>
+                          <span class="n">temperature</span> <span class="o">=</span> <span class="mi">300</span><span class="o">*</span><span class="n">kelvin</span><span class="p">,</span>
+                          <span class="n">friction</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="n">picosecond</span><span class="p">,</span>
+                          <span class="n">equilibrations</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;NPT&#39;</span><span class="p">,</span> <span class="mi">100</span><span class="o">*</span><span class="n">picosecond</span><span class="p">,</span> <span class="mi">100</span><span class="p">)],</span>
+                          <span class="n">pressure</span><span class="o">=</span><span class="mi">1</span><span class="o">*</span><span class="n">atmospheres</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -495,7 +501,10 @@ PDB file generated: C:\Users\hcarv\Documents\work\Protein Design 2021\Group1/sys
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;simtk.openmm.openmm.Platform; proxy of &lt;Swig Object of type &#39;OpenMM::Platform *&#39; at 0x000001FB92BFE990&gt; &gt;
+&lt;simtk.openmm.openmm.Platform; proxy of &lt;Swig Object of type &#39;OpenMM::Platform *&#39; at 0x000001DA2C315690&gt; &gt;
+Steps is not a unitless: 100 ps
+Converted to unitless using integration time of 0.002 ps: 50000.0
+50000.0
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -504,7 +513,7 @@ PDB file generated: C:\Users\hcarv\Documents\work\Protein Design 2021\Group1/sys
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;simtk.openmm.app.simulation.Simulation at 0x1fb92c66df0&gt;
+&lt;simtk.openmm.app.simulation.Simulation at 0x1da36bcdeb0&gt;
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -512,7 +521,7 @@ PDB file generated: C:\Users\hcarv\Documents\work\Protein Design 2021\Group1/sys
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">system_omm</span><span class="o">.</span><span class="n">energyMinimization</span><span class="p">()</span>
+<span></span><span class="n">system_omm</span><span class="o">.</span><span class="n">run_energyMinimization</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -521,8 +530,8 @@ PDB file generated: C:\Users\hcarv\Documents\work\Protein Design 2021\Group1/sys
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Performing energy minimization: -786575.7661969243 kJ/mol
-System is now minimized: -1269544.7661969243 kJ/mol
+Performing energy minimization: -996073.9013136635 kJ/mol
+System is now minimized: -1270882.4013136635 kJ/mol
 PDB file generated: C:\Users\hcarv\Documents\work\Protein Design 2021\Group1/Emin.pdb
 </pre></div></div>
 </div>
@@ -532,7 +541,7 @@ PDB file generated: C:\Users\hcarv\Documents\work\Protein Design 2021\Group1/Emi
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;simtk.openmm.app.simulation.Simulation at 0x1fb92c66df0&gt;
+&lt;simtk.openmm.app.simulation.Simulation at 0x1da36bcdeb0&gt;
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -540,46 +549,20 @@ PDB file generated: C:\Users\hcarv\Documents\work\Protein Design 2021\Group1/Emi
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">system_omm</span><span class="o">.</span><span class="n">equilibration_NPT</span><span class="p">()</span>
+<span></span><span class="n">system_omm</span><span class="o">.</span><span class="n">run_equilibrations</span><span class="p">()</span>
 </pre></div>
 </div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-&lt;simtk.openmm.app.simulation.Simulation object at 0x000001FB92C66DF0&gt;
-</pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-<span class="ansi-red-intense-fg ansi-bold">---------------------------------------------------------------------------</span>
-<span class="ansi-red-intense-fg ansi-bold">AttributeError</span>                            Traceback (most recent call last)
-<span class="ansi-green-intense-fg ansi-bold">&lt;ipython-input-5-0ff993f55cfc&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span>
-<span class="ansi-green-intense-fg ansi-bold">----&gt; 1</span><span class="ansi-yellow-intense-fg ansi-bold"> </span>system_omm<span class="ansi-yellow-intense-fg ansi-bold">.</span>equilibration_NPT<span class="ansi-yellow-intense-fg ansi-bold">(</span><span class="ansi-yellow-intense-fg ansi-bold">)</span>
-
-<span class="ansi-green-intense-fg ansi-bold">~\Documents\GitHub\SimFound_v2\source\Protocols.py</span> in <span class="ansi-cyan-fg">equilibration_NPT</span><span class="ansi-blue-intense-fg ansi-bold">(self, *args)</span>
-<span class="ansi-green-fg">    314</span>
-<span class="ansi-green-fg">    315</span>
-<span class="ansi-green-intense-fg ansi-bold">--&gt; 316</span><span class="ansi-yellow-intense-fg ansi-bold">         </span>print<span class="ansi-yellow-intense-fg ansi-bold">(</span>simulation<span class="ansi-yellow-intense-fg ansi-bold">.</span>pressure<span class="ansi-yellow-intense-fg ansi-bold">)</span>
-<span class="ansi-green-fg">    317</span>
-<span class="ansi-green-fg">    318</span>         <span class="ansi-red-intense-fg ansi-bold"># add MC barostat for NPT</span>
-
-<span class="ansi-red-intense-fg ansi-bold">AttributeError</span>: &#39;Simulation&#39; object has no attribute &#39;pressure&#39;
+Run: NPT
+Restrained NPT equilibration (100.0 ps)...
+NPT equilibration finished.
+System is now equilibrated (?): -1035605.9013136635 kJ/mol
 </pre></div></div>
-</div>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>
-</pre></div>
-</div>
 </div>
 </div>
 

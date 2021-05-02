@@ -5,14 +5,24 @@ Created on Sat May  1 19:24:37 2021
 @author: hcarv
 """
 
-
-#SFv2
-import tools
+try:
+    #SFv2
+    import tools
+except:
+    print('Could not load SFv2 modules')
 
 #legacy
 from simtk.openmm.app import *
 import simtk.openmm as omm
-from simtk.unit import picoseconds, picosecond, kelvin, nanometers, molar, atmospheres, nanoseconds, nanosecond #* 
+
+used_units=('picoseconds', 'picosecond', 'nanoseconds', 'nanosecond',
+            'kelvin', 
+            'nanometers', 'angstroms',
+            'molar', 
+            'atmospheres',  
+            'kilojoules_per_mole')
+
+from simtk.unit import * 
 from simtk.openmm import app
 from simtk import unit
 from sys import stdout
@@ -25,13 +35,15 @@ import re
 import numpy as np
 from pdbfixer.pdbfixer import PDBFixer
 
-peptide = 'H3K36'
-sim_time = '100ns'
-
-traj_folder = 'trajectories_SETD2_{}_{}'.format(peptide, sim_time)
-
-
-
+# =============================================================================
+# peptide = 'H3K36'
+# sim_time = '100ns'
+# 
+# traj_folder = 'trajectories_SETD2_{}_{}'.format(peptide, sim_time)
+# 
+# 
+# 
+# =============================================================================
 
 
 
@@ -188,9 +200,13 @@ class Protocols:
                       dt = 0.002*picoseconds, 
                       temperature = 300*kelvin, 
                       friction = 1/picosecond,
-                      equilibrations=[('NPT', 1*nanoseconds, 100)],
                       pressure=1*atmospheres,
-                      pH=7.0):
+                      pH=7.0,
+                      equilibrations=[{'ensemble': 'NPT', 
+                                       'step': 1*nanoseconds, 
+                                       'report': 1000, 
+                                       'restrained_sets': {'selections': ['protein and backbone'], 
+                                                           'forces': [100*kilojoules_per_mole/angstroms]}}]):
         """
         Function to setup simulation protocols.
         Returns a simulation object.
@@ -226,13 +242,14 @@ class Protocols:
         self.pH=pH
         #TODO: make pressure, temperature protocol specific
 
-        #TODO: Decide on whether hardware specs are stored under simulation or on the system. later is better for different machines (update function)
+        #TODO: Decide on whether hardware specs are stored under simulation or on the system. 
+        #later is better for different machines (update function)
 
         platform = omm.Platform.getPlatformByName('CUDA')
         gpu_index = '0'
         platformProperties = {'Precision': 'single','DeviceIndex': gpu_index}
         
-        print(platform)
+        #print(platform)
         
         #TODO: make it classmethod maybe
         #TODO: Set integrator types
@@ -248,37 +265,37 @@ class Protocols:
         
         simulation.context.setPositions(self.positions)
         
-
-        
-        self.trj_write={}
-        self.steps={}
         selection_reference_topology = md.Topology().from_openmm(self.topology)
-        
-        self.trj_subset='protein'
-        #trajectory_out_atoms = 'protein or resname SAM or resname ZNB'
+       
+        self.trj_write={}
+        self.steps={}       
+        self.trj_subset='all'
         self.trj_indices = selection_reference_topology.select(self.trj_subset)
-        
         self.eq_protocols=[]
-        
-        #TODO: make it protocol-specific
+ 
+        #trajectory_out_atoms = 'protein or resname SAM or resname ZNB'
         
         for eq in equilibrations:
+                        
+            print('Setting equilibration protocol:')
             
-            ensemble, steps, save_steps=eq
-            
-            #TODO: convert units to steps for steps
-
-            if type(steps) != int:
-                print(f'Steps is not unitless: {steps}')
-                steps=steps/self.dt 
-                print(f'Converted to unitless using integration time of {self.dt}: {steps}')
-            
-            print(steps)
+            for k,v in eq.items():
+                print(f'\t{k}: {v}')
+                        
+            if type(eq['step']) != int:
                 
+                print(f"Steps is not unitless: {eq['step']}")
+                eq['step']=int(eq['step']/self.dt) 
+                
+                print(f"Converted to unitless using integration time of {self.dt}: {eq['step']}")
             
-            self.steps[ensemble]=steps
-            self.trj_write[ensemble] = save_steps #10000
-            self.eq_protocols.append(ensemble)
+            self.eq_protocols.append(eq)
+            
+            #Legacy, passed as single global.
+            #ensemble= steps, save_steps, restrained_sets=eq
+            #self.steps[eq['ensemble']]=steps
+            #self.trj_write[eq['ensemble']] = save_steps #10000
+            #self.eq_protocols.append((, restrained_sets))
             
         self.simulation=simulation
         
@@ -340,10 +357,10 @@ class Protocols:
         
         for p in protocols:
             
-            if p == 'NPT':
+            if p['ensemble'] == 'NPT':
                 
-                print(f'Run: {p}')
-                run=self.equilibration_NPT()
+                print(f"Run: {p['ensemble']}")
+                run=self.equilibration_NPT(p)
             
             else:
                 print('TODO')
@@ -354,9 +371,16 @@ class Protocols:
                 
         
         
-    def equilibration_NPT(self, *args):      
+    def equilibration_NPT(self, protocol):      
         
-        # add MC barostat for NPT
+
+        if protocol['restrained_sets']:
+
+            #call to setRestraints, returns updated system. Check protocol['restrained_sets'] definitions on setSimulation.            
+            self.system=self.setRestraints(protocol['restrained_sets'])
+
+        
+        # add MC barostat for NPT     
         self.system.addForce(omm.MonteCarloBarostat(self.pressure, 
                                                     self.temperature, 
                                                     25)) 
@@ -368,43 +392,115 @@ class Protocols:
         
         # Define reporters
         self.simulation.reporters.append(app.StateDataReporter(f'{self.workdir}/report.csv', 
-                                                          self.trj_write['NPT'], 
+                                                          protocol['report'], 
                                                           step=True, 
                                                           potentialEnergy=True, 
                                                           temperature=True, 
                                                           progress=True, 
                                                           remainingTime=True, 
                                                           speed=True, 
-                                                          totalSteps=self.steps['NPT'], 
+                                                          totalSteps=protocol['step'], 
                                                           separator='\t'))
         #TODO: Decide on wether same extent as steps for reporter
         #TODO: Link to streamz
         
         self.simulation.reporters.append(HDF5Reporter(f'{self.workdir}/equilibration_NPT.h5', 
-                                                 self.trj_write['NPT'], 
+                                                 protocol['report'], 
                                                  atomSubset=self.trj_indices))
         
+        trj_time=protocol['step']*self.dt
         
         
-        trj_time=self.steps['NPT']*self.dt
-        print(f'Restrained NPT equilibration ({trj_time})...')
-        self.simulation.step(self.steps['NPT'])
+        #############
+        ## WARNING ##
+        #############
+        print(f"Restrained NPT equilibration ({trj_time})...")
         
-        state_npt_EQ = self.simulation.context.getState(getPositions=True, getVelocities=True)
-        
-        positions = state_npt_EQ.getPositions()
-        
-        app.PDBFile.writeFile(self.simulation.topology, 
-                              positions, 
-                              open(f'{self.workdir}/equilibration_NPT.pdb', 'w'), 
-                              keepIds=True)
+        self.simulation.step(protocol['step'])
         
         
-        Eo=self.simulation.context.getState(getEnergy=True).getPotentialEnergy()
-
+        #state_npt_EQ = self.simulation.context.getState(getPositions=True, getVelocities=True)
+        
+        position_new = self.simulation.context.getState(getPositions=True, getVelocities=True).getPositions()
         
         print('NPT equilibration finished.')
+        
+        self.EQ_NPT=self.writePDB(self.simulation.topology, positions_new, name='EQ_NPT')
+        Eo=self.simulation.context.getState(getEnergy=True).getPotentialEnergy()
+        
         print(f'System is now equilibrated (?): {Eo}')
+        
+        import subprocess
+        cmd="mdconvert equilibration_NPT.h5 -o equilibration_NPT.xtc"
+        
+        process=subprocess.Popen(cmd.split(), stdout=self.workdir, cwd=self.workdir)
+        
+        output, error = process.comunicate()
+        
+        print(output, error)
+    
+    
+        return output
+
+    def setRestraints(self, restrained_sets):
+                      
+                      
+                      #=['protein and backbone'],
+                      #forces=[100*kilojoules_per_mole/angstroms]):
+        """
+        Set position restraints on atom set(s).
+
+        Parameters
+        ----------
+        restrained_sets : list of str, optional
+            Selection(s) (MDTraj). The default is ['protein and backbone'].
+        forces : list of int, optional
+            The force applied in kilojoules_per_mole/angstroms. The default is 100.
+
+        Returns
+        -------
+        system : TYPE
+            DESCRIPTION.
+
+        """
+        
+        
+        
+        #('protein and name CA and not chainid 1', 'chainid 3 and resid 0')
+        
+        #TODO: Fix difference of positions_system as inputs and only system as out.
+        
+        #trajectory_out_atoms = 'protein or resname SAM or resname ZNB'
+        
+
+        topology = md.Topology().from_openmm(self.topology)   
+                     
+        
+        if len(restrained_sets['selections']) == len(restrained_sets['forces']):
+        
+            for restrained_set, force_value in zip(restrained_sets['selections'], restrained_sets['forces']):
+        
+                force = omm.CustomExternalForce("(k/2)*periodicdistance(x, y, z, x0, y0, z0)^2")
+                force.addGlobalParameter("k", force_value*kilojoules_per_mole/angstroms**2)
+                force.addPerParticleParameter("x0")
+                force.addPerParticleParameter("y0")
+                force.addPerParticleParameter("z0")
+            
+                for res_atom_index in topology.select(restrained_set):
+                    
+                    force.addParticle(int(res_atom_index), self.positions[int(res_atom_index)].value_in_unit(unit.nanometers))
+            
+            #TODO: Decide wether to spawn system reps. Streamlined now. Legacy removes later.    
+            self.system.addForce(force)
+
+            return self.system
+        
+        else:
+            print('Inputs for restrained sets are not the same length.')
+    
+    
+        #      for res_atom_index, force in zip(restrained_indices_list, forces_list):
+                       
         # 
         # 
         # # Free Equilibration
@@ -555,74 +651,8 @@ class Protocols:
         return out_pdb
 
 
-    @staticmethod
-    def setRestraints(positions_system,
-                      restrained_sets=('protein and name CA and not chainid 1', 'chainid 3 and resid 0'),
-                      forces=[100, 150],
-                      restrained_set=True):
-        """
-        
-        Set position restraints on atom set(s).
 
-        Parameters
-        ----------
-        positions_system : tuple
-            A tuple of positions and system object
-        restrained_sets : list, optional
-            Selection(s) (MDTraj). The default 'protein and name CA and not chainid 1' and 'chainid 3 and resid 0'.
-            Backbone and Restrained peptide, cofactor, and metal-dummy atoms
-        forces : list, optional
-            The force applied in kilojoules_per_mole/angstroms. Has to be same size as the restrained_sets. The default is [100,150].    
-
-
-        Returns
-        -------
-        System: object
-            A modified version of the system with costumized forces.
-
-        """
-        
-        #TODO: Fix difference of positions_system as inputs and only system as out.
-        
-        #trajectory_out_atoms = 'protein or resname SAM or resname ZNB'
-        #trajectory_out_interval = 10000
-        #trajectory_out_indices = selection_reference_topology.select(trajectory_out_atoms)
-        
-        
-        
-        (positions, system)=positions_system
-        selection_reference_topology = md.Topology().from_openmm(system.topology)   
-                     
-        
-        restrained_indices_list=[]
-        for restrained_set in restrained_sets:
-
-            restrained_indices = selection_reference_topology.select(restrained_set)
-            restrained_indices_list.append(restrained_indices)
-
-        forces_list=[]
-        for idx, f in enumerate(forces):
-        
-            force = omm.CustomExternalForce("(k/2)*periodicdistance(x, y, z, x0, y0, z0)^2")
-            force.addGlobalParameter("k", f*unit.kilojoules_per_mole/unit.angstroms**2)
-        
-            force.addPerParticleParameter("x0")
-            force.addPerParticleParameter("y0")
-            force.addPerParticleParameter("z0")
-            
-            forces_list.append(force)
-
-        #TODO: Fixed for the last (second) set on SETD2.
-        chain=0
-        
-        if restrained_set:
-            chain=-1
-            
-        for res_atom_index in restrained_indices_list[chain]:   
-            forces_list[chain].addParticle(int(res_atom_index), positions[int(res_atom_index)].value_in_unit(unit.nanometers))    
-        system.addForce(forces_list[chain])
-    
-        return system
+ 
 
     @staticmethod
     def solvate(system, 
