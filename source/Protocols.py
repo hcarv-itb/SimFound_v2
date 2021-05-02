@@ -214,6 +214,8 @@ class Protocols:
         gpu_index = '0'
         platformProperties = {'Precision': 'single','DeviceIndex': gpu_index}
         
+        print(platform)
+        
         #TODO: make it classmethod maybe
         #TODO: Set integrator types
         integrator = omm.LangevinIntegrator(temperature, 
@@ -237,6 +239,8 @@ class Protocols:
         self.trj_indices = selection_reference_topology.select(self.trj_subset)
         
         self.protocols=[]
+        
+        #TODO: make it protocol-specific
         
         for eq in equilibrations:
             
@@ -272,6 +276,8 @@ class Protocols:
         #if not provided, use stored from instance (default)
         #TODO: make it pretty.
         
+
+        
         if not args:
             simulation=self.simulation
             topology=self.topology
@@ -290,6 +296,8 @@ class Protocols:
         self.Emin=self.writePDB(topology, positions_new, name='Emin')
         
         self.positions=positions_new
+        
+        self.simulation=simulation
 
         return simulation
 
@@ -302,10 +310,14 @@ class Protocols:
             positions=self.positions        
 
 
+        print(self.simulation)
+
+
+        print(simulation.pressure)
         
-        # add barostat for NPT
+        # add MC barostat for NPT
         self.system.addForce(omm.MonteCarloBarostat(simulation.pressure, 
-                                                    simulation.temperature*kelvin, 
+                                                    simulation.temperature, 
                                                     25))
         simulation.context.setPositions(positions)
         simulation.context.setVelocitiesToTemperature(simulation.temperature*kelvin)
