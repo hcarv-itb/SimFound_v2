@@ -80,6 +80,12 @@ class Protocols:
               other_ff_instance=False,
               pH_protein = 7.0):
         """
+        Method to prepare an openMM system from PDB and XML/other force field definitions.
+        Returns self, so that other methods can act on it.
+        Requires input PDB file(s) handled by "input_pdbs". 
+        Uses default AMBER force fields if none are provide by "ff_files".
+        Includes to provided force fields (or defaults) additional XML/other definitions with "extra_ff_files".
+        TODO: include "extra_input_pdb" methods to build boxes on the fly.
         
 
         Parameters
@@ -102,7 +108,7 @@ class Protocols:
             DESCRIPTION. The default is [].
         other_ff_instance : TYPE, optional
             DESCRIPTION. The default is False.
-        pH : TYPE, optional
+        pH_protein : TYPE, optional
             DESCRIPTION. The default is 7.0.
 
         Returns
@@ -186,7 +192,9 @@ class Protocols:
                       pressure=1*atmospheres,
                       pH=7.0):
         """
-        
+        Function to setup simulation protocols.
+        Returns a simulation object.
+        Updates openMM instance with simulation and some self attributes to make simulation hyperparameters more acessible (HPCsim)
 
         Parameters
         ----------
@@ -195,11 +203,13 @@ class Protocols:
         temperature : TYPE, optional
             DESCRIPTION. The default is 300*kelvin.
         friction : TYPE, optional
-            DESCRIPTION. The default is 1/picoseconds.
+            DESCRIPTION. The default is 1/picosecond.
         equilibrations : TYPE, optional
-            DESCRIPTION. The default is [('NPT', 5e6, 100)].
+            DESCRIPTION. The default is [('NPT', 1*nanoseconds, 100)].
         pressure : TYPE, optional
             DESCRIPTION. The default is 1*atmospheres.
+        pH : TYPE, optional
+            DESCRIPTION. The default is 7.0.
 
         Returns
         -------
@@ -207,6 +217,7 @@ class Protocols:
             DESCRIPTION.
 
         """
+  
 
         self.dt=dt
         self.temperature=temperature
@@ -215,7 +226,7 @@ class Protocols:
         self.pH=pH
         #TODO: make pressure, temperature protocol specific
 
-        #TODO: convert times and steps into physical.
+        #TODO: Decide on whether hardware specs are stored under simulation or on the system. later is better for different machines (update function)
 
         platform = omm.Platform.getPlatformByName('CUDA')
         gpu_index = '0'
