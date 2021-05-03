@@ -91,7 +91,7 @@ class Protocols:
               extra_names=[],
               other_ff_instance=False,
               pH_protein = 7.0,
-              protonation_dictionary={}):
+              residue_variants={}):
         """
         Method to prepare an openMM system from PDB and XML/other force field definitions.
         Returns self, so that other methods can act on it.
@@ -160,11 +160,18 @@ class Protocols:
                                          omm_ff=False)
     
         if protonate:
-            pre_system.addHydrogens(forcefield, 
+            
+            if residue_variants:
+            
+                #Call to method setProtonationState()
+                pre_system.addHydrogens(forcefield, 
                              pH = pH_protein, 
                              variants = self.setProtonationState(pre_system.topology.chains(), 
-                                                                 protonation_dict=protonation_dictionary) )
+                                                                 protonation_dict=residue_variants))
 
+            else:
+                pre_system.addHydrogens(forcefield, 
+                             pH = pH_protein)
         
         # add ligand structures to the model
         for extra_pdb_file in extra_input_pdb:
@@ -740,22 +747,6 @@ class Protocols:
         #only for manual protonation
         #TODO: Outsource residue protonation states.
     
-        if not bool(protonation_dict):
-            
-            print('No protonation dictionary provided. Using default.')
-    
-            protonation_dict = {('A',1499): 'CYX', 
-                    ('A',1501): 'CYX', 
-                    ('A',1516): 'CYX', 
-                    ('A',1520): 'CYX', 
-                    ('A',1529): 'CYX', 
-                    ('A',1533):'CYX', 
-                    ('A',1539):'CYX', 
-                    ('A',1631):'CYX', 
-                    ('A',1678):'CYX', 
-                    ('A',1680):'CYX', 
-                    ('A',1685):'CYX', 
-                    ('B',36): 'LYN'} 
 
         protonation_list = []
         key_list=[]
@@ -867,9 +858,24 @@ class Protocols:
 
 
 
-
-
-
+# =============================================================================
+#             print('No protonation dictionary provided. Using default.')
+#     
+#             protonation_dict = {('A',1499): 'CYX', 
+#                     ('A',1501): 'CYX', 
+#                     ('A',1516): 'CYX', 
+#                     ('A',1520): 'CYX', 
+#                     ('A',1529): 'CYX', 
+#                     ('A',1533):'CYX', 
+#                     ('A',1539):'CYX', 
+#                     ('A',1631):'CYX', 
+#                     ('A',1678):'CYX', 
+#                     ('A',1680):'CYX', 
+#                     ('A',1685):'CYX', 
+#                     ('B',36): 'LYN'} 
+# 
+# 
+# =============================================================================
 # 
 #  # Simulate
 #  
