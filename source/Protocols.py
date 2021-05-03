@@ -253,11 +253,19 @@ class Protocols:
         #TODO: Decide on whether hardware specs are stored under simulation or on the system. 
         #later is better for different machines (update function)
 
-        platform = omm.Platform.getPlatformByName('CUDA')
-        gpu_index = '0'
-        platformProperties = {'Precision': 'single','DeviceIndex': gpu_index}
+        try:
+            platform = omm.Platform.getPlatformByName('CUDA')
+            gpu_index = '0'
+            platformProperties = {'Precision': 'single','DeviceIndex': gpu_index}
         
-        #print(platform)
+        except OpenMMException:
+            
+            print('No CUDA running device found. Changing to CPU.')
+            platform = omm.Platform.getPlatformByName('CUDA')
+            platformProperties = {}
+        
+        
+        print(platform)
         
         #TODO: make it classmethod maybe
         #TODO: Set integrator types
