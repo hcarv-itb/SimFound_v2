@@ -606,15 +606,15 @@ class Protocols:
             
             for idx, f in enumerate(ff_files):
         
-                print("Appending ff_files [idx]: {os.path.abspath(f'{ff_path}/{f}')}")
+                print("Appending FF files [idx]: {os.path.abspath(f'{ff_path}/{f}')}")
                 ff_files[idx]=os.path.abspath(f'{ff_path}/{f}') 
         
-        elif len(extra_ff_files) != 0:
+            if len(extra_ff_files) != 0:
             
-            for idx, f in enumerate(extra_ff_files):
+                for idx_e, f_e in enumerate(extra_ff_files, idx):
                 
-                print("Appending ff_files [idx]: {os.path.abspath(f'{ff_path}/{f}')}")
-                ff_files.append(os.path.abspath(f'{ff_path}/{f}')) 
+                    print("Appending extra FF files [idx_e]: {os.path.abspath(f'{ff_path}/{f}')}")
+                    ff_files.append(os.path.abspath(f'{ff_path}/{f_e}')) 
                 
         #TODO: probably remove this
         elif add_residue_file != None:
@@ -625,7 +625,7 @@ class Protocols:
             ff_files=defaults
             
     
-        if not omm_ff:
+        if omm_ff == None:
             
             forcefield = app.ForceField(*ff_files)
 
