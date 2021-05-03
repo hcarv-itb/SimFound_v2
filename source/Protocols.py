@@ -586,7 +586,7 @@ class Protocols:
                          extra_ff_files=[],
                          omm_ff=None,
                          ff_path=None,
-                         defaults=('amber14-all.xml', 'amber14/tip4pew.xml'), 
+                         defaults=['amber14-all.xml', 'amber14/tip4pew.xml'], 
                          add_residue_file=None):
 
         
@@ -601,6 +601,12 @@ class Protocols:
             
             ff_path=self.workdir
     
+        if len(ff_files) == 0:
+            
+            ff_files=defaults
+            
+            #forcefield = app.ForceField(*defaults)
+    
         if len(extra_ff_files) > 0:
                            
             for ff in extra_ff_files:
@@ -613,25 +619,28 @@ class Protocols:
    
         for idx, ff in enumerate(ff_files):
             
-            print(f'Extra force field file {idx+1}: {ff_path}/{ff}')
+            print(f'Force field file {idx+1}: {ff_path}/{ff}')
             ff_files[idx]=os.path.abspath(f'{ff_path}/{ff}') 
  
         #Wrap up what was defined
         if len(ff_files) > 0:
             
             print(f'Using default force fields: {defaults}')
-            ff_files=defaults   
-            forcefield = app.ForceField(*defaults)
+            #ff_files=defaults   
+            forcefield = app.ForceField(*ff_files)
         
         elif omm_ff:
             print(f'Other openMM force field instance has been passed: {omm_ff}')
             pass
+        
             #TODO: get this from somewhere else    
             #forcefield=self.pre-setup('InputsFromGroup2')
-        
-        else:
-            forcefield = app.ForceField(*ff_files)
-        
+# =============================================================================
+#         
+#         else:
+#             forcefield = app.ForceField(*ff_files)
+#         
+# =============================================================================
         
         return forcefield    
     
