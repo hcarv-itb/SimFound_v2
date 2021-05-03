@@ -609,7 +609,7 @@ class Protocols:
             ff_files[idx]=os.path.abspath(f'{ff_path}/{ff}') 
  
         #Wrap up what was defined
-        if len(ff_files) > 0:
+        if len(ff_files) = 0:
             
             print(f'Using default force fields: {defaults}')
             ff_files=defaults   
