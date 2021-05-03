@@ -1,10 +1,10 @@
 {
  "cells": [
   {
-   "cell_type": "raw",
+   "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "# SFv2 Template notebook"
+    "# **SFv2 Template notebook**"
    ]
   },
   {
@@ -40,12 +40,58 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "# Protocols"
+    "## Set defaults"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": 2,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "std_report=100\n",
+    "\n",
+    "CALB_variants={('A',187): 'ASP', \n",
+    "                       ('A',224): 'HID'}\n",
+    "\n",
+    "SETD2_variants={('A',1499): 'CYX', \n",
+    "                    ('A',1501): 'CYX', \n",
+    "                    ('A',1516): 'CYX', \n",
+    "                    ('A',1520): 'CYX', \n",
+    "                    ('A',1529): 'CYX', \n",
+    "                    ('A',1533):'CYX', \n",
+    "                    ('A',1539):'CYX', \n",
+    "                    ('A',1631):'CYX', \n",
+    "                    ('A',1678):'CYX', \n",
+    "                    ('A',1680):'CYX', \n",
+    "                    ('A',1685):'CYX', \n",
+    "                    ('B',36): 'LYN'} \n",
+    "\n",
+    "CALB_defaults={'ensemble': 'NPT',\n",
+    "               'step': 1*picoseconds, \n",
+    "               'report': std_report, \n",
+    "               'restrained_sets': {'selections': ['protein and backbone'],\n",
+    "                                   'forces': [100*kilojoules_per_mole/angstroms]}}\n",
+    "\n",
+    "SETD2_defaults={'ensemble': 'NPT',\n",
+    "                'step': 100*picoseconds, \n",
+    "                'report': std_report, \n",
+    "                'restrained_sets': {'selections': ['protein and name CA and not chainid 1', 'chainid 3 and resid 0'],\n",
+    "                                    'forces': [100*kilojoules_per_mole/angstroms, 150*kilojoules_per_mole/angstroms]}}"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# **Protocols**\n",
+    "\n",
+    "## 1. From PDB to openMM: pdb2omm"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
    "metadata": {},
    "outputs": [
     {
@@ -64,37 +110,35 @@
     "importlib.reload(P)\n",
     "sim_tools=P.Protocols(workdir=data_path)\n",
     "\n",
-    "system_omm=sim_tools.pdb2omm(input_pdbs=pdb, \n",
+    "system_omm=sim_tools.pdb2omm(input_pdbs=pdb,\n",
     "                            extra_ff_files=['gaff-2.11modv3_1.xml'], \n",
     "                            protonate=True,\n",
     "                            solvate=True,\n",
     "                            inspect=True,\n",
-    "                            pH_protein=7.0) \n",
+    "                            pH_protein=7.0,\n",
+    "                            residue_variants=CALB_variants) \n",
     "\n",
-    "std_report=100\n",
     "\n",
-    "CALB_defaults={'ensemble': 'NPT',\n",
-    "               'step': 1*picoseconds, \n",
-    "               'report': std_report, \n",
-    "               'restrained_sets': {'selections': ['protein and backbone'],\n",
-    "                                   'forces': [100*kilojoules_per_mole/angstroms]}}\n",
-    "\n",
-    "SETD2_defaults={'ensemble': 'NPT',\n",
-    "                'step': 100*picoseconds, \n",
-    "                'report': std_report, \n",
-    "                'restrained_sets': {'selections': ['protein and name CA and not chainid 1', 'chainid 3 and resid 0'],\n",
-    "                                    'forces': [100*kilojoules_per_mole/angstroms, 150*kilojoules_per_mole/angstroms]}}"
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 2. Set simulations"
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": 3,
+   "execution_count": 4,
    "metadata": {},
    "outputs": [
     {
      "name": "stdout",
      "output_type": "stream",
      "text": [
+      "<simtk.openmm.openmm.Platform; proxy of <Swig Object of type 'OpenMM::Platform *' at 0x00000241BF885960> >\n",
       "Setting equilibration protocol:\n",
       "\tensemble: NPT\n",
       "\tstep: 1 ps\n",
@@ -107,10 +151,10 @@
     {
      "data": {
       "text/plain": [
-       "<simtk.openmm.app.simulation.Simulation at 0x1ecb00edb80>"
+       "<simtk.openmm.app.simulation.Simulation at 0x241bf8e8bb0>"
       ]
      },
-     "execution_count": 3,
+     "execution_count": 4,
      "metadata": {},
      "output_type": "execute_result"
     }
@@ -124,32 +168,14 @@
    ]
   },
   {
-   "cell_type": "code",
-   "execution_count": 4,
+   "cell_type": "markdown",
    "metadata": {},
-   "outputs": [
-    {
-     "name": "stdout",
-     "output_type": "stream",
-     "text": [
-      "Performing energy minimization: -657779.2424402358 kJ/mol\n",
-      "System is now minimized: -1269143.7424402358 kJ/mol\n",
-      "PDB file generated: C:\\Users\\hcarv\\Documents\\work\\Protein Design 2021\\Group1/Emin.pdb\n"
-     ]
-    },
-    {
-     "data": {
-      "text/plain": [
-       "<simtk.openmm.app.simulation.Simulation at 0x1ecb00edb80>"
-      ]
-     },
-     "execution_count": 4,
-     "metadata": {},
-     "output_type": "execute_result"
-    }
-   ],
    "source": [
-    "system_omm.run_energyMinimization()"
+    "## **Run simulations**\n",
+    "\n",
+    "1. Energy minimization\n",
+    "2. Equilibration(s)\n",
+    "3. Production(s)"
    ]
   },
   {
@@ -161,17 +187,20 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
+      "Performing energy minimization: -996161.5042478982 kJ/mol\n",
+      "System is now minimized: -1270673.5042478982 kJ/mol\n",
+      "PDB file generated: C:\\Users\\hcarv\\Documents\\work\\Protein Design 2021\\Group1/Emin.pdb\n",
       "Run: NPT\n",
       "Restrained NPT equilibration (1.0 ps)...\n",
       "NPT equilibration finished.\n",
       "PDB file generated: C:\\Users\\hcarv\\Documents\\work\\Protein Design 2021\\Group1/EQ_NPT.pdb\n",
-      "System is now equilibrated (?): -1108416.7424402358 kJ/mol\n"
+      "System is now equilibrated (?): -1108031.5042478982 kJ/mol\n"
      ]
     },
     {
      "data": {
       "text/plain": [
-       "<simtk.openmm.app.simulation.Simulation at 0x1ecb00edb80>"
+       "<module 'simtk.openmm.app.simulation' from 'C:\\\\Users\\\\hcarv\\\\anaconda3\\\\lib\\\\site-packages\\\\simtk\\\\openmm\\\\app\\\\simulation.py'>"
       ]
      },
      "execution_count": 5,
@@ -180,7 +209,9 @@
     }
    ],
    "source": [
-    "system_omm.run_equilibrations()"
+    "system_omm.run_energyMinimization()\n",
+    "system_omm.run_equilibrations()\n",
+    "#TODO: system_omm.run_productions()"
    ]
   },
   {

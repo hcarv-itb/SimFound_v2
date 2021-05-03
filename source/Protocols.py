@@ -258,10 +258,10 @@ class Protocols:
             gpu_index = '0'
             platformProperties = {'Precision': 'single','DeviceIndex': gpu_index}
         
-        except OpenMMException:
+        except:
             
             print('No CUDA running device found. Changing to CPU.')
-            platform = omm.Platform.getPlatformByName('CUDA')
+            platform = omm.Platform.getPlatformByName('CPU')
             platformProperties = {}
         
         

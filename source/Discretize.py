@@ -5,9 +5,12 @@ Created on Fri Feb  5 11:59:08 2021
 @author: hcarv
 """
 
-#Workflow modules
-#tools
-#from source import tools_plots
+#SFv2 modules
+try:
+    import tools
+    import tools_plots
+except:
+    print('Could not load SFv2 modules')
 
 #python modules
 import os
