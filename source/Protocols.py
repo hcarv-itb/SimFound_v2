@@ -90,7 +90,8 @@ class Protocols:
               extra_ff_files=[],
               extra_names=[],
               other_ff_instance=False,
-              pH_protein = 7.0):
+              pH_protein = 7.0,
+              protonation_dictionary={}):
         """
         Method to prepare an openMM system from PDB and XML/other force field definitions.
         Returns self, so that other methods can act on it.
@@ -162,7 +163,7 @@ class Protocols:
             pre_system.addHydrogens(forcefield, 
                              pH = pH_protein, 
                              variants = self.setProtonationState(pre_system.topology.chains(), 
-                                                                 protonation_dict={('A',187): 'ASP', ('A',224): 'HID'}) )
+                                                                 protonation_dict=protonation_dictionary) )
 
         
         # add ligand structures to the model
@@ -429,6 +430,11 @@ class Protocols:
         Eo=self.simulation.context.getState(getEnergy=True).getPotentialEnergy()
         
         print(f'System is now equilibrated (?): {Eo}')
+        
+        
+        self.positions=positions_new
+    
+        self.simulation=simulation
         
 # =============================================================================
 #         
