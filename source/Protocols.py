@@ -35,18 +35,6 @@ import re
 import numpy as np
 from pdbfixer.pdbfixer import PDBFixer
 
-# =============================================================================
-# peptide = 'H3K36'
-# sim_time = '100ns'
-# 
-# traj_folder = 'trajectories_SETD2_{}_{}'.format(peptide, sim_time)
-# 
-# 
-# 
-# =============================================================================
-
-
-
 
 class Protocols:
 
@@ -65,18 +53,41 @@ class Protocols:
 
         """
 
-
         self.workdir=os.path.abspath(workdir)
 
 
-        # Simulation Options
-
-        self.Simulate_Steps = 5e7  # 100ns
-
-        self.SAM_restr_eq_Steps = 5e6          
-        self.SAM_free_eq_Steps = 5e6   
-
-
+    @staticmethod
+    def omm_system(input_sdf,
+                   input_pdb,
+                   ff_files=[], 
+                   template_ff='gaff-2.11'):
+        
+    
+        print(input_sdf, input_pdb)
+        print(type(input_sdf), type(input_pdb))
+        from openmmforcefields.generators import SystemGenerator
+        from openff.toolkit.topology import Molecule
+		
+        # maybe possible to add same parameters that u give forcefield.createSystem() function
+        forcefield_kwargs ={'constraints' : app.HBonds,
+                            'rigidWater' : True,
+                            'removeCMMotion' : False,
+                            'hydrogenMass' : 4*amu }
+        
+        
+		# Initialize a SystemGenerator using GAFF
+        # maybe can give forcefield object?
+        system_generator = SystemGenerator(forcefields=ff_files, 
+                                           small_molecule_forcefield=template_ff,
+                                           forcefield_kwargs=forcefield_kwargs, 
+                                           cache='db.json')
+												
+		# Alternatively, create an OpenMM System from an OpenMM Topology object and a list of OpenFF Molecule objects
+        molecules = Molecule.from_file(input_sdf, file_format='sdf')
+        system = system_generator.create_system(input_pdb.topology, molecules=molecules)
+        
+        return system
+        
 
 
     def pdb2omm(self, 
@@ -91,7 +102,9 @@ class Protocols:
               extra_names=[],
               other_ff_instance=False,
               pH_protein = 7.0,
-              residue_variants={}):
+              residue_variants={},
+              other_omm=False,
+              input_sdf_file=None):
         """
         Method to prepare an openMM system from PDB and XML/other force field definitions.
         Returns self, so that other methods can act on it.
@@ -130,14 +143,7 @@ class Protocols:
 
         """
 
-# =============================================================================
-#         
-#                       extra_input_pdb=[], #['SAM_H3K36.pdb', 'ZNB_H3K36.pdb']
-#               ff_files=[], #['amber14-all.xml', 'amber14/tip4pew.xml', 'gaff.xml'],
-#               extra_ff_files=[], #['SAM.xml', 'ZNB.xml']
-#               extra_names=[], #['SAM', 'ZNB'],
-#         
-# =============================================================================
+
         tools.Functions.fileHandler(self.workdir)
        
         input_pdb=f'{self.workdir}/{input_pdbs}'
@@ -155,9 +161,11 @@ class Protocols:
         
         pre_system = app.Modeller(pdb.topology, pdb.positions)
     
-        forcefield=self.setForceFields(ff_files=ff_files, 
+        self.topology=pre_system.topology
+    
+        forcefield, ff_paths=self.setForceFields(ff_files=ff_files, 
                                          extra_ff_files=extra_ff_files,
-                                         omm_ff=False)
+                                         omm_ff=None)
     
         if protonate:
             
@@ -183,19 +191,35 @@ class Protocols:
         if solvate:
             pre_system=self.solvate(pre_system, forcefield)
     
-        #Create a openMM topology instance
-        system = forcefield.createSystem(pre_system.topology, 
+    
+    
+        if other_omm:
+            
+            system=self.omm_system(input_sdf_file, 
+                                   pre_system, 
+                                   ff_files=ff_paths, 
+                                   template_ff='gaff-2.11')
+            
+            self.positions=pdb.positions
+            self.topology=pdb.topology
+    
+        else:
+            #Create a openMM topology instance
+            system = forcefield.createSystem(pre_system.topology, 
                                          nonbondedMethod=app.PME, 
                                          nonbondedCutoff=1.0*nanometers,
                                          ewaldErrorTolerance=0.0005, 
                                          constraints='HBonds', 
                                          rigidWater=True)
         
+            self.positions=pre_system.positions
+            self.topology=pre_system.topology
+            
         #Update attributes
         self.input_pdb=input_pdb
         self.system=system
-        self.topology=pre_system.topology
-        self.positions=pre_system.positions
+
+
         
         
             
@@ -254,9 +278,9 @@ class Protocols:
         #later is better for different machines (update function)
 
         try:
-            platform = omm.Platform.getPlatformByName('CUDA')
-            gpu_index = '0'
-            platformProperties = {'Precision': 'single','DeviceIndex': gpu_index}
+            platform = omm.Platform.getPlatform()
+            #gpu_index = '0'
+            #platformProperties = {'Precision': 'single','DeviceIndex': gpu_index}
         
         except:
             
@@ -519,66 +543,7 @@ class Protocols:
         else:
             print('Inputs for restrained sets are not the same length.')
     
-    
-        #      for res_atom_index, force in zip(restrained_indices_list, forces_list):
-                       
-        # 
-        # 
-        # # Free Equilibration
-        # # forces: 0->HarmonicBondForce, 1->HarmonicAngleForce, 2->PeriodicTorsionForce, 3->NonbondedForce, 4->CMMotionRemover, 5->CustomExternalForce, 6->CustomExternalForce, 7->MonteCarloBarostat
-        # n_forces = len(system.getForces())
-        # system.removeForce(n_forces-2)
-        # print('force removed')
-        # 
-        # # optional ligand restraint to force slight conformational changes
-        # if restrained_ligands:
-        #     
-        #     integrator = mm.LangevinIntegrator(temperature*unit.kelvin, 1/unit.picosecond, 0.002*unit.picoseconds)
-        #     simulation = app.Simulation(solvated_protein.topology, system, integrator, platform, platformProperties)
-        #     simulation.context.setState(state_npt_EQ)
-        #     simulation.reporters.append(app.StateDataReporter(stdout, 10000, step=True, potentialEnergy=True, temperature=True, progress=True, remainingTime=True, speed=True, totalSteps=SAM_restr_eq_Steps, separator='\t'))
-        #     simulation.reporters.append(HDF5Reporter(traj_folder + '/' + 'free_BB_restrained_SAM_NPT_EQ.h5', 10000, atomSubset=trajectory_out_indices))
-        #     print('free BB NPT equilibration of protein with restrained SAM...')
-        #     simulation.step(SAM_restr_eq_Steps)
-        #     state_free_EQP = simulation.context.getState(getPositions=True, getVelocities=True)
-        #     positions = state_free_EQP.getPositions()
-        #     app.PDBFile.writeFile(simulation.topology, positions, open(traj_folder + '/' + 'free_BB_restrained_SAM_NPT_EQ.pdb', 'w'), keepIds=True)
-        #     print('Successful free BB, SAM restrained equilibration!')
-        #   
-        #     # equilibration with free ligand   
-        #     n_forces = len(system.getForces())
-        #     system.removeForce(n_forces-2)
-        #     integrator = mm.LangevinIntegrator(temperature*unit.kelvin, 1/unit.picosecond, 0.002*unit.picoseconds)
-        #     simulation = app.Simulation(solvated_protein.topology, system, integrator, platform, platformProperties)
-        #     simulation.context.setState(state_free_EQP)
-        #     simulation.reporters.append(app.StateDataReporter(stdout, 10000, step=True, potentialEnergy=True, temperature=True, progress=True, remainingTime=True, speed=True, totalSteps=SAM_free_eq_Steps, separator='\t'))
-        #     simulation.reporters.append(HDF5Reporter(traj_folder + '/' + 'SAM_free_NPT_EQ.h5', 10000, atomSubset=trajectory_out_indices))
-        #     print('SAM free NPT equilibration...')
-        #     simulation.step(SAM_free_eq_Steps)
-        #     state_free_EQ = simulation.context.getState(getPositions=True, getVelocities=True)
-        #     positions = state_free_EQ.getPositions()
-        #     app.PDBFile.writeFile(simulation.topology, positions, open(traj_folder + '/' + 'SAM_free_NPT_EQ.pdb', 'w'), keepIds=True)
-        #     print('Successful SAM free equilibration!')
-        #     
-        # else:
-        #     
-        #     # remove ligand restraints for free equilibration (remove the second last force object, as the last one was the barostat)
-        #     n_forces = len(system.getForces())
-        #     system.removeForce(n_forces-2)
-        #     simulation.context.setState(state_npt_EQ)
-        #     simulation.reporters.append(app.StateDataReporter(stdout, 10000, step=True, potentialEnergy=True, temperature=True, progress=True, remainingTime=True, speed=True, totalSteps=SAM_free_eq_Steps, separator='\t'))
-        #     simulation.reporters.append(HDF5Reporter(traj_folder + '/' + 'EQ_NPT_free.h5', 10000, atomSubset=trajectory_out_indices))
-        #     print('free NPT equilibration...')
-        #     simulation.step(SAM_free_eq_Steps)
-        #     state_free_EQ = simulation.context.getState(getPositions=True, getVelocities=True)
-        #     positions = state_free_EQ.getPositions()
-        #     app.PDBFile.writeFile(simulation.topology, positions, open(traj_folder + '/' + 'free_NPT_EQ.pdb', 'w'), keepIds=True)
-        #     print('Successful free equilibration!')
-        # 
-        # number_replicates = 5
-        # count = 0
-        # while (count < number_replicates):
-        #  count = count+1 
+ 
     
 
     def setForceFields(self,
@@ -586,7 +551,7 @@ class Protocols:
                          extra_ff_files=[],
                          omm_ff=None,
                          ff_path=None,
-                         defaults=['amber14-all', 'amber14/tip4pew.xml'], 
+                         defaults=['amber14/protein.ff14SB.xml', 'amber14/tip4pew.xml'], 
                          add_residue_file=None):
 
         
@@ -604,17 +569,18 @@ class Protocols:
     
         if len(ff_files) != 0:
             
-            for idx, f in enumerate(ff_files):
+            for idx, f in enumerate(ff_files, 1):
         
-                print("Appending FF files [idx]: {os.path.abspath(f'{ff_path}/{f}')}")
+                print(f"Appending FF files {idx}: {os.path.abspath(f'{ff_path}/{f}')}")
                 ff_files[idx]=os.path.abspath(f'{ff_path}/{f}') 
-        
-            if len(extra_ff_files) != 0:
-            
-                for idx_e, f_e in enumerate(extra_ff_files, idx):
                 
-                    print("Appending extra FF files [idx_e]: {os.path.abspath(f'{ff_path}/{f}')}")
-                    ff_files.append(os.path.abspath(f'{ff_path}/{f_e}')) 
+        
+        if len(extra_ff_files) != 0:
+            
+            for idx_e, f_e in enumerate(extra_ff_files):
+                
+                print(f"Appending extra FF files {idx_e}: {os.path.abspath(f'{ff_path}/{f_e}')}")
+                ff_files.append(os.path.abspath(f'{ff_path}/{f_e}')) 
                 
         #TODO: probably remove this
         elif add_residue_file != None:
@@ -628,13 +594,17 @@ class Protocols:
         if omm_ff == None:
             
             forcefield = app.ForceField(*ff_files)
+            
+
 
         else:
             print(f'Other openMM force field instance has been passed: {omm_ff}')
             pass
         
         
-        return forcefield    
+        print(forcefield.getMatchingTemplates(self.topology))
+        
+        return forcefield, ff_files    
     
     
     
@@ -922,3 +892,78 @@ class Protocols:
 # 
 # =============================================================================
 
+  # =============================================================================
+#         
+#                       extra_input_pdb=[], #['SAM_H3K36.pdb', 'ZNB_H3K36.pdb']
+#               ff_files=[], #['amber14-all.xml', 'amber14/tip4pew.xml', 'gaff.xml'],
+#               extra_ff_files=[], #['SAM.xml', 'ZNB.xml']
+#               extra_names=[], #['SAM', 'ZNB'],
+#         
+# ============================================================================= 
+        #      for res_atom_index, force in zip(restrained_indices_list, forces_list):
+                       
+        # 
+        # 
+        # # Free Equilibration
+        # # forces: 0->HarmonicBondForce, 1->HarmonicAngleForce, 2->PeriodicTorsionForce, 3->NonbondedForce, 4->CMMotionRemover, 5->CustomExternalForce, 6->CustomExternalForce, 7->MonteCarloBarostat
+        # n_forces = len(system.getForces())
+        # system.removeForce(n_forces-2)
+        # print('force removed')
+        # 
+        # # optional ligand restraint to force slight conformational changes
+        # if restrained_ligands:
+        #     
+        #     integrator = mm.LangevinIntegrator(temperature*unit.kelvin, 1/unit.picosecond, 0.002*unit.picoseconds)
+        #     simulation = app.Simulation(solvated_protein.topology, system, integrator, platform, platformProperties)
+        #     simulation.context.setState(state_npt_EQ)
+        #     simulation.reporters.append(app.StateDataReporter(stdout, 10000, step=True, potentialEnergy=True, temperature=True, progress=True, remainingTime=True, speed=True, totalSteps=SAM_restr_eq_Steps, separator='\t'))
+        #     simulation.reporters.append(HDF5Reporter(traj_folder + '/' + 'free_BB_restrained_SAM_NPT_EQ.h5', 10000, atomSubset=trajectory_out_indices))
+        #     print('free BB NPT equilibration of protein with restrained SAM...')
+        #     simulation.step(SAM_restr_eq_Steps)
+        #     state_free_EQP = simulation.context.getState(getPositions=True, getVelocities=True)
+        #     positions = state_free_EQP.getPositions()
+        #     app.PDBFile.writeFile(simulation.topology, positions, open(traj_folder + '/' + 'free_BB_restrained_SAM_NPT_EQ.pdb', 'w'), keepIds=True)
+        #     print('Successful free BB, SAM restrained equilibration!')
+        #   
+        #     # equilibration with free ligand   
+        #     n_forces = len(system.getForces())
+        #     system.removeForce(n_forces-2)
+        #     integrator = mm.LangevinIntegrator(temperature*unit.kelvin, 1/unit.picosecond, 0.002*unit.picoseconds)
+        #     simulation = app.Simulation(solvated_protein.topology, system, integrator, platform, platformProperties)
+        #     simulation.context.setState(state_free_EQP)
+        #     simulation.reporters.append(app.StateDataReporter(stdout, 10000, step=True, potentialEnergy=True, temperature=True, progress=True, remainingTime=True, speed=True, totalSteps=SAM_free_eq_Steps, separator='\t'))
+        #     simulation.reporters.append(HDF5Reporter(traj_folder + '/' + 'SAM_free_NPT_EQ.h5', 10000, atomSubset=trajectory_out_indices))
+        #     print('SAM free NPT equilibration...')
+        #     simulation.step(SAM_free_eq_Steps)
+        #     state_free_EQ = simulation.context.getState(getPositions=True, getVelocities=True)
+        #     positions = state_free_EQ.getPositions()
+        #     app.PDBFile.writeFile(simulation.topology, positions, open(traj_folder + '/' + 'SAM_free_NPT_EQ.pdb', 'w'), keepIds=True)
+        #     print('Successful SAM free equilibration!')
+        #     
+        # else:
+        #     
+        #     # remove ligand restraints for free equilibration (remove the second last force object, as the last one was the barostat)
+        #     n_forces = len(system.getForces())
+        #     system.removeForce(n_forces-2)
+        #     simulation.context.setState(state_npt_EQ)
+        #     simulation.reporters.append(app.StateDataReporter(stdout, 10000, step=True, potentialEnergy=True, temperature=True, progress=True, remainingTime=True, speed=True, totalSteps=SAM_free_eq_Steps, separator='\t'))
+        #     simulation.reporters.append(HDF5Reporter(traj_folder + '/' + 'EQ_NPT_free.h5', 10000, atomSubset=trajectory_out_indices))
+        #     print('free NPT equilibration...')
+        #     simulation.step(SAM_free_eq_Steps)
+        #     state_free_EQ = simulation.context.getState(getPositions=True, getVelocities=True)
+        #     positions = state_free_EQ.getPositions()
+        #     app.PDBFile.writeFile(simulation.topology, positions, open(traj_folder + '/' + 'free_NPT_EQ.pdb', 'w'), keepIds=True)
+        #     print('Successful free equilibration!')
+        # 
+        # number_replicates = 5
+        # count = 0
+        # while (count < number_replicates):
+        #  count = count+1 
+        
+        
+                # Simulation Options
+
+        self.Simulate_Steps = 5e7  # 100ns
+
+        self.SAM_restr_eq_Steps = 5e6          
+        self.SAM_free_eq_Steps = 5e6   
