@@ -11,60 +11,80 @@ Created on Fri Jul  3 11:30:16 2020
 @author: hca
 """
 
+try:
+    import os
+    import tools
+    import tools_plots
+    from Trajectory import Trajectory
+    from MSM import MSM
+    from Discretize import Discretize
+    from Featurize import Featurize
+    from tools import Tools
+  
 
-import tools
-#import tools_plots
-#from Trajectory import Trajectory
-#from MSM import MSM
-#from Discretize import Discretize
-#from Featurize import Featurize
-
-
-
-#try:
+  
 #    import pyemma
-#except:
-#    pass
+except:
+    print('some modules were not loaded')
+    pass
 
+import simtk.unit as unit
 
 
 class Project:
-    """Base class define a project.
+    """
     
-    Parameters
-    ----------
-    workdir : path
-        The working folder. The default is Path(os.getcwd()).
-    title : str
-        The title of the project. The default is "Untitled".
-    hierarchy : TYPE, optional
-        The ordered set of parameters to generate systems. 
-        The default is ("protein", "ligand", "parameter").
-        Note: For default value, folders will be protein-ligand-parameter/replicaN, with N being the replicate index.
-    parameter : list
-        The list of parameters. The default is "None".
-    replicas : int
-        Number of replicas contained within each parent_folder-parameter folder. The default is 1.
-    protein : list
-        Name of the protein(s). The default is "protein".
-    ligand : list
-        Name of the ligand(s). The default is "ligand".
-    timestep : int
-        The physical time of frame (ps). The default is 1.
-    results : path
-        The path where results will be stored.
+    Base class to define a project.
     
-    
-    Returns
-    -------
-    self: object
-        The project instance. 
     """
 
     
-    def __init__(self, workdir, results, title="Untitled",
-                 hierarchy=("protein", "ligand", "parameter"), parameter=None, 
-                 replicas=1, protein='protein', ligand='ligand', timestep=1):
+    def __init__(self, workdir, 
+                 results, 
+                 title="Untitled",
+                 hierarchy=("protein", "ligand", "parameter"), 
+                 parameter=None, 
+                 replicas=1, 
+                 protein='protein', 
+                 ligand='ligand', 
+                 timestep=1, 
+                 topology='protein.pdb',
+                 trajectory='production.h5'):
+        
+        """
+    
+        Parameters
+        ----------
+        
+        
+        workdir : path
+            The working folder. The default is Path(os.getcwd()).
+        title : str
+            The title of the project. The default is "Untitled".
+        hierarchy : TYPE, optional
+            The ordered set of parameters to generate systems. 
+            The default is ("protein", "ligand", "parameter").
+            Note: For default value, folders will be protein-ligand-parameter/replicaN, with N being the replicate index.
+        parameter : list
+            The list of parameters. The default is "None".
+        replicas : int
+            Number of replicas contained within each parent_folder-parameter folder. The default is 1.
+        protein : list
+            Name of the protein(s). The default is "protein".
+        ligand : list
+            Name of the ligand(s). The default is "ligand".
+        timestep : int
+            The physical time of frame (ps). The default is 1.
+        results : path
+            The path where results will be stored.
+        
+        
+        Returns
+        -------
+        self: object
+            The project instance. 
+    
+        """
         
         self.workdir=workdir
         self.title=title
@@ -75,9 +95,29 @@ class Project:
         self.ligand=ligand
         self.timestep=timestep
         self.results=results
-     
-
+        #TODO: make confirmation tasks
         
+        self.def_input_struct=f'{self.workdir}/inputs/structures'
+        
+        self.input_topology=f'{self.def_input_struct}/{topology}'
+        self.output_trajectory=trajectory
+        
+        self.parameter_dict={}
+        for idx, p in enumerate(self.parameter):
+
+            try:
+                scalar=float(str(p).split('K')[0])*unit.kelvin
+
+                #self.parameter_scalar.append(scalar)
+                #parameter_label.append(str(scalar).replace(" ",""))
+                
+                print(f'Converted parameter "temperature" (in K) into scalar: {scalar}')
+            except:
+                scalar=idx
+                self.parameter_scalar.append(scalar)
+                print(f'Converted unidentified parameter into scalar: {scalar}')
+
+            self.parameter_dict[p]=scalar
     
     def getProperties(self, *args) -> str:
        """
@@ -119,13 +159,33 @@ class Project:
         
         elements=[self.getProperties(element) for element in self.hierarchy] #retrieve values for each element in hierarchy.
         replicas=[str(i) for i in range(1,self.replicas+1)]
-        
+        #TODO: allow init replica > 1
         elements.append(replicas)
-    
+        
         systems=list(itertools.product(*elements)) #generate all possible combinations of elements: systems.
         systems_obj=[] #Retrieve the systems from class System.
+        
         for system in systems:
-            systems_obj.append(System(system, self.timestep, workdir=self.workdir))
+            
+            print(system)
+            
+            #TODO: This is hardcoding protein, ligand and parameter. Flexible is REQUIRED!!!
+            systems_obj.append(System(system, 
+                                      self.workdir, 
+                                      self.input_topology,
+                                      protein=system[0],
+                                      ligand=system[1],
+                                      parameter=system[2],
+                                      parameter_dict=self.parameter_dict,
+                                      replicate=system[3]))
+            
+# =============================================================================
+#             systems_obj.append(System(system, 
+#                                       self.timestep, 
+#                                       topology=self.topology_input, 
+#                                       trajectory=self.trajectory_output,
+#                                       workdir=self.workdir))
+# =============================================================================
         
         systems={}
         for system in systems_obj:
@@ -140,7 +200,7 @@ class Project:
         return systems
         
         
-class System:
+class System(Project):
     """The base class to define a system. Takes as input a system tuple.
     The system tuple can be accepted as a instance of the parent class or given manually.
     See parent class method `setSystems` for details of tuple generation.
@@ -168,22 +228,49 @@ class System:
     
     systems: obj
         An instance of System.
+        
     """
     
     
-    def __init__(self, system, timestep, workdir=os.getcwd(), replica_name='sim', linker='-'):
+    def __init__(self, 
+                 system,
+                 workdir,
+                 input_topology,
+                 protein='protein',
+                 ligand='ligand',
+                 parameter='parameter',
+                 parameter_dict={'parameter':0},
+                 replicate=1,
+                 replica_name='replicate', 
+                 linker='-', 
+                 topology='system.pdb', 
+                 trajectory='production.h5'):
+    
+        #workdir=os.getcwd(),
+        #inputs=f'{os.getcwd()}/inputs/'):
+            #timestep
+        
+        #TODO: class inheritance to fix it.
+        self.protein=protein
+        self.ligand=ligand
+        self.parameter=parameter        
+        self.scalar=parameter_dict[parameter]
+        self.replicate=replicate
         self.system=system
         self.workdir=workdir
+        self.input_topology=input_topology
+        
         self.replica_name=replica_name
         self.linker=linker
         self.name=self.linker.join(self.system)
         self.name_folder=f'{self.linker.join(self.system[:-1])}/{self.replica_name}{self.system[-1]}'
+        
         self.path=f'{self.workdir}/{self.name_folder}'
         self.results_folder=f'{self.path}/results/'
-        self.trajectory=f'{self.path}/calb.xtc'
-        self.topology=f'{self.path}/calb.pdb'
-        self.timestep=timestep
-    
+        self.trajectory=f'{self.path}/{trajectory}'
+        self.topology=f'{self.path}/{topology}'
+
+        print(f'System defined: {self.system}. ID: ({self.scalar})')
     
 # =============================================================================
 # 

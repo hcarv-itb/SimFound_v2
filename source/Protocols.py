@@ -56,42 +56,12 @@ class Protocols:
         self.workdir=os.path.abspath(workdir)
 
 
-    @staticmethod
-    def omm_system(input_sdf,
-                   input_pdb,
-                   ff_files=[], 
-                   template_ff='gaff-2.11'):
-        
-    
-        print(input_sdf, input_pdb)
-        print(type(input_sdf), type(input_pdb))
-        from openmmforcefields.generators import SystemGenerator
-        from openff.toolkit.topology import Molecule
-		
-        # maybe possible to add same parameters that u give forcefield.createSystem() function
-        forcefield_kwargs ={'constraints' : app.HBonds,
-                            'rigidWater' : True,
-                            'removeCMMotion' : False,
-                            'hydrogenMass' : 4*amu }
-        
-        
-		# Initialize a SystemGenerator using GAFF
-        # maybe can give forcefield object?
-        system_generator = SystemGenerator(forcefields=ff_files, 
-                                           small_molecule_forcefield=template_ff,
-                                           forcefield_kwargs=forcefield_kwargs, 
-                                           cache='db.json')
-												
-		# Alternatively, create an OpenMM System from an OpenMM Topology object and a list of OpenFF Molecule objects
-        molecules = Molecule.from_file(input_sdf, file_format='sdf')
-        system = system_generator.create_system(input_pdb.topology, molecules=molecules)
-        
-        return system
+
         
 
 
     def pdb2omm(self, 
-              input_pdbs=None,
+              input_pdb=None,
               solvate=True,
               protonate=True,
               fix_pdb=True,
@@ -104,7 +74,9 @@ class Protocols:
               pH_protein = 7.0,
               residue_variants={},
               other_omm=False,
-              input_sdf_file=None):
+              input_sdf_file=None,
+              box_size=9.0,
+              name='NoName'):
         """
         Method to prepare an openMM system from PDB and XML/other force field definitions.
         Returns self, so that other methods can act on it.
@@ -143,10 +115,10 @@ class Protocols:
 
         """
 
+        if input_pdb == None:
 
-        tools.Functions.fileHandler(self.workdir)
-       
-        input_pdb=f'{self.workdir}/{input_pdbs}'
+            input_pdb=f'{self.workdir}/{input_pdb}'
+        
         
         if fix_pdb:
             
@@ -189,21 +161,28 @@ class Protocols:
 
         #Call to static solvate
         if solvate:
-            pre_system=self.solvate(pre_system, forcefield)
-    
+            pre_system=self.solvate(pre_system, forcefield, box_size=box_size)
+# =============================================================================
+#         else:
+#             pre_system.setPreiodicBoxVectors(omm.Vec3(box_size, box_size, box_size))
+# =============================================================================
     
     
         if other_omm:
             
-            system=self.omm_system(input_sdf_file, 
-                                   pre_system, 
+            system, forcefield=self.omm_system(input_sdf_file, 
+                                   pre_system,
+                                   forcefield,
                                    ff_files=ff_paths, 
                                    template_ff='gaff-2.11')
             
             self.positions=pdb.positions
             self.topology=pdb.topology
+            
+            #forcefield not needed? keep i 
     
         else:
+            
             #Create a openMM topology instance
             system = forcefield.createSystem(pre_system.topology, 
                                          nonbondedMethod=app.PME, 
@@ -220,21 +199,21 @@ class Protocols:
         self.system=system
 
 
-        
-        
-            
         #TODO: A lot. Link to Visualization
         self.system_pdb=self.writePDB(pre_system.topology, pre_system.positions, name='system')
+        
+        
+        print(f'System is now converted to openMM type: \n\tFile: {self.system_pdb}, \n\tTopology: {self.topology}')
         
         return self
     
     def setSimulations(self, 
-                      dt = 0.002*picoseconds, 
-                      temperature = 300*kelvin, 
-                      friction = 1/picosecond,
-                      pressure=1*atmospheres,
-                      pH=7.0,
-                      equilibrations=[{'ensemble': 'NPT', 
+                       dt = 0.002*picoseconds, 
+                       temperature = 300*kelvin, 
+                       friction = 1/picosecond,
+                       pressure=1*atmospheres,
+                       pH=7.0,
+                       equilibrations=[{'ensemble': 'NPT', 
                                        'step': 1*nanoseconds, 
                                        'report': 1000, 
                                        'restrained_sets': {'selections': ['protein and backbone'], 
@@ -309,7 +288,7 @@ class Protocols:
        
         self.trj_write={}
         self.steps={}       
-        self.trj_subset='all'
+        self.trj_subset='protein'
         self.trj_indices = selection_reference_topology.select(self.trj_subset)
         self.eq_protocols=[]
  
@@ -328,6 +307,13 @@ class Protocols:
                 eq['step']=int(eq['step']/self.dt) 
                 
                 print(f"Converted to unitless using integration time of {self.dt}: {eq['step']}")
+            
+            if type(eq['report']) != int:
+                
+                print(f"Report steps is not unitless: {eq['report']}")
+                eq['report']=int(eq['report']/self.dt) 
+                
+                print(f"Converted to unitless using integration time of {self.dt}: {eq['report']}")
             
             self.eq_protocols.append(eq)
             
@@ -544,6 +530,43 @@ class Protocols:
             print('Inputs for restrained sets are not the same length.')
     
  
+    @staticmethod
+    def omm_system(input_sdf,
+                   input_pdb,
+                   forcefield,
+                   ff_files=[],
+                   template_ff='gaff-2.11'):
+        
+    
+        print(input_sdf, input_pdb)
+        print(type(input_sdf), type(input_pdb))
+        from openmmforcefields.generators import SystemGenerator, GAFFTemplateGenerator
+        from openff.toolkit.topology import Molecule
+		
+        # maybe possible to add same parameters that u give forcefield.createSystem() function
+        forcefield_kwargs ={'constraints' : app.HBonds,
+                            'rigidWater' : True,
+                            'removeCMMotion' : False,
+                            'hydrogenMass' : 4*amu }
+        
+        
+		# Initialize a SystemGenerator using GAFF
+        # maybe can give forcefield object?
+        system_generator = SystemGenerator(forcefields=ff_files, 
+                                           small_molecule_forcefield=template_ff,
+                                           forcefield_kwargs=forcefield_kwargs, 
+                                           cache='db.json')
+												
+		# Alternatively, create an OpenMM System from an OpenMM Topology object and a list of OpenFF Molecule objects
+        molecules = Molecule.from_file(input_sdf, file_format='sdf')
+        system = system_generator.create_system(input_pdb.topology, molecules=molecules)
+        
+        
+        gaff = GAFFTemplateGenerator(molecules=molecules)
+        forcefield.registerTemplateGenerator(gaff.generator)
+        
+        
+        return system, forcefield
     
 
     def setForceFields(self,
@@ -602,7 +625,7 @@ class Protocols:
             pass
         
         
-        print(forcefield.getMatchingTemplates(self.topology))
+        #print(forcefield.getMatchingTemplates(self.topology))
         
         return forcefield, ff_files    
     
