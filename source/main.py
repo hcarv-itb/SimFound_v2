@@ -167,8 +167,6 @@ class Project:
         
         for system in systems:
             
-            print(system)
-            
             #TODO: This is hardcoding protein, ligand and parameter. Flexible is REQUIRED!!!
             systems_obj.append(System(system, 
                                       self.workdir, 
@@ -270,7 +268,7 @@ class System(Project):
         self.trajectory=f'{self.path}/{trajectory}'
         self.topology=f'{self.path}/{topology}'
 
-        print(f'System defined: {self.system}. ID: ({self.scalar})')
+        print(f'System defined: {self.system}, ID: {self.scalar}')
     
 # =============================================================================
 # 

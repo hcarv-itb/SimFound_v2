@@ -207,12 +207,56 @@ class Protocols:
         
         return self
     
+    
+    
+    @staticmethod
+    def sniffMachine(gpu_index='0'):
+        """
+        
+
+        Parameters
+        ----------
+        gpu_index : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        platform : TYPE
+            DESCRIPTION.
+        platformProperties : TYPE
+            DESCRIPTION.
+
+        """
+        
+        import openmmtools
+        
+        #TODO: Use a test to check the number of available gpu (2 Pixar,3 Snake/Packman, 4 HPC) 
+        
+        #platforms=openmmtools.utils.get_available_platforms()
+        fastest=openmmtools.utils.get_fastest_platform()
+        
+        
+        #platform=omm.Platform.getPlatformByName('CUDA')
+        platform=fastest
+
+        platformProperties = {'Precision': 'mixed',
+                              'DeviceIndex': gpu_index}
+        
+
+        print(f'The fastest platform is {fastest.getName()}')
+        print(f'Selected GPU ID: {gpu_index}')
+        
+        return platform, platformProperties
+    
+
+    
     def setSimulations(self, 
                        dt = 0.002*picoseconds, 
                        temperature = 300*kelvin, 
                        friction = 1/picosecond,
                        pressure=1*atmospheres,
                        pH=7.0,
+                       gpu_index='0',
                        equilibrations=[{'ensemble': 'NPT', 
                                        'step': 1*nanoseconds, 
                                        'report': 1000, 
@@ -244,7 +288,7 @@ class Protocols:
             DESCRIPTION.
 
         """
-  
+        
 
         self.dt=dt
         self.temperature=temperature
@@ -253,22 +297,10 @@ class Protocols:
         self.pH=pH
         #TODO: make pressure, temperature protocol specific
 
-        #TODO: Decide on whether hardware specs are stored under simulation or on the system. 
-        #later is better for different machines (update function)
-
-        try:
-            platform = omm.Platform.getPlatform()
-            #gpu_index = '0'
-            #platformProperties = {'Precision': 'single','DeviceIndex': gpu_index}
+        #Call to sniffMachine
+        platform, platformProperties = self.sniffMachine(gpu_index)
         
-        except:
-            
-            print('No CUDA running device found. Changing to CPU.')
-            platform = omm.Platform.getPlatformByName('CPU')
-            platformProperties = {}
-        
-        
-        print(platform)
+        print(f"Using platform {platform.getName()}, ID: {platformProperties['DeviceIndex']}")
         
         #TODO: make it classmethod maybe
         #TODO: Set integrator types
@@ -458,8 +490,6 @@ class Protocols:
         
         
         self.positions=positions_new
-    
-        self.simulation=simulation
         
 # =============================================================================
 #         
