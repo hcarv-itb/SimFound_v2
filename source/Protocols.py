@@ -38,7 +38,11 @@ from pdbfixer.pdbfixer import PDBFixer
 
 class Protocols:
 
-    def __init__(self, workdir=os.getcwd()):
+    def __init__(self, 
+                 workdir,
+                 project_dir,
+                 def_input_ff='/inputs/forcefields',
+                 def_input_struct='/inputs/structures'):
         """
         
 
@@ -54,11 +58,16 @@ class Protocols:
         """
 
         self.workdir=os.path.abspath(workdir)
-
-
-
+        self.project_dir=os.path.abspath(project_dir)
         
-
+        print(f'Setting openMM simulation protocols in {self.workdir}.')
+        
+        #TODO: make robust
+        self.def_input_struct=os.path.abspath(def_input_struct)
+        self.def_input_ff=os.path.abspath(def_input_ff)
+        
+        #print(self.def_input_struct)
+        #print(self.def_input_ff)
 
     def pdb2omm(self, 
               input_pdb=None,
@@ -119,7 +128,7 @@ class Protocols:
 
             input_pdb=f'{self.workdir}/{input_pdb}'
         
-        
+        #Fix the input_pdb with PDBFixer
         if fix_pdb:
             
             pdb=PDBFixer(input_pdb)
@@ -131,46 +140,46 @@ class Protocols:
         else:
             pdb = app.PDBFile(input_pdb)
         
+        
+        #Generate a Modeller instance of the fixed pdb
+        #It will be used to populate system
         pre_system = app.Modeller(pdb.topology, pdb.positions)
     
+    
+        #Add ligand structures to the model with addExtraMolecules_PDB
+        if len(extra_input_pdb) > 0:
+
+            pre_system, self.extra_molecules=self.addExtraMolecules_PDB(pre_system, extra_input_pdb)
+
         self.topology=pre_system.topology
     
+        #Create a ForceField instance with provided XMLs with setForceFields()
         forcefield, ff_paths=self.setForceFields(ff_files=ff_files, 
-                                         extra_ff_files=extra_ff_files,
-                                         omm_ff=None)
+                                                 extra_ff_files=extra_ff_files, 
+                                                 omm_ff=None)
     
+        #Call to setProtonationState()
         if protonate:
             
             if residue_variants:
             
-                #Call to method setProtonationState()
-                pre_system.addHydrogens(forcefield, 
-                             pH = pH_protein, 
-                             variants = self.setProtonationState(pre_system.topology.chains(), 
+                pre_system.addHydrogens(forcefield, pH = pH_protein, 
+                                        variants = self.setProtonationState(pre_system.topology.chains(), 
                                                                  protonation_dict=residue_variants))
 
             else:
-                pre_system.addHydrogens(forcefield, 
-                             pH = pH_protein)
+                pre_system.addHydrogens(forcefield, pH = pH_protein)
         
-        # add ligand structures to the model
-        for extra_pdb_file in extra_input_pdb:
-            extra_pdb = app.PDBFile(extra_pdb_file)
-            pre_system.add(extra_pdb.topology, extra_pdb.positions)
 
-
-        #Call to static solvate
+        #Call to solvate()
+        #TODO: For empty box, add waters, remove then
         if solvate:
             pre_system=self.solvate(pre_system, forcefield, box_size=box_size)
-# =============================================================================
-#         else:
-#             pre_system.setPreiodicBoxVectors(omm.Vec3(box_size, box_size, box_size))
-# =============================================================================
     
     
         if other_omm:
             
-            system, forcefield=self.omm_system(input_sdf_file, 
+            system, forcefield_other=self.omm_system(input_sdf_file, 
                                    pre_system,
                                    forcefield,
                                    ff_files=ff_paths, 
@@ -179,7 +188,7 @@ class Protocols:
             self.positions=pdb.positions
             self.topology=pdb.topology
             
-            #forcefield not needed? keep i 
+            #forcefield not needed?? 
     
         else:
             
@@ -192,12 +201,12 @@ class Protocols:
                                          rigidWater=True)
         
             self.positions=pre_system.positions
-            self.topology=pre_system.topology
+            self.topology
             
         #Update attributes
         self.input_pdb=input_pdb
         self.system=system
-
+        self.topology=pre_system.topology
 
         #TODO: A lot. Link to Visualization
         self.system_pdb=self.writePDB(pre_system.topology, pre_system.positions, name='system')
@@ -207,7 +216,44 @@ class Protocols:
         
         return self
     
-    
+  
+
+    def addExtraMolecules_PDB(self, system, extra_input_pdb, input_path=None):
+        
+        if input_path == None:
+            
+            input_path=self.def_input_struct
+            
+        total_mols=[]
+        
+        for idx, pdb_e in enumerate(extra_input_pdb, 1):
+            
+            
+            path_pdb=f'{self.def_input_struct}/{pdb_e}'
+
+            if not os.path.exists(path_pdb):
+                
+                print(f'\tFile {path_pdb} not found!')
+            else:
+                print(f'\tAdding extra PDB file {idx} to pre-system: {path_pdb}')
+                extra_pdb = app.PDBFile(path_pdb)
+                       
+            try:
+                system.add(extra_pdb.topology, extra_pdb.positions)
+                print(f'\t{extra_pdb.topology}')
+            
+                total_mols.append((idx, path_pdb))  
+            
+            except:
+                
+                print(f'\tMolecule {idx} ({extra_pdb}) could not be added by openMM')
+
+        for mol in total_mols:
+            
+            print(f'\tAdded {mol[0]}: {mol[1]}')  
+  
+        return system, total_mols
+  
     
     @staticmethod
     def sniffMachine(gpu_index='0'):
@@ -230,7 +276,7 @@ class Protocols:
         
         import openmmtools
         
-        #TODO: Use a test to check the number of available gpu (2 Pixar,3 Snake/Packman, 4 HPC) 
+        #TODO: Use a test to check the number of available gpu (2 Pixar,3 Snake/Packman, 4 or 8 HPC) 
         
         #platforms=openmmtools.utils.get_available_platforms()
         fastest=openmmtools.utils.get_fastest_platform()
@@ -346,6 +392,9 @@ class Protocols:
                 eq['report']=int(eq['report']/self.dt) 
                 
                 print(f"Converted to unitless using integration time of {self.dt}: {eq['report']}")
+                
+                #TODO: Checkpoints for continuation. Crucial for production.
+                #simulation.saveCheckpoint(os.path.abspath(f'{self.workidr}/checkpoint.chk'))
             
             self.eq_protocols.append(eq)
             
@@ -360,8 +409,7 @@ class Protocols:
         return simulation
 
 
-    def run_energyMinimization(self,
-                     *args):
+    def run_energyMinimization(self):
         """
         
 
@@ -383,29 +431,24 @@ class Protocols:
         #TODO: make it pretty.
         
 
-        
-        if not args:
-            simulation=self.simulation
-            topology=self.topology
-
-        Ei=simulation.context.getState(getEnergy=True).getPotentialEnergy()
+        Ei=self.simulation.context.getState(getEnergy=True).getPotentialEnergy()
 
         print(f'Performing energy minimization: {Ei}')
         
         
         #TODO: pass Etol, iterations etc.
-        simulation.minimizeEnergy()
-        Eo=simulation.context.getState(getEnergy=True).getPotentialEnergy()
+        self.simulation.minimizeEnergy()
+        Eo=self.simulation.context.getState(getEnergy=True).getPotentialEnergy()
         print(f'System is now minimized: {Eo}')
 
-        positions_new = simulation.context.getState(getPositions=True).getPositions()
-        self.Emin=self.writePDB(topology, positions_new, name='Emin')
+        positions_new = self.simulation.context.getState(getPositions=True).getPositions()
+        self.Emin=self.writePDB(self.topology, positions_new, name='Emin')
         
         self.positions=positions_new
         
-        self.simulation=simulation
 
-        return simulation
+
+        return self.simulation
 
 
     def run_equilibrations(self, *args):
@@ -489,22 +532,33 @@ class Protocols:
         print(f'System is now equilibrated (?): {Eo}')
         
         
-        self.positions=positions_new
         
-# =============================================================================
-#         
-#         import subprocess
-#         cmd="mdconvert equilibration_NPT.h5 -o equilibration_NPT.xtc"
-#         
-#         process=subprocess.Popen(cmd.split(), stdout=self.workdir, cwd=self.workdir)
-#         
-#         output, error = process.comunicate()
-#         
-#         print(output, error)
-#     
-# =============================================================================
-    
+        # Free Equilibration
+        # forces: 0->HarmonicBondForce, 
+        #1->HarmonicAngleForce, 
+        #2->PeriodicTorsionForce, 
+        #3->NonbondedForce, 
+        #4->CMMotionRemover, 
+        #5->CustomExternalForce, 
+        #6->CustomExternalForce, 
+        #7->MonteCarloBarostat
+
+        forces=self.system.getForces()
+        
+        for idx, force in enumerate(forces):
+            
+            #print(force)
+            
+            if force.__class__.__name__ == 'CustomExternalForce':
+            
+                self.system.removeForce(idx)
+                print(f'Force of kind "CustomExternalForce" ({idx}) removed.')        
+           
+        self.positions=positions_new
+            
         return self.simulation
+
+
 
     def setRestraints(self, restrained_sets):
                       
@@ -546,13 +600,15 @@ class Protocols:
                 force.addPerParticleParameter("x0")
                 force.addPerParticleParameter("y0")
                 force.addPerParticleParameter("z0")
+                
+                print(f'Restraining set ({force_value*kilojoules_per_mole/angstroms**2}): {len(topology.select(restrained_set))}')
             
                 for res_atom_index in topology.select(restrained_set):
                     
                     force.addParticle(int(res_atom_index), self.positions[int(res_atom_index)].value_in_unit(unit.nanometers))
             
-            #TODO: Decide wether to spawn system reps. Streamlined now. Legacy removes later.    
-            self.system.addForce(force)
+            #   TODO: Decide wether to spawn system reps. Streamlined now. Legacy removes later.    
+                self.system.addForce(force)
 
             return self.system
         
@@ -560,50 +616,14 @@ class Protocols:
             print('Inputs for restrained sets are not the same length.')
     
  
-    @staticmethod
-    def omm_system(input_sdf,
-                   input_pdb,
-                   forcefield,
-                   ff_files=[],
-                   template_ff='gaff-2.11'):
-        
     
-        print(input_sdf, input_pdb)
-        print(type(input_sdf), type(input_pdb))
-        from openmmforcefields.generators import SystemGenerator, GAFFTemplateGenerator
-        from openff.toolkit.topology import Molecule
-		
-        # maybe possible to add same parameters that u give forcefield.createSystem() function
-        forcefield_kwargs ={'constraints' : app.HBonds,
-                            'rigidWater' : True,
-                            'removeCMMotion' : False,
-                            'hydrogenMass' : 4*amu }
-        
-        
-		# Initialize a SystemGenerator using GAFF
-        # maybe can give forcefield object?
-        system_generator = SystemGenerator(forcefields=ff_files, 
-                                           small_molecule_forcefield=template_ff,
-                                           forcefield_kwargs=forcefield_kwargs, 
-                                           cache='db.json')
-												
-		# Alternatively, create an OpenMM System from an OpenMM Topology object and a list of OpenFF Molecule objects
-        molecules = Molecule.from_file(input_sdf, file_format='sdf')
-        system = system_generator.create_system(input_pdb.topology, molecules=molecules)
-        
-        
-        gaff = GAFFTemplateGenerator(molecules=molecules)
-        forcefield.registerTemplateGenerator(gaff.generator)
-        
-        
-        return system, forcefield
     
 
     def setForceFields(self,
                          ff_files=[], 
                          extra_ff_files=[],
                          omm_ff=None,
-                         ff_path=None,
+                         input_path=None,
                          defaults=['amber14/protein.ff14SB.xml', 'amber14/tip4pew.xml'], 
                          add_residue_file=None):
 
@@ -615,49 +635,32 @@ class Protocols:
         #TODO: make more checks             
         #definition of additional residues (for ligands or novel residues); bonds extracted from ligand xml files
     
-        if ff_path == None:
-            
-            ff_path=self.workdir
-            
-    
-        if len(ff_files) != 0:
-            
-            for idx, f in enumerate(ff_files, 1):
-        
-                print(f"Appending FF files {idx}: {os.path.abspath(f'{ff_path}/{f}')}")
-                ff_files[idx]=os.path.abspath(f'{ff_path}/{f}') 
-                
-        
-        if len(extra_ff_files) != 0:
-            
-            for idx_e, f_e in enumerate(extra_ff_files):
-                
-                print(f"Appending extra FF files {idx_e}: {os.path.abspath(f'{ff_path}/{f_e}')}")
-                ff_files.append(os.path.abspath(f'{ff_path}/{f_e}')) 
-                
-        #TODO: probably remove this
-        elif add_residue_file != None:
-            
-            ff_files.append(os.path.abspath(f'{ff_path}/{add_residue_file}'))
-        
-        else:
-            ff_files=defaults
-            
-    
-        if omm_ff == None:
-            
-            forcefield = app.ForceField(*ff_files)
-            
 
+            
+        ff_list=[]
+        
+        if len(ff_files) > 0:
+                    
+            for idx, ff in enumerate(ff_files, 1):
+            
+                path_ff=f'{self.def_input_ff}/{ff}'
 
-        else:
-            print(f'Other openMM force field instance has been passed: {omm_ff}')
-            pass
+                if not os.path.exists(path_ff):
+                
+                    print(f'\tFile {path_ff} not found!')
+            
+                else:
+                    
+                    print(f'\tAdding extra FF file {idx}: {path_ff}')
+                    ff_list.append(path_ff)
+        
+        for d in defaults:
+            ff_list.append(d)
         
         
-        #print(forcefield.getMatchingTemplates(self.topology))
-        
-        return forcefield, ff_files    
+        forcefield = app.ForceField(*ff_list)
+                
+        return forcefield, ff_list  
     
     
     
@@ -696,7 +699,43 @@ class Protocols:
         return out_pdb
 
 
-
+    @staticmethod
+    def omm_system(input_sdf,
+                   input_pdb,
+                   forcefield,
+                   ff_files=[],
+                   template_ff='gaff-2.11'):
+        
+    
+        print(input_sdf, input_pdb)
+        print(type(input_sdf), type(input_pdb))
+        from openmmforcefields.generators import SystemGenerator, GAFFTemplateGenerator
+        from openff.toolkit.topology import Molecule
+		
+        # maybe possible to add same parameters that u give forcefield.createSystem() function
+        forcefield_kwargs ={'constraints' : app.HBonds,
+                            'rigidWater' : True,
+                            'removeCMMotion' : False,
+                            'hydrogenMass' : 4*amu }
+        
+        
+		# Initialize a SystemGenerator using GAFF
+        # maybe can give forcefield object?
+        system_generator = SystemGenerator(forcefields=ff_files, 
+                                           small_molecule_forcefield=template_ff,
+                                           forcefield_kwargs=forcefield_kwargs, 
+                                           cache='db.json')
+												
+		# Alternatively, create an OpenMM System from an OpenMM Topology object and a list of OpenFF Molecule objects
+        molecules = Molecule.from_file(input_sdf, file_format='sdf')
+        system = system_generator.create_system(input_pdb.topology, molecules=molecules)
+        
+        
+        gaff = GAFFTemplateGenerator(molecules=molecules)
+        forcefield.registerTemplateGenerator(gaff.generator)
+        
+        
+        return system, forcefield
  
 
     @staticmethod

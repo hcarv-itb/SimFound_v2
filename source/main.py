@@ -98,6 +98,7 @@ class Project:
         #TODO: make confirmation tasks
         
         self.def_input_struct=f'{self.workdir}/inputs/structures'
+        self.def_input_ff=f'{self.workdir}/inputs/forcefields'
         
         self.input_topology=f'{self.def_input_struct}/{topology}'
         self.output_trajectory=trajectory
