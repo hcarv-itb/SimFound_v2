@@ -123,22 +123,23 @@ class Protocols:
         None.
 
         """
+        self.input_pdb=input_pdb
+        
+        if self.input_pdb == None:
 
-        if input_pdb == None:
-
-            input_pdb=f'{self.workdir}/{input_pdb}'
+            self.input_pdb=f'{self.workdir}/{self.input_pdb}'
         
         #Fix the input_pdb with PDBFixer
         if fix_pdb:
             
-            pdb=PDBFixer(input_pdb)
+            pdb=PDBFixer(self.input_pdb)
             
             pdb.findMissingResidues()
             pdb.findMissingAtoms()
             pdb.addMissingAtoms()
         
         else:
-            pdb = app.PDBFile(input_pdb)
+            pdb = app.PDBFile(self.input_pdb)
         
         
         #Generate a Modeller instance of the fixed pdb
@@ -151,12 +152,11 @@ class Protocols:
 
             pre_system, self.extra_molecules=self.addExtraMolecules_PDB(pre_system, extra_input_pdb)
 
-        self.topology=pre_system.topology
+
     
         #Create a ForceField instance with provided XMLs with setForceFields()
         forcefield, ff_paths=self.setForceFields(ff_files=ff_files, 
-                                                 extra_ff_files=extra_ff_files, 
-                                                 omm_ff=None)
+                                                 extra_ff_files=extra_ff_files)
     
         #Call to setProtonationState()
         if protonate:
@@ -176,18 +176,20 @@ class Protocols:
         if solvate:
             pre_system=self.solvate(pre_system, forcefield, box_size=box_size)
     
+        self.topology=pre_system.topology
+        self.positions=pre_system.positions
     
+        #Define system. Either by provided pre_system, or other_omm system instance.
+        
         if other_omm:
             
             system, forcefield_other=self.omm_system(input_sdf_file, 
-                                   pre_system,
-                                   forcefield,
-                                   ff_files=ff_paths, 
-                                   template_ff='gaff-2.11')
-            
-            self.positions=pdb.positions
-            self.topology=pdb.topology
-            
+                                                     pre_system,
+                                                     forcefield,
+                                                     self.def_input_struct,
+                                                     ff_files=ff_paths, 
+                                                     template_ff='gaff-2.11')
+                        
             #forcefield not needed?? 
     
         else:
@@ -199,14 +201,9 @@ class Protocols:
                                          ewaldErrorTolerance=0.0005, 
                                          constraints='HBonds', 
                                          rigidWater=True)
-        
-            self.positions=pre_system.positions
-            self.topology
             
         #Update attributes
-        self.input_pdb=input_pdb
         self.system=system
-        self.topology=pre_system.topology
 
         #TODO: A lot. Link to Visualization
         self.system_pdb=self.writePDB(pre_system.topology, pre_system.positions, name='system')
@@ -255,44 +252,7 @@ class Protocols:
         return system, total_mols
   
     
-    @staticmethod
-    def sniffMachine(gpu_index='0'):
-        """
-        
 
-        Parameters
-        ----------
-        gpu_index : TYPE
-            DESCRIPTION.
-
-        Returns
-        -------
-        platform : TYPE
-            DESCRIPTION.
-        platformProperties : TYPE
-            DESCRIPTION.
-
-        """
-        
-        import openmmtools
-        
-        #TODO: Use a test to check the number of available gpu (2 Pixar,3 Snake/Packman, 4 or 8 HPC) 
-        
-        #platforms=openmmtools.utils.get_available_platforms()
-        fastest=openmmtools.utils.get_fastest_platform()
-        
-        
-        #platform=omm.Platform.getPlatformByName('CUDA')
-        platform=fastest
-
-        platformProperties = {'Precision': 'mixed',
-                              'DeviceIndex': gpu_index}
-        
-
-        print(f'The fastest platform is {fastest.getName()}')
-        print(f'Selected GPU ID: {gpu_index}')
-        
-        return platform, platformProperties
     
 
     
@@ -475,6 +435,8 @@ class Protocols:
     def equilibration_NPT(self, protocol):      
         
 
+        eq_trj=f'{self.workdir}/equilibration_NPT.h5'
+
         if protocol['restrained_sets']:
 
             #call to setRestraints, returns updated system. Check protocol['restrained_sets'] definitions on setSimulation.            
@@ -505,7 +467,7 @@ class Protocols:
         #TODO: Decide on wether same extent as steps for reporter
         #TODO: Link to streamz
         
-        self.simulation.reporters.append(HDF5Reporter(f'{self.workdir}/equilibration_NPT.h5', 
+        self.simulation.reporters.append(HDF5Reporter(eq_trj, 
                                                  protocol['report'], 
                                                  atomSubset=self.trj_indices))
         
@@ -622,10 +584,8 @@ class Protocols:
     def setForceFields(self,
                          ff_files=[], 
                          extra_ff_files=[],
-                         omm_ff=None,
                          input_path=None,
-                         defaults=['amber14/protein.ff14SB.xml', 'amber14/tip4pew.xml'], 
-                         add_residue_file=None):
+                         defaults=['amber14/protein.ff14SB.xml', 'amber14/tip4pew.xml']):
 
         
 
@@ -690,7 +650,6 @@ class Protocols:
         
         
         #TODO: allow other extensions
-        
         out_pdb=f'{self.workdir}/{name}.pdb'
         app.PDBFile.writeFile(topology, positions, open(out_pdb, 'w'))
             
@@ -701,38 +660,60 @@ class Protocols:
 
     @staticmethod
     def omm_system(input_sdf,
-                   input_pdb,
+                   input_system,
                    forcefield,
+                   input_path,
                    ff_files=[],
                    template_ff='gaff-2.11'):
         
-    
-        print(input_sdf, input_pdb)
-        print(type(input_sdf), type(input_pdb))
+
+        
         from openmmforcefields.generators import SystemGenerator, GAFFTemplateGenerator
         from openff.toolkit.topology import Molecule
-		
+        
+        
         # maybe possible to add same parameters that u give forcefield.createSystem() function
         forcefield_kwargs ={'constraints' : app.HBonds,
                             'rigidWater' : True,
                             'removeCMMotion' : False,
                             'hydrogenMass' : 4*amu }
-        
-        
-		# Initialize a SystemGenerator using GAFF
-        # maybe can give forcefield object?
+		
         system_generator = SystemGenerator(forcefields=ff_files, 
                                            small_molecule_forcefield=template_ff,
                                            forcefield_kwargs=forcefield_kwargs, 
                                            cache='db.json')
-												
-		# Alternatively, create an OpenMM System from an OpenMM Topology object and a list of OpenFF Molecule objects
-        molecules = Molecule.from_file(input_sdf, file_format='sdf')
-        system = system_generator.create_system(input_pdb.topology, molecules=molecules)
+        
+
+        input_sdfs=[]
+        for idx, sdf in enumerate(input_sdf, 1):
+        
+            
+            path_sdf=f'{input_path}/{sdf}'
+
+            if not os.path.exists(path_sdf):
+                
+                print(f'\tFile {path_sdf} not found!')
+            else:
+                print(f'\tAdding extra SDF file {idx} to pre-system: {path_sdf}')
+                input_sdfs.append(path_sdf)
+                       
+
+        molecules = Molecule.from_file(*input_sdfs, file_format='sdf')
+        
+        print(molecules)
+        
+        system = system_generator.create_system(topology=input_system.topology)#, molecules=molecules)
         
         
-        gaff = GAFFTemplateGenerator(molecules=molecules)
+        gaff = GAFFTemplateGenerator(molecules=molecules, forcefield=template_ff)
+        gaff.add_molecules(molecules)
+        print(gaff)
         forcefield.registerTemplateGenerator(gaff.generator)
+        
+        #forcefield.registerResidueTemplate(template)
+        
+        print(system)
+        print(forcefield)
         
         
         return system, forcefield
@@ -775,7 +756,46 @@ class Protocols:
             
         return system
 
+    @staticmethod
+    def sniffMachine(gpu_index='0'):
+        """
+        
 
+        Parameters
+        ----------
+        gpu_index : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        platform : TYPE
+            DESCRIPTION.
+        platformProperties : TYPE
+            DESCRIPTION.
+
+        """
+        
+        import openmmtools
+        
+        #TODO: Use a test to check the number of available gpu (2 Pixar,3 Snake/Packman, 4 or 8 HPC) 
+        
+        #platforms=openmmtools.utils.get_available_platforms()
+        fastest=openmmtools.utils.get_fastest_platform()
+        
+        
+        #platform=omm.Platform.getPlatformByName('CUDA')
+        platform=fastest
+
+        platformProperties = {'Precision': 'mixed',
+                              'DeviceIndex': gpu_index}
+        
+
+        print(f'The fastest platform is {fastest.getName()}')
+        print(f'Selected GPU ID: {gpu_index}')
+        
+        return platform, platformProperties
+    
+    
         
     @staticmethod
     def setProtonationState(system, protonation_dict=()):

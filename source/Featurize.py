@@ -13,7 +13,13 @@ import os
 import MDAnalysis as mda
 import MDAnalysis.analysis.distances as D
 
-#import tools
+
+import mdtraj as md
+
+
+from simtk.unit import picoseconds
+
+import tools
 
 class Featurize:
     """
@@ -31,12 +37,12 @@ class Featurize:
     
     """
     
-    def __init__(self, systems, results):
+    def __init__(self, systems, timestep, results):
         self.systems=systems
         self.results=results
         self.features={}
-        self.levels=self.systems.getlevels()
-        #self.timestep=int(f'{self.systems.timestep}')
+        #self.levels=self.systems.getlevels()
+        self.timestep=timestep
  
         
     def dist(self, distances, start=0, stop=-1, stride=1)->dict:
@@ -82,7 +88,101 @@ class Featurize:
                                                       name, stride, timestep)
 
         return dist
-             
+ 
+
+    def calculate(self, 
+                inputs,
+                feature_name='feature',
+                start=0,
+                stop=-1,
+                stride=1,
+                n_cores=-1):
+        """
+        Calculates something based on some 'inputs'. 
+        Increase "n_cores" to speed up calculations.
+        Retrieves the output array and corresponding dataframe.
+        Recieves instructions from multiprocessing calls.
+        Makes calls to "*_calculation" methods.
+        Operation is adjusted for multiprocessing calls, hence the requirement for tuple manipulation.
+        
+        
+        Parameters
+        ----------
+
+
+        inputs : list of tuples
+            A list of distance tuples of the kind [(ref1-sel1), ..., (refN-selN)].
+        feature_name : string
+            The name given to the featurized object. The default is 'feature'.
+        start : int, optional
+            The starting frame used to calculate. The default is 0.
+        stop : int, optional
+            The last frame used to calculate. The default is -1.
+        stride : int, optional
+            Read every nth frame. The default is 1.
+        n_cores : int, optional
+            The number of cores to execute task. Set to -1 for all cores. The default is 2.
+
+        Returns
+        -------
+        dataframe
+            A dataframe containing all the d_NAC values across the list of iterables*replicas*pairs.
+
+        """
+           
+        # Define system specifications and measurement instructions
+        systems_specs=[]
+        
+        for name, system in self.systems.items(): #system cannot be sent as pickle for multiproc, has to be list
+            
+            trajectory=system.trajectory
+            topology=system.input_topology
+            results_folder=system.results_folder
+            timestep=system.timestep
+            
+            systems_specs.append((trajectory, topology, results_folder, name))
+            
+        measurements=(inputs, start, stop, timestep, stride)
+        #print(system_specs)
+        #print(measurements)
+        
+            
+        methods_dict={'dNAC' : Featurize.nac_calculation,
+                      'distance' : Featurize.nac_calculation,
+                      'RMSD' : Featurize.nac_calculation}  
+        
+        try:
+            method=methods_dict[feature_name]
+            
+        except:
+            
+            print('Feature {feature_name} not supported.')
+                    
+        data_t=tools.Tasks.parallel_task(method, 
+                                             systems_specs, 
+                                             measurements, 
+                                             n_cores=n_cores)
+        
+        # concat dataframes from multiprocessing into one dataframe
+        #Update state of system and features with the feature df.
+        
+        out_df=pd.DataFrame()
+        
+        for data_df, system in zip(data_t, self.systems.values()):
+          
+            system.data[feature_name]=data_df[0]
+            system.features[feature_name]=data_df[1]
+            
+            out_df=pd.concat([out_df,  data_df[1]], axis=1)
+                                       
+        print(out_df)
+        
+        self.features[feature_name]=out_df
+        
+        return out_df
+
+
+            
         
     def nac(self,  
                 distances,
@@ -207,8 +307,8 @@ class Featurize:
         names=[f'l{i}' for i in range(1, len(indexes)+2)] # +2 to account for number of molecules
         #TODO: Make function call to get the real names of the levels. Current l1, l2, l3, etc.
 
-       
-        nac_file=f'{results_folder}/dNAC_{len(distances)}-i{start}-o{stop}-s{stride}-{timestep}ps.npy'
+          
+        nac_file=f'{results_folder}/dNAC_{len(distances)}-i{start}-o{stop}-s{stride}-{str(timestep).replace(" ","")}.npy'
         
         if not os.path.exists(nac_file):
              
@@ -217,47 +317,47 @@ class Featurize:
             #print(f'This is dists  {np.shape(dists[0])}: \n {dists[0]}')
             #print(f'This is power: \n{np.power(dists[0], 2)}')
 
+
             print(f'Calculating d_NAC of {name}')
-            #NAC calculation
             
             #SQRT(SUM(di^2)/#i)
             nac_array=np.around(np.sqrt(np.power(dists, 2).sum(axis=0)/len(dists)), 3) #sum(axis=0)
             
             #SQRT(MEAN(di^2))
             #nac_array=np.around(np.sqrt(np.mean(np.power(dists))), 3)
-            np.save(nac_file, nac_array)
-
             
+            print(nac_array)
+            
+            np.save(nac_file, nac_array)
+                
+                
+
         else:
             #print(f'dNAC file for {name} found.') 
             nac_array=np.load(nac_file)
 
-        
-        #TODO: Check behaviour for ref > 1
-        #TODO: switch ref and sel for full.
-        frames, sel, ref=np.shape(nac_array)
-        
-        print(f'{name} \n\tNumber of frames: {frames}\n\tSelections: {sel}\n\tReferences: {ref}\n\t{np.min(nac_array)}, {np.max(nac_array)}')
-
         try:
-            nac_array=nac_array.reshape(frames, ref*sel)
+            #TODO: Check behaviour for ref > 1
+            #TODO: switch ref and sel for full.
+            frames, sel, ref=np.shape(nac_array)
+            
+            print(f'{name} \n\tNumber of frames: {frames}\n\tSelections: {sel}\n\tReferences: {ref}\n\t{np.min(nac_array)}, {np.max(nac_array)}')
+            
+            pairs=np.arange(1,sel+1)
+            #print(pairs)
+            indexes.append(pairs)
+            #print(indexes)
+            column_index=pd.MultiIndex.from_product(indexes, names=names)
+            #print(column_index)
+            nac_df_system=pd.DataFrame(nac_array, columns=column_index) #index=np.arange(start, stop, stride)
+        
         except:
             
-            print(f'\tError found in {name}: the dNAC shape is {np.shape(nac_array)}')
+            print(f'Empty array for {name}.')
             
-            nac_array=nac_array.reshape(frames-1, ref*sel)
-        
+            nac_df_system=pd.DataFrame()
+            
 
-        pairs=np.arange(1,sel+1)
-        #print(pairs)
-        indexes.append(pairs)
-        #print(indexes)
-        column_index=pd.MultiIndex.from_product(indexes, names=names)
-        #print(column_index)
-        nac_df_system=pd.DataFrame(nac_array, columns=column_index) #index=np.arange(start, stop, stride)
-        
-        #print(nac_df_system)    
-        
 # =============================================================================
 #         plt.hist(nac_array.flat, bins=np.arange(0,151))
 #         plt.title(f'{name}')
@@ -269,6 +369,18 @@ class Featurize:
             
         return (nac_file, nac_df_system)
     
+    
+    
+    
+    @staticmethod
+    def rmsd_calculation(system_specs, measurements):
+        
+        (trajectory, topology, results_folder, name)=system_specs
+        (distances,  start, stop, timestep, stride)=measurements    
+ 
+        rmsd=md.rmsd(trajectory, trajectory, start)   
+ 
+        return rmsd 
     
 
     @staticmethod
@@ -319,28 +431,41 @@ class Featurize:
         #For each sel, define atomgroup1 (sel1) and atomgroup2 (sel2)
 #        fig,axes=plt.subplots(1, 2, sharex=True, sharey=True, constrained_layout=True, figsize=(9,6))
         for idx, dist in enumerate(distances, 1): 
-            dist_file=f'{results_folder}/distance{idx}-i{start}-o{stop}-s{stride}-{timestep}ps.npy'
+            
+            
+            dist_file=f'{results_folder}/distance{idx}-i{start}-o{stop}-s{stride}-{str(timestep).replace(" ","")}).npy'
             clock_s=time.time()
             if not os.path.exists(dist_file):
                 
+                print(f'Distance {idx} not found for {name}. Reading trajectory...')               
+ 
+    
+                try:
+                    u=mda.Universe(topology, trajectory)
+
                 
-                                
-                print(f'Distance {idx} not found for {name}. Reading trajectory...')  
-                u=mda.Universe(topology, trajectory)
+                    #print(u.dimensions)
+                    ref, sel =u.select_atoms(dist[0]).positions, u.select_atoms(dist[1]).positions
                 
-                #print(u.dimensions)
-                ref, sel =u.select_atoms(dist[0]).positions, u.select_atoms(dist[1]).positions
+                    print(ref)
+                
+                    print(sel)
                     
-                print(f'\t\tref: {u.select_atoms(dist[0])[0]} x {len(ref)}\n\t\tsel: {u.select_atoms(dist[1])[0]} x {len(sel)}')
-                print(f'\tCalculating distance {idx} of {name}')          
-                dists_=np.around(
+                    print(f'\t\tref: {u.select_atoms(dist[0])[0]} x {len(ref)}\n\t\tsel: {u.select_atoms(dist[1])[0]} x {len(sel)}')
+                    print(f'\tCalculating distance {idx} of {name}')          
+                    dists_=np.around(
                                 [D.distance_array(ref, 
                                                   sel, 
                                                   box=u.dimensions, 
                                                   result=np.empty((len(ref), len(sel)))) for ts in u.trajectory[start:stop:stride]],
                                 decimals=3) 
-                                
-                np.save(dist_file, dists_)
+                
+                    np.save(dist_file, dists_)
+                
+                except FileNotFoundError:
+                    
+                    print(f'\tFile(s) not found for {name}.')
+                    dists_=np.empty(2)
                         
             else:
                 #print(f'\tDistance {idx} found for {name}')
@@ -357,7 +482,7 @@ class Featurize:
 #       plt.show()
 
         #print(np.min(np.asarray(dists)), np.max(np.asarray(dists)))
-        return np.asarray(dists)
+        return np.asarray(dists) #return
         
 
             

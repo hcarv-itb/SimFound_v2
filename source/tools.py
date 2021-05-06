@@ -391,59 +391,92 @@ class Tasks:
     
     """
     
-    def parallel_task(input_function=None, collection=None):
-        """
+    def parallel_task(input_function, container, fixed, n_cores=-1):
+        """Core function for multiprocessing of a given task.Takes as input a function and an iterator.
+        Warning: Spawns as many threads as the number of elements in the iterator."""
         
-        Core function for multiprocessing of a given task.Takes as input a function and an iterator.
-        Warning: Spawns as many threads as the number of elements in the iterator.
-            
-
-        """
-        
-        
-        from pathlib import Path
-        import multiprocessing
-        from multiprocessing import Manager, Process
-
-        n_cpus=multiprocessing.cpu_count()
-        temp_dir='/tmp'
-        
-        
-        
-        def task_exec(manager, input_function, idx, c) -> dict:
-            """
-            Execution of the input function. Output is stored in the manager, which is handled to the job
-
-            Parameters
-            ----------
-            manager : TYPE
-                DESCRIPTION.
-            input_function : TYPE
-                DESCRIPTION.
-            idx : TYPE
-                DESCRIPTION.
-            c : TYPE
-                DESCRIPTION.
-
-
-            """
-            
-            task=manager
-            function=input_function
-            task[idx]=function(c)           
-        
-        if input_function != None and collection != None:
-        
-            manager=Manager().list()
-            job=[Process(target=task_exec, args=(manager, input_function, idx, c)) for idx, c in enumerate(collection)]
-            _=[p.start() for p in job]
-            _=[p.join() for p in job]
-       
-            return manager
-        
+        import psutil
+        from functools import partial
+        from multiprocessing import Pool
+                
+        if n_cores <=0:
+            num_cpus = psutil.cpu_count(logical=True)
         else:
-            print('No input function or container provided')
+            num_cpus = n_cores
             
-            
+        print(f'Performing {input_function} tasks for {len(container)} elements on {num_cpus} logical cores')
+        
+        process_pool = Pool(processes=num_cpus)
+        
+        calc=partial(input_function, specs=fixed)                     
+        out=list(process_pool.map(calc, container))
+
+        print(f'Pooling results of {len(out)} tasks..')
+        process_pool.close()
+        process_pool.join()
+        
+
+        
+        #print(out)
+        return out
+    
+    
+# =============================================================================
+#     
+#     def parallel_task(input_function=None, collection=None):
+#         """
+#         
+#         Core function for multiprocessing of a given task.Takes as input a function and an iterator.
+#         Warning: Spawns as many threads as the number of elements in the iterator.
+#             
+# 
+#         """
+#         
+#         
+#         from pathlib import Path
+#         import multiprocessing
+#         from multiprocessing import Manager, Process
+# 
+#         n_cpus=multiprocessing.cpu_count()
+#         temp_dir='/tmp'
+#         
+#         
+#         
+#         def task_exec(manager, input_function, idx, c) -> dict:
+#             """
+#             Execution of the input function. Output is stored in the manager, which is handled to the job
+# 
+#             Parameters
+#             ----------
+#             manager : TYPE
+#                 DESCRIPTION.
+#             input_function : TYPE
+#                 DESCRIPTION.
+#             idx : TYPE
+#                 DESCRIPTION.
+#             c : TYPE
+#                 DESCRIPTION.
+# 
+# 
+#             """
+#             
+#             task=manager
+#             function=input_function
+#             task[idx]=function(c)           
+#         
+#         if input_function != None and collection != None:
+#         
+#             manager=Manager().list()
+#             job=[Process(target=task_exec, args=(manager, input_function, idx, c)) for idx, c in enumerate(collection)]
+#             _=[p.start() for p in job]
+#             _=[p.join() for p in job]
+#        
+#             return manager
+#         
+#         else:
+#             print('No input function or container provided')
+#             
+#             
+# =============================================================================
     
     
