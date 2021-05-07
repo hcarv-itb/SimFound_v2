@@ -263,11 +263,8 @@ class Protocols:
                        pressure=1*atmospheres,
                        pH=7.0,
                        gpu_index='0',
-                       equilibrations=[{'ensemble': 'NPT', 
-                                       'step': 1*nanoseconds, 
-                                       'report': 1000, 
-                                       'restrained_sets': {'selections': ['protein and backbone'], 
-                                                           'forces': [100*kilojoules_per_mole/angstroms]}}]):
+                       productions=[],
+                       equilibrations=[]):
         """
         Function to setup simulation protocols.
         Returns a simulation object.
@@ -326,44 +323,27 @@ class Protocols:
        
         self.trj_write={}
         self.steps={}       
-        self.trj_subset='protein'
+        self.trj_subset='not water'
         self.trj_indices = selection_reference_topology.select(self.trj_subset)
         self.eq_protocols=[]
+        self.productions=[]
  
         #trajectory_out_atoms = 'protein or resname SAM or resname ZNB'
-        
+
         for eq in equilibrations:
-                        
-            print('Setting equilibration protocol:')
             
-            for k,v in eq.items():
-                print(f'\t{k}: {v}')
-                        
-            if type(eq['step']) != int:
-                
-                print(f"Steps is not unitless: {eq['step']}")
-                eq['step']=int(eq['step']/self.dt) 
-                
-                print(f"Converted to unitless using integration time of {self.dt}: {eq['step']}")
-            
-            if type(eq['report']) != int:
-                
-                print(f"Report steps is not unitless: {eq['report']}")
-                eq['report']=int(eq['report']/self.dt) 
-                
-                print(f"Converted to unitless using integration time of {self.dt}: {eq['report']}")
-                
-                #TODO: Checkpoints for continuation. Crucial for production.
-                #simulation.saveCheckpoint(os.path.abspath(f'{self.workidr}/checkpoint.chk'))
-            
+            eq=self.convert_Unit_Step(eq, self.dt)
             self.eq_protocols.append(eq)
+
+        for prod in productions:
+        
+            prod=self.convert_Unit_Step(prod, self.dt)
+            self.productions.append(prod)
+                
+        #TODO: Checkpoints for continuation. Crucial for production.
+        #simulation.saveCheckpoint(os.path.abspath(f'{self.workidr}/checkpoint.chk'))
             
-            #Legacy, passed as single global.
-            #ensemble= steps, save_steps, restrained_sets=eq
-            #self.steps[eq['ensemble']]=steps
-            #self.trj_write[eq['ensemble']] = save_steps #10000
-            #self.eq_protocols.append((, restrained_sets))
-            
+
         self.simulation=simulation
         
         return simulation
@@ -411,26 +391,95 @@ class Protocols:
         return self.simulation
 
 
-    def run_equilibrations(self, *args):
+    def run_simulations(self, run_equilibrations=True, run_productions=False):
         
+        if run_equilibrations:
         
-        protocols=self.eq_protocols
-        
-        for p in protocols:
+            for p in self.eq_protocols:
             
-            if p['ensemble'] == 'NPT':
+                if p['ensemble'] == 'NPT':
                 
-                print(f"Run: {p['ensemble']}")
-                run=self.equilibration_NPT(p)
-            
-            else:
-                print('TODO')
-                
-                #TODO: expand.
+                    print(f"Run: {p['ensemble']}")
+                    run=self.equilibration_NPT(p)
+                    
+                else:
+                    print('TODO')
+                    #TODO: expand.
+        
+        if run_productions:
+                            
+            for p in self.productions:
+                    
+                if p['ensemble'] == 'NPT':
+                    print(f"Run: {p['ensemble']}")
+                    run=self.production_NPT(p)
         
         return run
                 
+
+    def production_NPT(self, protocol):      
         
+
+        prod_trj=f'{self.workdir}/production_NPT.h5'
+
+        
+# =============================================================================
+#         # add MC barostat for NPT     
+#         self.system.addForce(omm.MonteCarloBarostat(self.pressure, 
+#                                                     self.temperature, 
+#                                                     25)) 
+#         #TODO: force is hardcoded, make it go away. Check units throughout!
+# =============================================================================
+        
+        
+        # Define reporters
+        self.simulation.reporters.append(app.StateDataReporter(f'{self.workdir}/report_production.csv', 
+                                                          protocol['report'], 
+                                                          step=True, 
+                                                          potentialEnergy=True, 
+                                                          temperature=True, 
+                                                          progress=True, 
+                                                          remainingTime=True, 
+                                                          speed=True, 
+                                                          totalSteps=protocol['step'], 
+                                                          separator='\t'))
+        #TODO: Decide on wether same extent as steps for reporter
+        #TODO: Link to streamz
+        
+        self.simulation.reporters.append(HDF5Reporter(prod_trj, 
+                                                 protocol['report'], 
+                                                 atomSubset=self.trj_indices))
+                
+        positions_first = self.simulation.context.getState(getPositions=True, getVelocities=True).getPositions()
+        self.writePDB(self.simulation.topology, positions_first, name='NPT_production_0')
+        
+        #############
+        ## WARNING ##
+        #############
+        trj_time=protocol['step']*self.dt
+        print(f"NPT production ({trj_time})...")
+        
+        self.simulation.step(protocol['step'])
+
+        
+        positions_new = self.simulation.context.getState(getPositions=True, 
+                                                         getVelocities=True,
+                                                         enforcePeriodicBox=True).getPositions()
+        
+        print('NPT production finished.')
+        
+        self.EQ_NPT=self.writePDB(self.simulation.topology, positions_new, name='NPT_production_0')
+        Eo=self.simulation.context.getState(getEnergy=True).getPotentialEnergy()
+        
+        print(f'System energy: {Eo}')
+        
+           
+        self.positions=positions_new
+            
+        return self.simulation        
+
+
+
         
     def equilibration_NPT(self, protocol):      
         
@@ -452,6 +501,7 @@ class Protocols:
         
         self.simulation.context.setPositions(self.positions)
         self.simulation.context.setVelocitiesToTemperature(self.temperature)
+        #TODO: IMPORTANT!!!!!!!!! setVelocities only on first one.
         
         # Define reporters
         self.simulation.reporters.append(app.StateDataReporter(f'{self.workdir}/report.csv', 
@@ -470,13 +520,17 @@ class Protocols:
         self.simulation.reporters.append(HDF5Reporter(eq_trj, 
                                                  protocol['report'], 
                                                  atomSubset=self.trj_indices))
+                
+        positions_first = self.simulation.context.getState(getPositions=True, 
+                                                           getVelocities=True, 
+                                                           enforcePeriodicBox=True).getPositions()
         
-        trj_time=protocol['step']*self.dt
-        
+        self.writePDB(self.simulation.topology, positions_first, name='EQ_NPT_0')
         
         #############
         ## WARNING ##
         #############
+        trj_time=protocol['step']*self.dt
         print(f"Restrained NPT equilibration ({trj_time})...")
         
         self.simulation.step(protocol['step'])
@@ -484,7 +538,9 @@ class Protocols:
         
         #state_npt_EQ = self.simulation.context.getState(getPositions=True, getVelocities=True)
         
-        positions_new = self.simulation.context.getState(getPositions=True, getVelocities=True).getPositions()
+        positions_new = self.simulation.context.getState(getPositions=True, 
+                                                         getVelocities=True,
+                                                         enforcePeriodicBox=True).getPositions()
         
         print('NPT equilibration finished.')
         
@@ -494,28 +550,31 @@ class Protocols:
         print(f'System is now equilibrated (?): {Eo}')
         
         
-        
-        # Free Equilibration
-        # forces: 0->HarmonicBondForce, 
-        #1->HarmonicAngleForce, 
-        #2->PeriodicTorsionForce, 
-        #3->NonbondedForce, 
-        #4->CMMotionRemover, 
-        #5->CustomExternalForce, 
-        #6->CustomExternalForce, 
-        #7->MonteCarloBarostat
-
+        #Remove implemented forces (only costum)
         forces=self.system.getForces()
         
+        to_remove=[]
         for idx, force in enumerate(forces):
             
-            #print(force)
+            print(force)
             
             if force.__class__.__name__ == 'CustomExternalForce':
             
-                self.system.removeForce(idx)
-                print(f'Force of kind "CustomExternalForce" ({idx}) removed.')        
-           
+                print(f'Force of kind "CustomExternalForce" ({idx}).')                
+                to_remove.append(idx)
+        
+        for remove in reversed(to_remove):       
+        
+            self.system.removeForce(remove)
+         
+# =============================================================================
+#         for idx, force in enumerate(self.system.getForces()):
+#             print('updated force:')
+#             print(force)
+#             
+#             
+# =============================================================================
+            
         self.positions=positions_new
             
         return self.simulation
@@ -873,10 +932,29 @@ class Protocols:
 
         return protonation_list
 
+    @staticmethod
+    def convert_Unit_Step(sim_dict, dt):
+            
+        
+        convert=['step', 'report']
+            
+        for c in convert:
+            
+            value=sim_dict[c]
+            
+            if type(value) != int:
+                
+                print(f'Value of {c} is not step: {value}')
+                sim_dict[c]=int(value/dt) 
+                
+            print(f"Converted to step using integration time of {dt}: {sim_dict[c]}")
+                
+        return sim_dict
+
 
 
     @classmethod
-    def box_padding(system, box_padding=1.0):
+    def box_padding(cls, system, box_padding=1.0):
         """
         
 
@@ -1071,11 +1149,13 @@ class Protocols:
         # count = 0
         # while (count < number_replicates):
         #  count = count+1 
-        
-        
-                # Simulation Options
-
-        self.Simulate_Steps = 5e7  # 100ns
-
-        self.SAM_restr_eq_Steps = 5e6          
-        self.SAM_free_eq_Steps = 5e6   
+# =============================================================================
+#         
+#         
+#                 # Simulation Options
+# 
+#         self.Simulate_Steps = 5e7  # 100ns
+# 
+#         self.SAM_restr_eq_Steps = 5e6          
+#         self.SAM_free_eq_Steps = 5e6   
+# =============================================================================
