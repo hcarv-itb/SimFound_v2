@@ -248,7 +248,7 @@ Requires the <em>regions</em> to be provided and optionally the <em>sampled_stat
 <p>Base class to spwan multiproc (Jupyter and Pandas compatible)</p>
 <dl class="py method">
 <dt id="source.tools.Tasks.parallel_task">
-<code class="sig-name descname">parallel_task</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">collection</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Tasks.parallel_task" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">parallel_task</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">container</span></em>, <em class="sig-param"><span class="n">fixed</span></em>, <em class="sig-param"><span class="n">n_cores</span><span class="o">=</span><span class="default_value">- 1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Tasks.parallel_task" title="Permalink to this definition">¶</a></dt>
 <dd><p>Core function for multiprocessing of a given task.Takes as input a function and an iterator.
 Warning: Spawns as many threads as the number of elements in the iterator.</p>
 </dd></dl>

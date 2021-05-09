@@ -10,9 +10,11 @@ Classes are implemented in jupyter notebooks or in offline runs (optional).
 Created on Fri Jul  3 11:30:16 2020
 @author: hca
 """
+   
+from Decorators import MLflow, MLflow_draft
 
 try:
-    import os
+
     import tools
     import tools_plots
     from Trajectory import Trajectory
@@ -20,15 +22,30 @@ try:
     import Discretize
     import Featurize
     from tools import Tools
-  
 
-  
+
+      
 #    import pyemma
 except:
     print('some modules were not loaded')
     pass
 
+
+import os
 import simtk.unit as unit
+
+
+@MLflow_draft
+def test():
+    
+    
+    import numpy as np
+    
+    x=np.random.rand(1,10)
+
+    y=np.random.rand(2,3)
+
+    return x, y
 
 
 class Project:
