@@ -188,7 +188,7 @@ class Protocols:
         
         if other_omm:
             
-            system, forcefield_other=self.omm_system(input_sdf_file, 
+            system = self.omm_system(input_sdf_file, 
                                                      pre_system,
                                                      forcefield,
                                                      self.def_input_struct,
@@ -425,10 +425,12 @@ class Protocols:
             #print(protocol['step'])
             trj_time=protocol['step']*self.dt
             print(f'\t{kind} simulation in {label} ensemble ({trj_time})...')
-            self.simulation.step(protocol['step'])
-        
-            self.simulation.saveCheckpoint(f'{self.workdir}/{name}.chk')
-            
+            try:
+                self.simulation.step(protocol['step'])
+                self.simulation.saveCheckpoint(f'{self.workdir}/{name}.chk')
+            except:
+                self.simulation.saveCheckpoint(f'{self.workdir}/{name}.chk')
+                print('simulation failed.')
             #############
             ## WARNOUT ##
             #############
@@ -562,8 +564,6 @@ class Protocols:
 
         if len(defaults) == 0:      
                 
-            defaults=['amber14/protein.ff14SB.xml', 'amber14/tip4pew.xml']
-                
             for d in defaults:
                 ff_list.append(d)
             print('\tAdded defaults: ', defaults)
@@ -671,12 +671,9 @@ class Protocols:
                 
         return system
 
-    @staticmethod
-    def omm_system(input_sdf,
-                   input_system,
-                   forcefield,
-                   input_path,
-                   ff_files=[],
+    def omm_system(self, input_sdf,
+                   input_pdb=None,
+                   ff_files=['protein.ff14SB.xml', 'tip4pew.xml'],
                    template_ff='gaff-2.11'):
         """
         Method to include molecules from GAFF Generator methods.
@@ -714,13 +711,31 @@ class Protocols:
         from openff.toolkit.topology import Molecule
         
         
+        pdb = app.PDBFile(input_pdb)
+        
+        ff_list=[]
+        
+        for idx, ff in enumerate(ff_files, 1):
+            
+                path_ff=f'{self.def_input_ff}/{ff}'
+
+                if not os.path.exists(path_ff):
+                
+                    print(f'\tFile {path_ff} not found!')
+            
+                else:
+                    
+                    print(f'\tAdding extra FF file {idx}: {path_ff}')
+                    ff_list.append(path_ff)
+        
+        
         # maybe possible to add same parameters that u give forcefield.createSystem() function
         forcefield_kwargs ={'constraints' : app.HBonds,
                             'rigidWater' : True,
                             'removeCMMotion' : False,
                             'hydrogenMass' : 4*amu }
 		
-        system_generator = SystemGenerator(forcefields=ff_files, 
+        system_generator = SystemGenerator(forcefields=ff_list, 
                                            small_molecule_forcefield=template_ff,
                                            forcefield_kwargs=forcefield_kwargs, 
                                            cache='db.json')
@@ -730,7 +745,7 @@ class Protocols:
         for idx, sdf in enumerate(input_sdf, 1):
         
             
-            path_sdf=f'{input_path}/{sdf}'
+            path_sdf=f'{self.def_input_struct}/{sdf}'
 
             if not os.path.exists(path_sdf):
                 
@@ -744,22 +759,36 @@ class Protocols:
         
         print(molecules)
         
-        system = system_generator.create_system(topology=input_system.topology)#, molecules=molecules)
+        #pre_system = system_generator.create_system(topology=input_system.topology)#, molecules=molecules)
         
         
         gaff = GAFFTemplateGenerator(molecules=molecules, forcefield=template_ff)
         gaff.add_molecules(molecules)
-        print(gaff)
+        gaff.aff_molecules(pdb.topology)
+        
+        forcefield = ForceField('protein.ff14SB.xml', 'tip3pew.xml')
+        
         forcefield.registerTemplateGenerator(gaff.generator)
+        
+        system = forcefield.createSystem(input_system.topology, 
+                                         nonbondedMethod=app.PME, 
+                                         nonbondedCutoff=1.0*nanometers,
+                                         ewaldErrorTolerance=0.0005, 
+                                         constraints='HBonds', 
+                                         rigidWater=True)
         
         #forcefield.registerResidueTemplate(template)
         
-        print(system)
-        print(forcefield)
+        self.system=system
         
-        
-        return system, forcefield
+        return system
  
+
+
+
+
+
+
 
     @staticmethod
     def solvate(system, 
