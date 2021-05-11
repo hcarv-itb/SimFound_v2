@@ -80,7 +80,7 @@ class Protocols:
               solvate=True,
               protonate=True,
               fix_pdb=True,
-              inspect=False,
+              insert_molecules=False,
               extra_input_pdb=[],
               ff_files=[],
               extra_ff_files=[],
@@ -91,7 +91,8 @@ class Protocols:
               other_omm=False,
               input_sdf_file=None,
               box_size=9.0,
-              name='NoName'):
+              name='NoName',
+              insert_smiles=None):
         """
         Method to prepare an openMM system from PDB and XML/other force field definitions.
         Returns self, so that other methods can act on it.
@@ -130,6 +131,9 @@ class Protocols:
 
         """
         
+        from openmmforcefields.generators import SystemGenerator, GAFFTemplateGenerator
+        from openff.toolkit.topology import Molecule
+        
         self.structures={}
         self.input_pdb=input_pdb
         
@@ -163,7 +167,30 @@ class Protocols:
         #Create a ForceField instance with provided XMLs with setForceFields()
         forcefield, ff_paths=self.setForceFields(ff_files=ff_files)
     
+        if insert_molecules:
+            molecules =  Molecule.from_smiles(insert_smiles, allow_undefined_stereo=True)
+            gaff = GAFFTemplateGenerator(molecules=molecules, forcefield='gaff-2.11')
+            gaff.add_molecules(molecules)
+            forcefield.registerTemplateGenerator(gaff.generator)
+ 
+            #TODO: Call to GAFF Generator SMILES
+        # =============================================================================
+#        smiles='C[S+](CC[C@@H](C(=O)[O-])N)C[C@@H]1[C@H]([C@H]([C@@H](O1)N2C=NC3=C(N=CN=C32)N)O)O'
+#        molecules =  Molecule.from_smiles(,allow_undefined_stereo=True)
+# 
+#         
+#         print(molecules)
+#         
+#
+#         
+#         
+#         gaff = GAFFTemplateGenerator(molecules=molecules, forcefield=template_ff)
+#         gaff.add_molecules(molecules)
+#         forcefield.registerTemplateGenerator(gaff.generator)
+# =============================================================================
+    
         #Call to setProtonationState()
+        print('\tProtonating.')
         if protonate:
             
             if residue_variants:
@@ -178,6 +205,7 @@ class Protocols:
 
         #Call to solvate()
         #TODO: For empty box, add waters, remove then
+        print('\tSolvating.')
         if solvate:
             pre_system=self.solvate(pre_system, forcefield, box_size=box_size)
     
@@ -268,34 +296,21 @@ class Protocols:
         #TODO: make pressure, temperature protocol specific
 
         #Call to sniffMachine
-        platform, platformProperties = self.sniffMachine(gpu_index)
+        self.platform, self.platformProperties = self.sniffMachine(gpu_index)
         
-        print(f"Using platform {platform.getName()}, ID: {platformProperties['DeviceIndex']}")
+        print(f"Using platform {self.platform.getName()}, ID: {self.platformProperties['DeviceIndex']}")
         
-        #TODO: make it classmethod maybe
-        #TODO: Set integrator types
-        integrator = omm.LangevinIntegrator(temperature, 
-                                            friction, 
-                                            dt)
-        
-        simulation = app.Simulation(self.topology, 
-                                    self.system, 
-                                    integrator, 
-                                    platform, 
-                                    platformProperties)
-        
-        simulation.context.setPositions(self.positions)
-        
+
+             
         selection_reference_topology = md.Topology().from_openmm(self.topology)
-       
+      
         self.trj_write={}
         self.steps={}       
         self.trj_subset='not water'
         self.trj_indices = selection_reference_topology.select(self.trj_subset)
+        self.minimization={}
         self.eq_protocols=[]
         self.productions=[]
- 
-        #trajectory_out_atoms = 'protein or resname SAM or resname ZNB'
 
         for eq in equilibrations:
             
@@ -307,13 +322,6 @@ class Protocols:
             prod=self.convert_Unit_Step(prod, self.dt)
             self.productions.append(prod)
                 
-        #TODO: Checkpoints for continuation. Crucial for production.
-        #simulation.saveCheckpoint(os.path.abspath(f'{self.workidr}/checkpoint.chk'))
-            
-
-        self.simulation=simulation
-        
-        return simulation
 
     #TODO: Get platform features from setSimulations, useful for multiprocessing.
     def runSimulations(self, run_Emin=True, run_equilibrations=True, run_productions=False):
@@ -322,15 +330,14 @@ class Protocols:
         
         if run_Emin:
             
-            simulations['minimization']=self.simulationSpawner(self.simulation, kind='minimization')
+            simulations['minimization']=self.simulationSpawner(self.minimization, kind='minimization')
         
         if run_equilibrations:
         
             for idx, p in enumerate(self.eq_protocols, 1):
             
                 print(f"EQ run {idx}: {p['ensemble']}")
-                simulations[f"EQ-{p['ensemble']}"]=self.simulationSpawner(self.simulation, 
-                                                       protocol=p, 
+                simulations[f"EQ-{p['ensemble']}"]=self.simulationSpawner(p, 
                                                        index=idx, 
                                                        kind='equilibration', 
                                                        label=p['ensemble'])
@@ -339,9 +346,12 @@ class Protocols:
                             
             for idx, p in enumerate(self.productions, 1):
                 
+                
+                if not run_equilibrations:
+                    idx=idx-1
+                
                 print(f"Production run {idx}: {p['ensemble']}")
-                simulations[f"MD-{p['ensemble']}"]=self.simulationSpawner(self.simulation, 
-                                           protocol=p, 
+                simulations[f"MD-{p['ensemble']}"]=self.simulationSpawner(p, 
                                            index=idx, 
                                            kind='production', 
                                            label=p['ensemble'])
@@ -350,34 +360,47 @@ class Protocols:
 
 
     def simulationSpawner(self,
-                          simulation,
-                          protocol=None, 
+                          protocol, 
                           label='NPT', 
                           kind='production', 
                           index=0):
         
         
-        self.energy=self.simulation.context.getState(getEnergy=True).getPotentialEnergy()
+        #TODO: Set integrator types    
+        integrator = omm.LangevinIntegrator(self.temperature, self.friction, self.dt)
+        simulation = app.Simulation(self.topology, 
+                                    self.system, 
+                                    integrator, 
+                                    self.platform, 
+                                    self.platformProperties)
+        
+        simulation.context.setPositions(self.positions)
+                
+        state_initial=simulation.context.getState(getPositions=True, getVelocities=True, getEnergy=True)
+        energy_initial = state_initial.getPotentialEnergy()
+        positions_initial = state_initial.getPositions()
 
-        print(f'Spwaning new simulation:')
+        print('Spwaning new simulation:')
         
         if kind == 'minimization':
             
-            print(f'\tEnergy minimization:')
-            print(f'\tSystem potential energy: {self.energy}')
+            print('\tEnergy minimization:')
+            print(f'\tSystem potential energy: {energy_initial}')
             
-            self.simulation.minimizeEnergy()
-            self.structures['minimization']=self.writePDB(self.topology, self.positions, name='minimization')
+            simulation.minimizeEnergy()
+            state=simulation.context.getState(getPositions=True, getVelocities=True, getEnergy=True)
+            
+            self.structures['minimization']=self.writePDB(self.topology, state.getPositions(), name='minimization')
+            
+            
+            #TODO: initialize simulation with flag "state=" from previous state of previous simulations
             
         else:
             
-           
-            name=f'{kind}_{label}'
-            
-            trj_file=f'{self.workdir}/{kind}_{label}'
+            name=f'{kind}_{label}-{index}'
+            trj_file=f'{self.workdir}/{kind}_{label}-{index}'
             
             print(f'\t{name}: populating file {trj_file}.')
-            
             
             #If there are user defined costum forces
             try:
@@ -393,17 +416,32 @@ class Protocols:
                 print(f'\tAdding MC barostat for {name} ensemble')      
                 self.system.addForce(omm.MonteCarloBarostat(self.pressure, self.temperature, 25)) 
         
-            self.simulation.context.setPositions(self.positions)
         
+            #Set velocities if continuation run
             if index == 1 and kind == 'equilibration':
-                print(f'\tFirst equilibration run {name}. Assigning velocities to {self.temperature}')
-                self.simulation.context.setVelocitiesToTemperature(self.temperature)
+                print(f'\tFirst run {name}. Assigning velocities to {self.temperature}')
+                simulation.context.setVelocitiesToTemperature(self.temperature)
+                
+
+            
+            elif index == 0 and kind == 'production':
+                print(f'\tWarning: First run {name} with no previous equilibration. Assigning velocities to {self.temperature}')
+                simulation.context.setVelocitiesToTemperature(self.temperature)
+            
+            else:
+                print(f'\tWarning: continuation run  {name}. Assigning velocities from stored state.')
+                simulation.context.setVelocities(self.velocities)
+                
+            
+                #TODO: Emulate temperature increase
+                #TODO: initialize simulation with flag "state=" from previous state of previous simulations
         
             # Define reporters
             
-            self.simulation.reporters.append(DCDReporter(f'{trj_file}.dcd', protocol['report']))           
-            self.simulation.reporters.append(HDF5Reporter(f'{trj_file}.h5', protocol['report'], atomSubset=self.trj_indices))
-            self.simulation.reporters.append(app.StateDataReporter(f'{trj_file}.csv', 
+            simulation.reporters.append(CheckpointReporter(f'{self.workdir}/{name}_{index}.chk', 1000))
+            simulation.reporters.append(DCDReporter(f'{trj_file}.dcd', protocol['report']))           
+            simulation.reporters.append(HDF5Reporter(f'{trj_file}.h5', protocol['report'], atomSubset=self.trj_indices))
+            simulation.reporters.append(app.StateDataReporter(f'{trj_file}.csv', 
                                                           protocol['report'], 
                                                           step=True, 
                                                           totalEnergy=True, 
@@ -415,30 +453,55 @@ class Protocols:
                                                           totalSteps=protocol['step'], 
                                                           separator='\t'))
         
-            positions_first = self.simulation.context.getState(getPositions=True).getPositions()
+            
         
-            self.structures['f{name}_ref']=self.writePDB(self.simulation.topology, positions_first, name=f'{name}_0')
+            self.structures['f{name}_ref']=self.writePDB(self.topology, positions_initial, name=f'{name}_0')
         
             #############
             ## WARNIN ##
             #############
-            #print(protocol['step'])
             trj_time=protocol['step']*self.dt
-            print(f'\t{kind} simulation in {label} ensemble ({trj_time})...')
-            try:
-                self.simulation.step(protocol['step'])
-                self.simulation.saveCheckpoint(f'{self.workdir}/{name}.chk')
-            except:
-                self.simulation.saveCheckpoint(f'{self.workdir}/{name}.chk')
-                print('simulation failed.')
+            print(f'\t{kind} in {label} ensemble ({trj_time})...')
+            
+            
+            checkpoint_final=f'{self.workdir}/{name}_{index}.chk'
+            checkpoint=f'{self.workdir}/{name}.chk'
+            
+            
+            if os.path.exists(checkpoint_final):
+            
+                print(f'\t{checkpoint_final} file found. Simulation terminated. Loading final state')
+                
+                with open(checkpoint_final, 'rb') as f:
+                    simulation.context.loadCheckpoint(f.read())
+                
+                positions = simulation.context.getState(getPositions=True).getPositions()
+
+            elif os.path.exists(checkpoint):
+                
+                print(f'\t{checkpoint} file found. Incomplete simulation. Resuming from there.')
+                
+                with open(checkpoint, 'rb') as f:
+                    simulation.context.loadCheckpoint(f.read())
+                    
+                positions = simulation.context.getState(getPositions=True).getPositions()
+            
+            else:
+                
+                print('\tNo checkpoint files found. Starting new.')
+                simulation.step(protocol['step'])
+                simulation.saveCheckpoint(f'{self.workdir}/{name}_{index}.chk')
+                
+                positions = simulation.context.getState(getPositions=True).getPositions()
+            
             #############
             ## WARNOUT ##
             #############
 
             print(f'\t{kind} simulation in {label} ensemble ({trj_time}) completed.')
-            self.structures[name]=self.writePDB(self.simulation.topology, self.positions, name=name)
+            self.structures[name]=self.writePDB(self.topology, positions, name=name)
 
-        state=self.simulation.context.getState(getPositions=True, getVelocities=True, getEnergy=True)
+        state=simulation.context.getState(getPositions=True, getVelocities=True, getEnergy=True)
         self.positions = state.getPositions()
         self.velocities = state.getVelocities()
         self.energy=state.getPotentialEnergy()
@@ -455,7 +518,7 @@ class Protocols:
         elif label == 'NVT':
             self.system=self.forceHandler(self.system, kinds=['CustomExternalForce'])
             
-        return self.simulation
+        return (simulation, self.state)
 
 
 
@@ -754,16 +817,20 @@ class Protocols:
                 print(f'\tAdding extra SDF file {idx} to pre-system: {path_sdf}')
                 input_sdfs.append(path_sdf)
                        
-
-        molecules = Molecule.from_file(*input_sdfs, file_format='sdf')
-        
-        print(molecules)
-        
-        #pre_system = system_generator.create_system(topology=input_system.topology)#, molecules=molecules)
-        
-        
-        gaff = GAFFTemplateGenerator(molecules=molecules, forcefield=template_ff)
-        gaff.add_molecules(molecules)
+        molecules = Molecule.from_file()
+# =============================================================================
+#         
+#         molecules = Molecule.from_file(*input_sdfs, file_format='sdf')
+# 
+#         
+#         print(molecules)
+#         
+#         #pre_system = system_generator.create_system(topology=input_system.topology)#, molecules=molecules)
+#         
+#         
+#         gaff = GAFFTemplateGenerator(molecules=molecules, forcefield=template_ff)
+#         gaff.add_molecules(molecules)
+# =============================================================================
         gaff.aff_molecules(pdb.topology)
         
         forcefield = ForceField('protein.ff14SB.xml', 'tip3pew.xml')
