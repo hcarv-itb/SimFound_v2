@@ -522,7 +522,7 @@ class Protocols:
 
 
 
-
+    #TODO: Merge with forceHandler.
     def setRestraints(self, restrained_sets):
                       
                       
@@ -553,7 +553,7 @@ class Protocols:
         
         equation="\t(k/2)*periodicdistance(x, y, z, x0, y0, z0)^2"
         
-        print('\tApplying potential: ', equation)
+        print('\tApplying custom external force: ', equation)
                      
         
         if len(restrained_sets['selections']) == len(restrained_sets['forces']):
@@ -716,6 +716,7 @@ class Protocols:
         for kind in kinds:
             
             forces=system.getForces()
+            print([f.__class__.__name__ for f in forces])
                 
             to_remove=[]
         
@@ -730,7 +731,7 @@ class Protocols:
         
                 system.removeForce(remove)
                 
-            #print([f.__class__.__name__ for f in system.getForces()])
+            print([f.__class__.__name__ for f in system.getForces()])
                 
         return system
 

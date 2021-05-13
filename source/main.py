@@ -66,7 +66,8 @@ class Project:
                  ligand='ligand', 
                  timestep=1*unit.picoseconds, 
                  topology='system.pdb',
-                 trajectory='equilibration_NPT.xtc'):
+                 trajectory='production_NPT-1.dcd',
+                 initial_replica=1):
         
         """
     
@@ -108,6 +109,7 @@ class Project:
         self.hierarchy=hierarchy
         self.parameter=parameter
         self.replicas=int(replicas)
+        self.initial_replica=initial_replica
         self.protein=protein
         self.ligand=ligand
         self.timestep=timestep
@@ -176,7 +178,7 @@ class Project:
         #tools.Functions.fileHandler([self.workdir, self.results], confirmation=defaults[confirmation])
         
         elements=[self.getProperties(element) for element in self.hierarchy] #retrieve values for each element in hierarchy.
-        replicas=[str(i) for i in range(1,self.replicas+1)]
+        replicas=[str(i) for i in range(self.initial_replica,self.replicas+1)]
         #TODO: allow init replica > 1
         elements.append(replicas)
         
@@ -261,7 +263,7 @@ class System(Project):
                  replica_name='replicate', 
                  linker='-', 
                  topology='system.pdb', 
-                 trajectory='equilibration_NPT.xtc'):
+                 trajectory='production_NPT-1.dcd'):
     
         #workdir=os.getcwd(),
         #inputs=f'{os.getcwd()}/inputs/'):
