@@ -226,10 +226,7 @@ class Featurize:
             print('Method {method} not supported.')
             print(f'Try: {methods_dict.keys()}')
                     
-        data_t=tools.Tasks.parallel_task(method_function, 
-                                             systems_specs, 
-                                             measurements, 
-                                             n_cores=n_cores)
+        data_t=tools.Tasks.parallel_task(method_function, systems_specs, measurements, n_cores=n_cores)
         
         # concat dataframes from multiprocessing into one dataframe
         #Update state of system and features with the feature df.
@@ -239,14 +236,15 @@ class Featurize:
         
         for data_df, system in zip(data_t, self.systems.values()):
           
-            print(data_df)
-            system.data[method]=data_df[0]
-            system.features[method]=data_df[1]
+            #print(data_df)
+            #print(system)
+            system.data[method]=data_df
+            system.features[method]=inputs
             
-            out_df=pd.concat([out_df,  data_df[1]], axis=1)
+            out_df=pd.concat([out_df,  data_df], axis=1)
                                        
-        print(out_df)
-        
+        #print(out_df)
+
         self.features[method]=out_df
         
         return out_df
@@ -434,22 +432,22 @@ class Featurize:
     
     
     @staticmethod
-    def loadTraj(topology, trajectory):
+    def loadTraj(topology, trajectory, name):
     
         try:
             u=mda.Universe(topology, trajectory)
-            print(f'System: ', u)
+            #print('System: ', u)
             status='full'
 
         except OSError:
                     
-            print(f'\tDCD parser could not handle file of {name}. Defining only the topology.')
+            #print(f'\tDCD parser could not handle file of {name}. Defining only the topology.')
             u=mda.Universe(topology)
             status='incomplete'
                 
         except FileNotFoundError:
                     
-            print(f'\tFile(s) not found for {name}.')
+            #print(f'\tFile(s) not found for {name}.')
             u=None
             status='inexistent'
         
@@ -457,21 +455,119 @@ class Featurize:
             
             print('\tThis is bat country.')
             status='null'
+            u=None
+            
+        return (u, status)
+    
+    
+    @staticmethod
+    def loadMDTraj(topology, trajectory, name):
+
+        try:            
+            traj=md.load(trajectory, top=topology)
+            #print('System: ', traj)
+            status='full'
+
+        except OSError:
+                    
+            #print(f'\tDCD parser could not handle file of {name}. Defining only the topology.')
+            traj=md.load(topology)
+            status='incomplete'
+                
+        except FileNotFoundError:
+                    
+            #print(f'\tFile(s) not found for {name}.')
+            traj=None
+            status='inexistent'
+        
+        except:
+             
+             #print('\tThis is bat country.')
+             status='null'
+             traj=None
+
+        return (traj, status)
+    
     
     @staticmethod
     def rmsd_calculation(system_specs, specs):
         
         (trajectory, topology, results_folder, name)=system_specs
-        (distances,  start, stop, timestep, stride)=specs   
- 
-        traj=Featurize.loadTraj(topology, trajectory)
-    
-        rmsd=md.rmsd(traj, traj, start)   
+        (selection,  start, stop, timestep, stride)=specs   
         
-        print(rmsd)
+        indexes=[[n] for n in name.split('-')] 
+        names=[f'l{i}' for i in range(1, len(indexes)+1)] # +2 to account for number of molecules
+        #TODO: Make function call to get the real names of the levels. Current l1, l2, l3, etc.
+
+          
  
-        return rmsd 
+        traj, status=Featurize.loadMDTraj(topology, trajectory, name)
     
+        if status == 'full' or status == 'incomplete':
+            
+            atom_indices=traj.topology.select(selection)
+            
+            
+            #print(atom_indices)
+            traj.center_coordinates()
+            #traj.atom_slice(atom_indices, inplace=True)
+            rmsd=md.rmsd(traj, traj, 0, atom_indices=atom_indices, precentered=True)  
+            
+            frames=np.arange(0, len(rmsd)*timestep, timestep)
+            #index_index=pd.MultiIndex.from_arrays(test, names='Time (timestep)')
+            column_index=pd.MultiIndex.from_product(indexes, names=names)
+            df_system=pd.DataFrame(rmsd, columns=column_index, index=frames) #index=np.arange(start, stop, stride)
+            
+            
+            #TODO: Remove abusurd values
+            df_system=df_system.mask(df_system > 90)
+            
+            return df_system
+    
+        else:
+            return pd.DataFrame(None, columns=column_index)
+
+
+    @staticmethod
+    def rmsf_calculation(system_specs, specs):
+        
+        (trajectory, topology, results_folder, name)=system_specs
+        (selection,  start, stop, timestep, stride)=specs   
+        
+        indexes=[[n] for n in name.split('-')] 
+        names=[f'l{i}' for i in range(1, len(indexes)+1)] # +2 to account for number of molecules
+        #TODO: Make function call to get the real names of the levels. Current l1, l2, l3, etc.
+
+          
+ 
+        traj, status=Featurize.loadTraj(topology, trajectory, name)
+    
+        if status == 'full' or status == 'incomplete':
+            
+            atom_indices=traj.topology.select(selection)
+            
+            
+            #print(atom_indices)
+            traj.center_coordinates()
+            #traj.atom_slice(atom_indices, inplace=True)
+            rmsd=md.rmsd(traj, traj, 0, atom_indices=atom_indices, precentered=True)  
+            
+            frames=np.arange(0, len(rmsd)*timestep, timestep)
+            #index_index=pd.MultiIndex.from_arrays(test, names='Time (timestep)')
+            column_index=pd.MultiIndex.from_product(indexes, names=names)
+            df_system=pd.DataFrame(rmsd, columns=column_index, index=frames) #index=np.arange(start, stop, stride)
+            
+            
+            #TODO: Remove abusurd values
+            df_system=df_system.mask(df_system > 90)
+            
+            return df_system
+    
+        else:
+            return pd.DataFrame(None, columns=column_index)
+
+
+
 
     @staticmethod
     def distance_calculation_original(system_specs, specs, child=False): #system_specs, measurements):
@@ -760,36 +856,43 @@ class Featurize:
             
             
             return (dist_file, dist_df_system)
-            
-    def plot(self, input_df, method='distance', level='l3'):
-            
-        
-            print(method)
-            try:
-                input_df=self.features[method]
-                print(input_df)
+ 
 
-            except:
-                input_df=input_df
-                
-            print(input_df)
 
-            levels=input_df.columns.levels[:-1] #Exclude last, the values of states
-            
-            print(levels)
     
-            for iterable in levels[2]:
-                
-                df_it=input_df.loc[:,input_df.columns.get_level_values(level) == iterable]
-                print(df_it.columns.unique(level=2).tolist())
-                df_it.plot(#kind='line',
-                               subplots=True,
-                               sharey=True,
-                               title=iterable,
-                               figsize=(6,8),
-                               legend=False,
-                               sort_columns=True)
+    def plot(self, 
+             input_df=None, 
+             method='RMSD', 
+             level=2, 
+             subplots=True):
+        
+        
+        
+        print('Plotting :', method)
+        try:
+            input_df=self.features[method]
+
+        except:
+            input_df=input_df
+
+        levels=input_df.columns.levels #might need to subselect here
+
+        for iterable in levels[level]: 
             
-                plt.savefig(f'{self.results}/discretized_{self.name}_{iterable}.png', dpi=300)
-                plt.show()
-                
+            df_it=input_df.loc[:,input_df.columns.get_level_values(f'l{level+1}') == iterable] #level +1 due to index starting at l1
+            
+            df_it.plot(kind='line', 
+                       subplots=True, 
+                       sharey=True, 
+                       title=iterable, #iterable, 
+                       figsize=(7,5), 
+                       legend=True, 
+                       sort_columns=True)
+            #current_x=plt.xticks()[0] #the array 0
+            #new_x=(current_x*5)/1000
+            #plt.xticks(ticks=current_x[1:-1].astype(int), labels=new_x[1:-1])
+            plt.xlabel('Simulation time (ps)')
+            
+            plt.savefig(os.path.abspath(f'{self.results}/{method}_{iterable}.png'), bbox_inches="tight", dpi=600)
+        
+            plt.show()
