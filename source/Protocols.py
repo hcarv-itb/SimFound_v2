@@ -716,7 +716,7 @@ class Protocols:
         for kind in kinds:
             
             forces=system.getForces()
-            print([f.__class__.__name__ for f in forces])
+            #print([f.__class__.__name__ for f in forces])
                 
             to_remove=[]
         
@@ -731,7 +731,7 @@ class Protocols:
         
                 system.removeForce(remove)
                 
-            print([f.__class__.__name__ for f in system.getForces()])
+            #print([f.__class__.__name__ for f in system.getForces()])
                 
         return system
 

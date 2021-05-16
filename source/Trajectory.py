@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import MDAnalysis as mda
+import mdtraj as md
 #import tools
 
 class Trajectory:
@@ -21,23 +22,62 @@ class Trajectory:
         self.systems=systems
         self.results=results
   
+    @staticmethod
+    def loadTraj(topology, trajectory, name):
     
-  
-    def start_simulations(self):
-        """
-        
+        try:
+            u=mda.Universe(topology, trajectory)
+            #print('System: ', u)
+            status='full'
 
-        Returns
-        -------
-        None.
-
-        """
+        except OSError:
+                    
+            #print(f'\tDCD parser could not handle file of {name}. Defining only the topology.')
+            u=mda.Universe(topology)
+            status='incomplete'
+                
+        except FileNotFoundError:
+                    
+            #print(f'\tFile(s) not found for {name}.')
+            u=None
+            status='inexistent'
         
-        print(self.systems)
-  
-        
+        except:
+            
+            print('\tThis is bat country.')
+            status='null'
+            u=None
+            
+        return (u, status)
     
-  
+    
+    @staticmethod
+    def loadMDTraj(topology, trajectory, name):
+
+        try:            
+            traj=md.load(trajectory, top=topology)
+            #print('System: ', traj)
+            status='full'
+
+        except OSError:
+                    
+            #print(f'\tDCD parser could not handle file of {name}. Defining only the topology.')
+            traj=md.load(topology)
+            status='incomplete'
+                
+        except FileNotFoundError:
+                    
+            #print(f'\tFile(s) not found for {name}.')
+            traj=None
+            status='inexistent'
+        
+        except:
+             
+             #print('\tThis is bat country.')
+             status='null'
+             traj=None
+
+        return (traj, status)
     
     @staticmethod
     def trj_filter(df, name, value):
@@ -184,6 +224,104 @@ class Trajectory:
         #print(extracted_frames_dict)
         return extracted_frames_dict
     
+
+    def monitorTraj(self):
+        """
+        
+        Extract trajectory subsets.
+        Writes the corresponding trajectories as .xtc and the corresponding .pdb. 
+        Legacy: option to save also the waters controlled with --noWater.
+
+        Parameters
+        ----------
+        t_start : int, optional
+            The starting frame index. 
+        extract : str, optional
+            A string of atom selections (MDTRAJ). The default is 'not water'.
+
+        
+        NOTES
+        -----
+        
+        IMPORTANT: automate t_start definition (equilibration phase discarded)
+
+
+        """
+        
+        import mdtraj as md
+        import glob
+        
+        for name, system in self.systems.items():
+        
+            
+            #TODO: get definitions from protocols as well
+            
+            
+            #Get definitions from file search. 
+            
+            print(name)
+            
+            import re
+                
+            trj_files={}
+            report_files={}
+            
+            files={}
+            
+            file_pattern={'report': '.csv', 
+                        'trajectory' : '.dcd',
+                        'trajectory_h5' : '.h5',
+                        'reference_positions' : '_0.pdb',
+                        'final_positions' : '.pdb',
+                        'checkpoint' : '.chk',
+                        'topology' : 'system.pdb',
+                        'minimmized' : 'minimization.pdb'}
+            
+            
+            def checkFile(file):
+                
+                for label, v in file_pattern.items():
+                   
+                    name = re.split(r'/', file)[-1]                  
+                    
+                    if v in name:
+                        
+                        if 'NPT' in name:
+                            
+                            return f'{label}-NPT'
+                        
+                        elif 'NVT' in name:
+                            
+                            return f'{label}-NVT'
+                        
+                        else:
+                            
+                            print('this is bat country')
+                    
+                
+            
+            equilibrations = {}
+            for file in glob.glob(os.path.abspath(f'{system.path}/equilibration*')):
+                
+                label = checkFile(file)
+                #print(f'{label} : {file}') 
+                equilibrations[label]=file
+                
+            productions = {}
+            for file in glob.glob(os.path.abspath(f'{system.path}/production*')):
+                
+                label = checkFile(file)
+                #print(f'{label} : {file}') 
+                productions[label]=file
+            
+            print(f'\tEquilibrations: {equilibrations}')
+            
+            #print(f'\tProductions: {productions}')
+            
+            #print(equilibrations['report'])
+
+            
+
 
     def filterTraj(self, t_start=0, extract='not water'):
         """
