@@ -9,10 +9,471 @@ import os
 import pyemma
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import matplotlib.gridspec as gridspec
 import numpy as np
 import pandas as pd
 
+import Trajectory
+import tools_plots
+
+
 class MSM:
+    """
+    Base class to create a pyEMMA *features* object.
+    
+    
+    """
+    
+    skip=0
+    
+    
+    def __init__(self, systems, timestep, results, chunksize=None, stride=1):
+        """
+        
+
+        Parameters
+        ----------
+        systems : TYPE
+            DESCRIPTION.
+        timestep : TYPE
+            DESCRIPTION.
+        results : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        self.systems=systems
+        self.results=results
+        self.features={}
+        self.chunksize=chunksize
+        self.stride=stride
+        self.timestep=timestep
+        self.unit='ps'
+        
+        print('Results will be stored under: ', self.results)
+ 
+        
+    def calculate(self,
+                       inputs,
+                       method=None,
+                       evaluate=None, 
+                       ft_name=None, 
+                       features=['torsions', 'positions', 'distances'], 
+                       lags=[1], 
+                       dim=-1):
+        """
+        Wrapper function to calculate VAMP2 scores using pyEMMA. 
+        
+
+
+        inputs : list or tuple
+            Either a list of 1 selection or atuple of 2 selections.
+        evaluate : string
+            How to calculate VAMP scores. The default is None.
+        ft_name: string, optional.
+            The optional name of the inputs. The default is None.
+        lags : list, optional.
+            A list of lag values to calculate VAMP2 scores. The defaults is [1].
+        dim : int, optional.
+            The number of dimensions to use for VAMP2 calculation in some methods. 
+            If fractionary and < 1, will calculate the corresponding precentage of kinetic variance.
+            More details in pyEMMA pyemma.vamp.
+
+
+        Returns
+        -------
+        dataframe
+            A dataframe containing all featurized values across the list of iterables*replicas*pairs.
+
+        """
+        
+        #TODODTOTOTODOTOTODOTODODODO
+        # Define system definitions and measurement hyperparameters
+        #Note: system cannot be sent as pickle for multiproc, has to be list
+        systems_specs=[]
+        
+        
+        for name, system in self.systems.items():
+            
+            topology=system.topology #input_topology
+            results_folder=system.results_folder
+            timestep=system.timestep
+            trajectory=Trajectory.Trajectory.eq_prod_filter(system.trajectory, False, True)
+
+            systems_specs.append((trajectory, topology, results_folder, name))            
+        
+
+        #Pack fixed measurement hyperparameters
+        #measurements=(inputs, start, stop, timestep, stride, self.chuncksize, self.stride)
+                
+        
+        #Gather all trajectories and handover to pyEMMA
+        trajectories_to_load = []
+        tops_to_load = []
+        
+        for system in systems_specs: #trajectory, topology, results_folder, name 
+            
+            #TODO: Fix this for differente "separator" value. This is now hardcorded to '-'.
+            indexes=[n for n in system[3].split('-')]
+            
+            if indexes[1] == 'SAM':
+                
+                
+                trj_list, top=system[0], system[1]
+                if len(trj_list):
+                    trajectories_to_load.append(trj_list[0])
+                    tops_to_load.append(top)
+        
+        features=self.load_features(tops_to_load[0], trajectories_to_load, features, inputs=inputs)
+        #self.features[ft_name]=features            
+        
+        if method == 'VAMP':
+            if evaluate == 'features':
+                vamps=self.VAMP2_features(features, lags, dim, ft_name)
+            elif evaluate == 'dimensions': 
+                vamps = self.VAMP_dimensions(features, lags, ft_name)   
+            else:
+                print('No evaluation defined.')
+            
+            self.features[f'{method}_{evaluate}'] = vamps
+   
+        if method == 'TICA':
+            
+            out_data=self.TICA_calculation(features, lags, ft_name=ft_name, dim=dim)
+            self.features[f'{method}'] = out_data
+        
+        else:
+            print('No method defined')
+            out_data=None
+         
+        
+    def TICA_calculation(self, 
+                         features, 
+                         lag,
+                         ft_name=None,
+                         dim=-1, 
+                         var_cutoff=0.95,
+                         opt_dim=10):
+        
+        ticas = {}
+        
+        if type(dim) is float:  
+            dim = -1
+
+        for data_tuple in features:
+            (data, name, dimensions)=data_tuple
+            print(f'\tCalculating TICA for {name} and lag {lag*self.timestep}')
+            tica = pyemma.coordinates.tica(data, lag=lag, dim=dim, stride=self.stride)
+            tica_output = np.concatenate(tica.get_output())
+            #print(tica_output)
+            ticas[name] = tica
+            
+
+            
+            if tica.dimension() > 10 and dim == -1:
+                print(f'\tWarning: TICA for {var_cutoff*100}% variance cutoff yields {tica.dimension()} dimensions. \n\tReducting to {opt_dim} dimensions.')
+                dims_plot=opt_dim
+            elif tica.dimension() > dim and dim > 0:
+                dim_plot=tica.dimension()
+                
+            
+            fig=plt.figure(figsize=(10, 8))
+            gs = gridspec.GridSpec(nrows=2, ncols=2)
+            
+            #plot histogram
+            ax0 = fig.add_subplot(gs[0, 0])
+            pyemma.plots.plot_feature_histograms(tica_output[:, :dims_plot], ax=ax0, ylog=True)
+            ax0.set_title('Histogram')
+            
+            #plot projection along main components
+            ax1 = fig.add_subplot(gs[0, 1])
+            pyemma.plots.plot_density(*tica_output[:, :2].T, ax=ax1, logscale=True)
+            ax1.set_xlabel('IC 1')
+            ax1.set_ylabel('IC 2')
+            ax1.set_title('IC density')
+
+            #plot discretized trajectories
+            ax2=fig.add_subplot(gs[1,:])
+            
+            x = self.timestep * np.arange(tica.get_output()[0].shape[0])
+    
+            for idx, tic in enumerate(tica.get_output()[0].T):
+                
+                if idx <= dims_plot:
+                    ax2.plot(x, tic, label=f'IC {idx}')
+                    ax2.set_ylabel('Feature values')
+            ax2.legend()
+            ax2.set_xlabel(f'Total simulation time  (in {self.unit})')
+            ax2.set_title('Discretized trajectories')
+        
+            fig.suptitle(fr'TICA: {ft_name} {name} @ $\tau$ ={self.timestep*lag}', weight='bold')
+            fig.tight_layout()
+            
+            fig.savefig(f'{self.results}/TICA_{ft_name}_{name}_lag{self.timestep*lag}.png', dpi=600, bbox_inches="tight")
+            plt.show()    
+        
+            
+        return ticas
+
+    
+    
+    def VAMP_dimensions(self, features, lags, ft_name):
+        
+        rows, columns, fix_layout=tools_plots.plot_layout(features)
+        fig, axes = plt.subplots(rows, columns, figsize=(9,6))
+
+        
+        for ax, data_tuple in zip (axes.flat, features):
+            
+            (data, name, dimensions)=data_tuple #as defined in load features
+            
+            print('Feature: ', name)
+                        
+            dims = [int(dimensions*i) for i in np.arange(0.1, 1.1, 0.1)]
+            legends = []
+
+            for lag in lags:
+                print('\tLag: ', lag*self.timestep)
+                scores_dim= []
+                #scores_=np.array([self.score_cv(data, dim, lag)[1] for dim in dims])
+
+                for dim in dims:
+                    try:
+                        scores_dim.append(self.score_cv(data, dim, lag)[1]) #discard vamps [0]
+                    except MemoryError:
+                        scores_dim.append([np.nan()])
+                scores_ = np.asarray(scores_dim)
+                scores = np.mean(scores_, axis=1)
+                errors = np.std(scores_, axis=1, ddof=1)
+                #color = 'C{lags.index(lag)}'
+                ax.fill_between(dims, scores - errors, scores + errors, alpha=0.3) #, facecolor=color)
+                ax.plot(dims, scores, '--o')
+                legends.append(r'$\tau$ = '+f'{self.timestep*lag}')
+            #ax.legend()
+            ax.set_title(name)
+            ax.set_xlabel('number of dimensions')
+            ax.set_ylabel('VAMP2 score')
+        
+        if ft_name != None:
+            fig.suptitle(f'VAMP2: {ft_name}', weight='bold')
+
+        fig.legend(legends, ncol=1, bbox_to_anchor=(1.08, 0.5), loc='center left')
+        
+        if not axes[-1].lines: 
+            axes[-1].set_visible(False)
+
+        fig.tight_layout()
+        plt.show()
+        fig.savefig(f'{self.results}/VAMP2_evalDimensions_{ft_name}.png', dpi=600, bbox_inches="tight")
+    
+        
+    def VAMP2_features(self, features, lags, dim, ft_name):
+        
+        vamps={}
+        rows, columns, fix_layout=tools_plots.plot_layout(lags)
+        fig, axes = plt.subplots(rows, columns, figsize=(9,6), sharex=True, sharey=True)
+        for ax, lag in zip(axes.flat, lags):
+            print('lag time: ', lag)
+            scores=[]
+            errors=[]
+            labels=[]
+            
+            for data_tuple in features:
+                (data, name, dimensions)=data_tuple #as defined in load features
+                labels.append(name)
+                
+                print(f'Feature: {name}')
+                vamps[name], ft_scores=self.score_cv(data, lag=lag, dim=dim)
+                scores += [ft_scores.mean()]
+                errors += [ft_scores.std()]
+            #colors=[f'C{c}' for c in range(len(self.features[ft_name]))]
+                
+            ax.bar(labels, scores, yerr=errors) #, color=colors)
+            ax.set_title(r'$\tau$ = '+f'{self.timestep*lag}')
+            ax.set_ylabel('VAMP2 score')
+            ax.tick_params('x', labelrotation=45)
+            #vamp_bars_plot = dict(labels=self.labels, scores=scores, errors=errors, dim=dim, lag=lag)
+            
+        if ft_name != None:
+            fig.suptitle(f'VAMP2 : {ft_name}', weight='bold')
+                
+        if not axes.flat[-1].lines: 
+            axes.flat[-1].set_visible(False)
+            
+        fig.tight_layout()
+        plt.show()
+        fig.savefig(f'{self.results}/VAMP2_evalFeatures_{ft_name}.png', dpi=600, bbox_inches="tight")
+        
+        return vamps
+        
+
+        
+                    
+    @staticmethod
+    def load_features(topology, trajectories, features, inputs=None):
+        
+        pyemma.config.show_progress_bars = False
+        
+        features_list=[]
+        
+        #print(inputs)
+        for f in features:
+            feat=pyemma.coordinates.featurizer(topology)
+            print('Extracting feature: ', f)
+            if type(inputs) is tuple:
+                if f == 'distances':
+                    print(inputs[0], inputs[1])
+                    print(feat.select(inputs[1]))
+                    feat.add_distances(indices=feat.select(inputs[0]), indices2=feat.select(inputs[1]))
+                elif f == 'contacts':
+                    feat.add_contacts(indices=feat.select(inputs[0]), indices2=feat.select(inputs[1]))
+                elif f == 'min_dist':
+                    sel1 = feat.select(inputs[0])
+                    sel2 = feat.select(inputs[1])
+                    
+                    for s1 in sel1:
+                        for s2 in sel2:
+                            #pairs_sel=np.concatenate((sel1, sel2))
+                            res_pairs=feat.pairs([s1,s2], excluded_neighbors=2)
+                    
+                            feat.add_residue_mindist(residue_pairs=res_pairs, 
+                                             scheme='closest-heavy', 
+                                             ignore_nonprotein=False, 
+                                             threshold=0.3)
+            else:
+                
+                if f == 'torsions':
+                    feat.add_backbone_torsions(selstr=inputs, cossin=True)
+    
+                elif f == 'positions':
+                    feat.add_selection(feat.select(inputs))
+      
+                elif f == 'chi':
+                    for idx in inputs:
+                        try:
+                            feat.add_chi1_torsions(selstr=f'resid {idx}', cossin=True)
+                        except ValueError:
+                            pass
+                elif f == 'RMSD':
+                    feat.add_minrmsd_to_ref(inputs)
+            
+            if len(feat.describe()) > 0:               
+                #print(feat.describe())
+                print(f'\tLoading data for {feat.dimension()} dimensions')
+                data = pyemma.coordinates.load(trajectories, features=feat)
+                features_list.append((data, f, feat.dimension()))
+
+
+        return features_list
+        
+        
+        
+    #From pyEMMA notebook
+    def score_cv(self,
+                 data, 
+                 dim, 
+                 lag, 
+                 number_of_splits=10, 
+                 validation_fraction=0.5):
+        """Compute a cross-validated VAMP2 score.
+
+        We randomly split the list of independent trajectories into
+        a training and a validation set, compute the VAMP2 score,
+        and repeat this process several times.
+
+        Parameters
+        ----------
+        data : list of numpy.ndarrays
+            The input data.
+        dim : int
+            Number of processes to score; equivalent to the dimension
+            after projecting the data with VAMP2.
+        lag : int
+            Lag time for the VAMP2 scoring.
+        number_of_splits : int, optional, default=10
+            How often do we repeat the splitting and score calculation.
+        validation_fraction : int, optional, default=0.5
+            Fraction of trajectories which should go into the validation
+            set during a split.
+        """
+    
+        # we temporarily suppress very short-lived progress bars
+        #print(f'\tCalculating VAMP2 scores, dimension = {dim}')
+        nval = int(len(data) * validation_fraction)
+        scores = np.zeros(number_of_splits)
+        for n in range(number_of_splits):
+            try:
+                print(f'\tCalculating VAMP2 scores for {dim} dimensions, cycle {n+1}/{number_of_splits}', end='\r')
+                ival = np.random.choice(len(data), size=nval, replace=False)
+                vamp = pyemma.coordinates.vamp([d for i, d in enumerate(data) if i not in ival], 
+                                           lag=lag, 
+                                           dim=dim, 
+                                           stride=self.stride, 
+                                           skip=self.skip, 
+                                           chunksize=self.chunksize)
+            
+                scores[n] = vamp.score([d for i, d in enumerate(data) if i in ival])
+                #frames[n] = vamp.n_frames_total(self.stride, self.skip)
+            except 'ZeroRankError':
+                pass
+        
+        return vamp, scores
+
+
+
+
+
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+# =============================================================================
+#         #Spawn multiprocessing tasks    
+#         data_t=tools.Tasks.parallel_task(method_function, systems_specs, measurements, n_cores=n_cores)
+#         
+#         # concat dataframes from multiprocessing into one dataframe
+#         #Update state of system and features with the feature df.
+#         out_df=pd.DataFrame()
+#         
+#         for data_df, system in zip(data_t, self.systems.values()):
+#             system.data[f'{method}-{feature_name}']=data_df
+#             system.features[f'{method}-{feature_name}']=inputs
+#             out_df=pd.concat([out_df,  data_df], axis=1)
+#         out_df.index.rename=data_df.index.name
+#         out_df.to_csv(os.path.abspath(f'{self.results}/{method}_{feature_name}_{str(inputs)}.csv'))
+# 
+#         if feature_name != None:
+#             self.features[f'{feature_name}']=out_df
+#         else:
+#             self.features['undefined']=out_df
+#             
+#         
+#         out_df.name=method
+#         
+#         print('Featurization updated: ', [feature for feature in self.features.keys()])
+#         
+#         return out_df
+# =============================================================================
+
+
+
+
+
+
+
+
+class MSM_dep:
     """
     Base class to create Markov state models. 
     

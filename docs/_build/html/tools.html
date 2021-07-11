@@ -397,7 +397,29 @@ Warning: Spawns as many threads as the number of elements in the iterator.</p>
 <dl class="py method">
 <dt id="source.Trajectory.Trajectory.DensityMap_frames">
 <code class="sig-name descname">DensityMap_frames</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">frames</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">level</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">density_selection</span><span class="o">=</span><span class="default_value">'not protein'</span></em>, <em class="sig-param"><span class="n">convert</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">unit</span><span class="o">=</span><span class="default_value">'Molar'</span></em>, <em class="sig-param"><span class="n">stride</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">dists</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.DensityMap_frames" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><dl class="simple">
+<dt>frames<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is {}.</p>
+</dd>
+<dt>level<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is 2.</p>
+</dd>
+<dt>density_selection<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is ‘not protein’.</p>
+</dd>
+<dt>convert<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is True.</p>
+</dd>
+<dt>unit<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is ‘Molar’.</p>
+</dd>
+<dt>stride<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is 1.</p>
+</dd>
+<dt>dists<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is None.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>collect<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>stats<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt id="source.Trajectory.Trajectory.DensityMap_fullTraj">
@@ -546,9 +568,56 @@ Legacy: option to save also the waters controlled with –noWater.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="source.Trajectory.Trajectory.start_simulations">
-<code class="sig-name descname">start_simulations</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.start_simulations" title="Permalink to this definition">¶</a></dt>
-<dd><p>None.</p>
+<dt id="source.Trajectory.Trajectory.loadMDTraj">
+<em class="property">static </em><code class="sig-name descname">loadMDTraj</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">topology</span></em>, <em class="sig-param"><span class="n">trajectory</span></em>, <em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.loadMDTraj" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>topology<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>trajectory<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>name<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>traj<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>status<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.Trajectory.Trajectory.loadTraj">
+<em class="property">static </em><code class="sig-name descname">loadTraj</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">topology</span></em>, <em class="sig-param"><span class="n">trajectory</span></em>, <em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.loadTraj" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>topology<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>trajectory<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>name<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>u<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>status<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.Trajectory.Trajectory.monitorTraj">
+<code class="sig-name descname">monitorTraj</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.monitorTraj" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract trajectory subsets.
+Writes the corresponding trajectories as .xtc and the corresponding .pdb. 
+Legacy: option to save also the waters controlled with –noWater.</p>
+<dl class="simple">
+<dt>t_start<span class="classifier">int, optional</span></dt><dd><p>The starting frame index.</p>
+</dd>
+<dt>extract<span class="classifier">str, optional</span></dt><dd><p>A string of atom selections (MDTRAJ). The default is ‘not water’.</p>
+</dd>
+</dl>
+<p>IMPORTANT: automate t_start definition (equilibration phase discarded)</p>
 </dd></dl>
 
 <dl class="py method">

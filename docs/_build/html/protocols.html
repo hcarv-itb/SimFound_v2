@@ -226,18 +226,42 @@
 <dd></dd></dl>
 
 <dl class="py method">
-<dt id="source.Protocols.Protocols.equilibration_NPT">
-<code class="sig-name descname">equilibration_NPT</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">protocol</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.equilibration_NPT" title="Permalink to this definition">¶</a></dt>
+<dt id="source.Protocols.Protocols.forceHandler">
+<em class="property">static </em><code class="sig-name descname">forceHandler</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">system</span></em>, <em class="sig-param"><span class="n">kinds</span><span class="o">=</span><span class="default_value">['CustomExternalForce']</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.forceHandler" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt id="source.Protocols.Protocols.omm_system">
-<em class="property">static </em><code class="sig-name descname">omm_system</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_sdf</span></em>, <em class="sig-param"><span class="n">input_system</span></em>, <em class="sig-param"><span class="n">forcefield</span></em>, <em class="sig-param"><span class="n">input_path</span></em>, <em class="sig-param"><span class="n">ff_files</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">template_ff</span><span class="o">=</span><span class="default_value">'gaff-2.11'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.omm_system" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<code class="sig-name descname">omm_system</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_sdf</span></em>, <em class="sig-param"><span class="n">input_pdb</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ff_files</span><span class="o">=</span><span class="default_value">['protein.ff14SB.xml', 'tip4pew.xml']</span></em>, <em class="sig-param"><span class="n">template_ff</span><span class="o">=</span><span class="default_value">'gaff-2.11'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.omm_system" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to include molecules from GAFF Generator methods.
+Supports inclusion with SDF files.
+TODO: Include SMILES.
+Takes as “input_system” a Modeller instance.</p>
+<dl class="simple">
+<dt>input_sdf<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>input_system<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>forcefield<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>input_path<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>ff_files<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is [].</p>
+</dd>
+<dt>template_ff<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is ‘gaff-2.11’.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>system<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>forcefield<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt id="source.Protocols.Protocols.pdb2omm">
-<code class="sig-name descname">pdb2omm</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_pdb</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">solvate</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">protonate</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">fix_pdb</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">inspect</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">extra_input_pdb</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">ff_files</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">extra_ff_files</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">extra_names</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">other_ff_instance</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">pH_protein</span><span class="o">=</span><span class="default_value">7.0</span></em>, <em class="sig-param"><span class="n">residue_variants</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">other_omm</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">input_sdf_file</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">box_size</span><span class="o">=</span><span class="default_value">9.0</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">'NoName'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.pdb2omm" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">pdb2omm</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_pdb</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">solvate</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">protonate</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">fix_pdb</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">insert_molecules</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">extra_input_pdb</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">ff_files</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">extra_ff_files</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">extra_names</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">other_ff_instance</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">pH_protein</span><span class="o">=</span><span class="default_value">7.0</span></em>, <em class="sig-param"><span class="n">residue_variants</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">other_omm</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">input_sdf_file</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">box_size</span><span class="o">=</span><span class="default_value">9.0</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">'NoName'</span></em>, <em class="sig-param"><span class="n">insert_smiles</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.pdb2omm" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method to prepare an openMM system from PDB and XML/other force field definitions.
 Returns self, so that other methods can act on it.
 Requires input PDB file(s) handled by “input_pdbs”. 
@@ -270,34 +294,26 @@ TODO: include “extra_input_pdb” methods to build boxes on the fly.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="source.Protocols.Protocols.production_NPT">
-<code class="sig-name descname">production_NPT</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">protocol</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.production_NPT" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt id="source.Protocols.Protocols.run_energyMinimization">
-<code class="sig-name descname">run_energyMinimization</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.run_energyMinimization" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="simple">
-<dt>simulation<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
-</dd>
-<dt>topology<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
-</dd>
-</dl>
-<dl class="simple">
-<dt>simulation<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="source.Protocols.Protocols.run_simulations">
-<code class="sig-name descname">run_simulations</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">run_equilibrations</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">run_productions</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.run_simulations" title="Permalink to this definition">¶</a></dt>
+<dt id="source.Protocols.Protocols.runSimulations">
+<code class="sig-name descname">runSimulations</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">run_Emin</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">run_equilibrations</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">run_productions</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.runSimulations" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt id="source.Protocols.Protocols.setForceFields">
-<code class="sig-name descname">setForceFields</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ff_files</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">extra_ff_files</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">input_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">defaults</span><span class="o">=</span><span class="default_value">['amber14/protein.ff14SB.xml', 'amber14/tip4pew.xml']</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.setForceFields" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<code class="sig-name descname">setForceFields</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ff_files</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">input_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">defaults</span><span class="o">=</span><span class="default_value">[]</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.setForceFields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to include force field files provided as [ff_files]. 
+If None is defined, it will include as default:’amber14/protein.ff14SB.xml’, ‘amber14/tip4pew.xml’.
+The “defaults” argument can be passed to override it.</p>
+<dl class="simple">
+<dt>ff_files<span class="classifier">list, optional</span></dt><dd><p>The force field files to include (under the default project <em>input path</em>). The default is empty.</p>
+</dd>
+<dt>defaults<span class="classifier">list, optional</span></dt><dd><p>Default force field file(s) to use. The default is [‘amber14/protein.ff14SB.xml’, ‘amber14/tip4pew.xml’].</p>
+</dd>
+<dt>input_path<span class="classifier">str, optional</span></dt><dd><p>The input path of the force field files.</p>
+</dd>
+</dl>
+<p>None.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt id="source.Protocols.Protocols.setProtonationState">
@@ -333,9 +349,7 @@ Cysteine: CYS, CYX</p>
 <code class="sig-name descname">setRestraints</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">restrained_sets</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.setRestraints" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set position restraints on atom set(s).</p>
 <dl class="simple">
-<dt>restrained_sets<span class="classifier">list of str, optional</span></dt><dd><p>Selection(s) (MDTraj). The default is [‘protein and backbone’].</p>
-</dd>
-<dt>forces<span class="classifier">list of int, optional</span></dt><dd><p>The force applied in kilojoules_per_mole/angstroms. The default is 100.</p>
+<dt>restrained_sets<span class="classifier">dictionary</span></dt><dd><p>Selection(s) (MDTraj) and forces (in kilojoules_per_mole/angstroms).</p>
 </dd>
 </dl>
 <dl class="simple">
@@ -371,9 +385,17 @@ Updates openMM instance with simulation and some self attributes to make simulat
 </dd></dl>
 
 <dl class="py method">
+<dt id="source.Protocols.Protocols.simulationSpawner">
+<code class="sig-name descname">simulationSpawner</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">protocol</span></em>, <em class="sig-param"><span class="n">label</span><span class="o">=</span><span class="default_value">'NPT'</span></em>, <em class="sig-param"><span class="n">kind</span><span class="o">=</span><span class="default_value">'production'</span></em>, <em class="sig-param"><span class="n">index</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.simulationSpawner" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
 <dt id="source.Protocols.Protocols.sniffMachine">
 <em class="property">static </em><code class="sig-name descname">sniffMachine</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">gpu_index</span><span class="o">=</span><span class="default_value">'0'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Protocols.Protocols.sniffMachine" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="simple">
+<dd><p>Method to get the fastest available platform. 
+Uses [openmmtools] to query platform properties.
+Sets the GPU index with “gpu_index”.</p>
+<dl class="simple">
 <dt>gpu_index<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
 </dd>
 </dl>
@@ -392,12 +414,21 @@ Updates openMM instance with simulation and some self attributes to make simulat
 <dl class="simple">
 <dt>system<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
 </dd>
-<dt>boxtype<span class="classifier">str, optional</span></dt><dd><p>Box type, either ‘cubic’ or ‘rectangular’. The default is ‘cubic’.</p>
+<dt>forcefield<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
 </dd>
-<dt>box_padding<span class="classifier">float, optional</span></dt><dd><p>Box padding. The default is 1.0.</p>
+<dt>box_size<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is 9.0.</p>
+</dd>
+<dt>boxtype<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is ‘cubic’.</p>
+</dd>
+<dt>padding<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is None.</p>
+</dd>
+<dt>ionicStrength<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is 0*molar.</p>
 </dd>
 </dl>
-<p>None.</p>
+<dl class="simple">
+<dt>system<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">

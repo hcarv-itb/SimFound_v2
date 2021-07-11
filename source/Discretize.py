@@ -49,7 +49,7 @@ class Discretize:
         self.discretized={}
 
         
-        print(f'Input feature: {self.feature_name} \nData: \n {self.data}')
+        #print(f'Input feature: {self.feature_name} \nData: \n {self.data}')
 
     
     def combinatorial(self, 
@@ -193,7 +193,7 @@ class Discretize:
             
             feature_df=pd.concat([feature_df, iterable_df_disc], axis=1)
             
-        print(f'Shell profile: \n {feature_df}')
+        #print(f'Shell profile: \n {feature_df}')
         
         self.discretized[self.feature_name]=('shell_profile', feature_df)
         
@@ -503,7 +503,7 @@ class Discretize:
     
     
     @staticmethod
-    def plot(df, level=2):
+    def plot(df, level=2, subplots=False):
         
 
         levels=df.columns.levels #Exclude last, the values of states
@@ -517,7 +517,7 @@ class Discretize:
             
             print(df_it.columns.unique(level=2).tolist())
             #plot_it=
-            df_it.plot(kind='line', subplots=True, sharey=True, title=iterable, figsize=(7,5), legend=False, sort_columns=True)
+            df_it.plot(kind='line', subplots=subplots, sharey=True, title=iterable, figsize=(7,5), legend=False, sort_columns=True)
             #current_x=plt.xticks()[0] #the array 0
             #new_x=(current_x*5)/1000
             #plt.xticks(ticks=current_x[1:-1].astype(int), labels=new_x[1:-1])

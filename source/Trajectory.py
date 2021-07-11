@@ -12,72 +12,184 @@ import numpy as np
 import pandas as pd
 import MDAnalysis as mda
 import mdtraj as md
-#import tools
+import glob
+import re
+
+#SFv2
+try:
+ import tools
+except:
+    pass
 
 class Trajectory:
     """Class to perform operatoin on trajectories using MDTRAJ."""
     
+    trj_types=['xtc', 'dcd', 'h5']
+    top_types=['pdb', 'gro']
     
     def __init__(self, systems, results):
+        """
+        
+
+        Parameters
+        ----------
+        systems : TYPE
+            DESCRIPTION.
+        results : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
         self.systems=systems
         self.results=results
-  
+        
+        
     @staticmethod
-    def loadTraj(topology, trajectory, name):
+    def eq_prod_filter(trajectories, equilibration, production):
+        
+        #Handle multiple trajectory files
+            
+        to_del = []
+            
+        for idx, t in enumerate(trajectories):
+                
+            if not equilibration:
+                if re.search('equilibration', t):
+                    to_del.append(idx)
+            if not production:
+                if re.search('production', t):
+                    to_del.append(idx)
+                    
+        if len(to_del) > 0:
+            for d in reversed(to_del):
+                trajectories.pop(d)
+                
+        return trajectories
+        
+
+    @staticmethod
+    def findTrajectory(workdir):
+        
+        trajectories = []
+        for trj_type in Trajectory.trj_types:
+            files=glob.glob(f'{workdir}/*.{trj_type}')
     
+            for f in files:    
+                trajectories.append(f)
+        
+        #print(trajectories)
+        
+        return trajectories
+                                
+    @staticmethod
+    def findTopology(workdir, ref_name):
+        
+
+        
+        topologies = []
+
+        files=glob.glob(f'{workdir}/{ref_name}')  
+
+        if not len(files):
+            print('ref not found')
+            
+            for top_type in Trajectory.top_types:
+            
+                files=glob.glob(f'{workdir}/*.{top_type}')
+            
+                for f in files:
+                    topologies.append(f)
+        
+        if not len(topologies):
+            
+            topologies = None
+        
         try:
-            u=mda.Universe(topology, trajectory)
-            #print('System: ', u)
-            status='full'
-
-        except OSError:
-                    
-            #print(f'\tDCD parser could not handle file of {name}. Defining only the topology.')
-            u=mda.Universe(topology)
-            status='incomplete'
-                
-        except FileNotFoundError:
-                    
-            #print(f'\tFile(s) not found for {name}.')
-            u=None
-            status='inexistent'
-        
+            return topologies[0]
         except:
-            
-            print('\tThis is bat country.')
-            status='null'
-            u=None
-            
-        return (u, status)
-    
+            return topologies
     
     @staticmethod
-    def loadMDTraj(topology, trajectory, name):
+    def loadTrajectory(topology, 
+                       trajectory, 
+                       task, 
+                       subset='not water', 
+                       priority=('h5', 'dcd', 'xtc')):
+        """
+        Workhorse function to load a trajectory.
 
-        try:            
-            traj=md.load(trajectory, top=topology)
-            #print('System: ', traj)
-            status='full'
+        Parameters
+        ----------
+        topology : TYPE
+            DESCRIPTION.
+        trajectory : TYPE
+            DESCRIPTION.
+        task : TYPE
+            DESCRIPTION.
+        subset : TYPE, optional
+            DESCRIPTION. The default is 'all'.
+        priority : TYPE, optional
+            DESCRIPTION. The default is ('h5', 'dcd', 'xtc').
 
-        except OSError:
-                    
-            #print(f'\tDCD parser could not handle file of {name}. Defining only the topology.')
-            traj=md.load(topology)
-            status='incomplete'
-                
-        except FileNotFoundError:
-                    
-            #print(f'\tFile(s) not found for {name}.')
-            traj=None
-            status='inexistent'
+        Returns
+        -------
+        traj : TYPE
+            DESCRIPTION.
+
+        """
+        """
         
-        except:
-             
-             #print('\tThis is bat country.')
-             status='null'
-             traj=None
 
-        return (traj, status)
+        Parameters
+        ----------
+        topology : TYPE
+            DESCRIPTION.
+        trajectory : TYPE
+            DESCRIPTION.
+        
+
+        Returns
+        -------
+        traj : TYPE
+            DESCRIPTION.
+        status : TYPE
+            DESCRIPTION.
+
+        """
+        
+        #TODO: not water is hardcoded. pass it up.
+        for p in priority:
+            to_load = []
+        
+            for t in trajectory:
+                trj_name, trj_format=str(t).split('.')
+                        
+                if trj_format == p:
+                    to_load.append(t)
+                
+            if len(to_load) > 0:
+                    
+                if task == 'MDTraj':
+                    ref_top_indices=md.load(topology).topology.select(subset)
+                    traj=md.load(to_load, top=topology, atom_indices=ref_top_indices)
+        
+                elif task == 'MDAnalysis':
+                    traj=mda.Universe(topology, to_load)
+    
+                print('loaded: ', traj)
+                
+                break
+            
+            else:
+                traj = None                   
+
+        return traj        
+            
+            
+            
     
     @staticmethod
     def trj_filter(df, name, value):
@@ -375,6 +487,34 @@ class Trajectory:
                           unit='Molar',
                           stride=1,
                           dists=None):
+        """
+        
+
+        Parameters
+        ----------
+        frames : TYPE, optional
+            DESCRIPTION. The default is {}.
+        level : TYPE, optional
+            DESCRIPTION. The default is 2.
+        density_selection : TYPE, optional
+            DESCRIPTION. The default is 'not protein'.
+        convert : TYPE, optional
+            DESCRIPTION. The default is True.
+        unit : TYPE, optional
+            DESCRIPTION. The default is 'Molar'.
+        stride : TYPE, optional
+            DESCRIPTION. The default is 1.
+        dists : TYPE, optional
+            DESCRIPTION. The default is None.
+
+        Returns
+        -------
+        collect : TYPE
+            DESCRIPTION.
+        stats : TYPE
+            DESCRIPTION.
+
+        """
     
         
         if not bool(frames):
@@ -751,10 +891,14 @@ class Trajectory:
     
     @staticmethod
     def distances(self,  dists, trajectory, topology, stride=1, skip_frames=0):
-        '''Calculates distances between pairs of atom groups (dist) for each set of selections "dists" using MDAnalysis D.distance_array method.
+        """
+        
+        Calculates distances between pairs of atom groups (dist) for each set of selections "dists" using MDAnalysis D.distance_array method.
         Stores the distances in results_dir. Returns the distances as dataframes.
 	    Uses the NAC_frames files obtained in extract_frames(). 
-	    NOTE: Can only work for multiple trajectories if the number of atoms is the same (--noWater)'''
+	    NOTE: Can only work for multiple trajectories if the number of atoms is the same (--noWater)
+        
+        """
          
         
         import MDAnalysis.analysis.distances as D

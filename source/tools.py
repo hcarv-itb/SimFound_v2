@@ -5,6 +5,8 @@ Created on Fri Nov  6 21:50:14 2020
 
 """
 
+
+
 class Functions:
     
     @staticmethod
@@ -404,7 +406,7 @@ class Tasks:
         else:
             num_cpus = n_cores
             
-        print(f'Performing {input_function} tasks for {len(container)} elements on {num_cpus} logical cores')
+        print(f'Performing {input_function.__name__} tasks for {len(container)} elements on {num_cpus} logical cores.')
         
         process_pool = Pool(processes=num_cpus)
         

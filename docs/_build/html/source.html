@@ -217,6 +217,159 @@ Both methods accept an arbitrary number of <strong>distances</strong> and output
 <p>The <strong>Collective Variable</strong> is a metric combinining two or more distances.</p>
 <p>The <em>Near Attack Conformation</em> concept is the average root mean squared value of all defined distances.</p>
 <a class="reference internal image-reference" href="_images/featurize.png"><img alt="combinatorial" src="_images/featurize.png" style="width: 600px;" /></a>
+<span class="target" id="module-source.Featurize"></span><p>Created on Fri Feb 12 16:34:14 2021</p>
+<p>&#64;author: hcarv</p>
+<dl class="py class">
+<dt id="source.Featurize.Featurize">
+<em class="property">class </em><code class="sig-prename descclassname">source.Featurize.</code><code class="sig-name descname">Featurize</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">systems</span></em>, <em class="sig-param"><span class="n">timestep</span></em>, <em class="sig-param"><span class="n">results</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Featurize.Featurize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Base class to create a <em>features</em> object. Different featurization schemes can be coded.</p>
+<dl class="simple">
+<dt>project: object</dt><dd><p>Object instance of the class “Project”.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>feature: object</dt><dd><p>Feature instance</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="source.Featurize.Featurize.calculate">
+<code class="sig-name descname">calculate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">inputs</span></em>, <em class="sig-param"><span class="n">method</span><span class="o">=</span><span class="default_value">'method'</span></em>, <em class="sig-param"><span class="n">start</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">stop</span><span class="o">=</span><span class="default_value">- 1</span></em>, <em class="sig-param"><span class="n">stride</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">n_cores</span><span class="o">=</span><span class="default_value">- 1</span></em>, <em class="sig-param"><span class="n">feature_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">multi</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Featurize.Featurize.calculate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates something based on some ‘inputs’. 
+Increase “n_cores” to speed up calculations.
+Retrieves the output array and corresponding dataframe.
+Recieves instructions from multiprocessing calls.
+Makes calls to “<a href="#id1"><span class="problematic" id="id2">*</span></a>_calculation” methods.
+Operation is adjusted for multiprocessing calls, hence the requirement for tuple manipulation.</p>
+<dl class="simple">
+<dt>inputs<span class="classifier">list of tuples</span></dt><dd><p>A list of distance tuples of the kind [(ref1-sel1), …, (refN-selN)].</p>
+</dd>
+<dt>feature_name<span class="classifier">string</span></dt><dd><p>The name given to the featurized object. The default is ‘feature’.</p>
+</dd>
+<dt>start<span class="classifier">int, optional</span></dt><dd><p>The starting frame used to calculate. The default is 0.</p>
+</dd>
+<dt>stop<span class="classifier">int, optional</span></dt><dd><p>The last frame used to calculate. The default is -1.</p>
+</dd>
+<dt>stride<span class="classifier">int, optional</span></dt><dd><p>Read every nth frame. The default is 1.</p>
+</dd>
+<dt>n_cores<span class="classifier">int, optional</span></dt><dd><p>The number of cores to execute task. Set to -1 for all cores. The default is 2.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>dataframe</dt><dd><p>A dataframe containing all the d_NAC values across the list of iterables*replicas*pairs.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.Featurize.Featurize.df_template">
+<em class="property">static </em><code class="sig-name descname">df_template</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">system_specs</span></em>, <em class="sig-param"><span class="n">unit</span><span class="o">=</span><span class="default_value">['nm']</span></em>, <em class="sig-param"><span class="n">multi</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">multi_len</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Featurize.Featurize.df_template" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="source.Featurize.Featurize.distance_calculation">
+<em class="property">static </em><code class="sig-name descname">distance_calculation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">system_specs</span></em>, <em class="sig-param"><span class="n">specs</span></em>, <em class="sig-param"><span class="n">child</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Featurize.Featurize.distance_calculation" title="Permalink to this definition">¶</a></dt>
+<dd><p>The workhorse function to calculate distances. Uses MDAnalysis.
+Retrieves infromation from two tuples passed by callers contained in “Parameters”.</p>
+<dl class="simple">
+<dt>topology<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>trajectory<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>distances<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>start<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>stop<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>results_folder<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>name<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>stride<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>timestep<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>TYPE</dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.Featurize.Featurize.getMethod">
+<em class="property">static </em><code class="sig-name descname">getMethod</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">method</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Featurize.Featurize.getMethod" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="source.Featurize.Featurize.nac_calculation">
+<em class="property">static </em><code class="sig-name descname">nac_calculation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">system_specs</span></em>, <em class="sig-param"><span class="n">specs</span><span class="o">=</span><span class="default_value">()</span></em>, <em class="sig-param"><span class="n">results_folder</span><span class="o">=</span><span class="default_value">'C:\\Users\\hcarv\\Documents\\GitHub\\SimFound_v2\\docs'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Featurize.Featurize.nac_calculation" title="Permalink to this definition">¶</a></dt>
+<dd><p>The workhorse function for nac_calculation. 
+Retrieves the d_NAC array and corresponding dataframe.
+Recieves instructions from multiprocessing calls.
+Makes calls to “nac_calculation” or “nac_precalculated”.
+Operation is adjusted for multiprocessing calls, hence the requirement for tuple manipulation.</p>
+<dl class="simple">
+<dt>system_specs<span class="classifier">tuple</span></dt><dd><p>A tuple containing system information (trajectory, topology, results_folder, name).</p>
+</dd>
+<dt>measurements<span class="classifier">tuple, optional</span></dt><dd><p>A tuple containing measurement information (distances, start, stop, timestep, stride).</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>nac_df_system<span class="classifier">dataframe</span></dt><dd><p>The d_NAC dataframe of the system</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>nac_file<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>nac_df_system<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.Featurize.Featurize.plot">
+<code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_df</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">method</span><span class="o">=</span><span class="default_value">'RMSD'</span></em>, <em class="sig-param"><span class="n">feature_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">level</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">subplots_</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">stats</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Featurize.Featurize.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>General function to print <em>Featurized</em> pandas dataFrame, either stored under a Featurize instance or external input.
+Takes as input the level referring to the Project <em>hierarchy</em> ontology. 
+Alternatively, it will extract data based on multi-index definitions of provided dataFrame.
+Generates statistical plots of the <em>level</em>.
+Generates subplots of sublevel.</p>
+<p>When Project.hierarchy=[‘protein’, ‘ligand’, ‘parameter’]
+Using level=2 will plot <em>ligand</em> stats and sublevel <em>parameter</em> plots.</p>
+<dl class="simple">
+<dt>input_df<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is None.</p>
+</dd>
+<dt>method<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is ‘RMSD’.</p>
+</dd>
+<dt>level<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is 2.</p>
+</dd>
+<dt><a href="#id3"><span class="problematic" id="id4">subplots_</span></a><span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is True.</p>
+</dd>
+<dt>stats<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is False.</p>
+</dd>
+</dl>
+<p>None.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.Featurize.Featurize.rdf_calculation">
+<em class="property">static </em><code class="sig-name descname">rdf_calculation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">system_specs</span></em>, <em class="sig-param"><span class="n">specs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Featurize.Featurize.rdf_calculation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="source.Featurize.Featurize.rmsd_calculation">
+<em class="property">static </em><code class="sig-name descname">rmsd_calculation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">system_specs</span></em>, <em class="sig-param"><span class="n">specs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Featurize.Featurize.rmsd_calculation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="source.Featurize.Featurize.rmsf_calculation">
+<em class="property">static </em><code class="sig-name descname">rmsf_calculation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">system_specs</span></em>, <em class="sig-param"><span class="n">specs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Featurize.Featurize.rmsf_calculation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 </div>
 </div>
 <div class="section" id="discretize">

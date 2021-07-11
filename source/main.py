@@ -13,11 +13,12 @@ Created on Fri Jul  3 11:30:16 2020
    
 from Decorators import MLflow, MLflow_draft
 
+#SFv2
 try:
 
     import tools
     import tools_plots
-    from Trajectory import Trajectory
+    
     from MSM import MSM
     import Discretize
     import Featurize
@@ -27,10 +28,9 @@ try:
       
 #    import pyemma
 except:
-    print('some modules were not loaded')
     pass
 
-
+import Trajectory
 import os
 import simtk.unit as unit
 
@@ -66,7 +66,6 @@ class Project:
                  ligand='ligand', 
                  timestep=1*unit.picoseconds, 
                  topology='system.pdb',
-                 trajectory='production_NPT-1.dcd',
                  initial_replica=1):
         
         """
@@ -119,7 +118,6 @@ class Project:
         self.def_input_struct=f'{self.workdir}/inputs/structures'
         self.def_input_ff=f'{self.workdir}/inputs/forcefields'
         self.input_topology=f'{self.def_input_struct}/{topology}'
-        self.output_trajectory=trajectory
         
         self.parameter_dict={}
         
@@ -132,10 +130,18 @@ class Project:
                 #parameter_label.append(str(scalar).replace(" ",""))
                 
                 print(f'Converted parameter "temperature" (in K) into scalar: {scalar}')
+            except ValueError:
+                
+                try:
+                    scalar=float(str(p).split('M')[0])*unit.molar
+                except:
+                    scalar=float(str(p).split('mM')[0])/1000*unit.molar
             except:
                 scalar=idx
                 self.parameter_scalar.append(scalar)
                 print(f'Converted unidentified parameter into scalar: {scalar}')
+                
+                
 
             self.parameter_dict[p]=scalar
     
@@ -161,7 +167,7 @@ class Project:
                print(f'Property "{prop}" not defined in system.')  
                
     
-    def setSystems(self) -> dict:
+    def setSystems(self, replica_name='replicate') -> dict:
         """
         Defines project systems based on hierarchy.
 
@@ -195,7 +201,9 @@ class Project:
                                       ligand=system[1],
                                       parameter=system[2],
                                       parameter_dict=self.parameter_dict,
-                                      replicate=system[3]))
+                                      replicate=system[3],
+                                      timestep=self.timestep,
+                                      replica_name=replica_name))
             
 # =============================================================================
 #             systems_obj.append(System(system, 
@@ -211,7 +219,7 @@ class Project:
             #print(f'{system.name} \n\t{system}\n\t{system.name_folder}\n\t{system.path}')
             
         for k, v in systems.items():
-            v.path=tools.Functions.fileHandler([v.path]) #Update the path if fileHandler generates a new folder
+            v.name_folder=tools.Functions.fileHandler([v.name_folder]) #Update the path if fileHandler generates a new folder
             
         self.systems=systems
 
@@ -249,6 +257,9 @@ class System(Project):
         
     """
     
+
+    linker='-'
+    
     
     def __init__(self, 
                  system,
@@ -260,14 +271,9 @@ class System(Project):
                  parameter='parameter',
                  parameter_dict={'parameter':0},
                  replicate=1,
-                 replica_name='replicate', 
-                 linker='-', 
-                 topology='system.pdb', 
-                 trajectory='production_NPT-1.dcd'):
-    
-        #workdir=os.getcwd(),
-        #inputs=f'{os.getcwd()}/inputs/'):
-            #timestep
+                 topology='system.pdb',
+                 replica_name='replicate'):
+
         
         #TODO: class inheritance to fix it.
         self.protein=protein
@@ -280,14 +286,11 @@ class System(Project):
         self.input_topology=input_topology
         self.timestep=timestep
         self.replica_name=replica_name
-        self.linker=linker
-        self.name=self.linker.join(self.system)
-        self.name_folder=f'{self.linker.join(self.system[:-1])}/{self.replica_name}{self.system[-1]}'
-        
-        self.path=f'{self.workdir}/{self.name_folder}'
-        self.results_folder=f'{self.path}/results/'
-        self.trajectory=f'{self.path}/{trajectory}'
-        self.topology=f'{self.path}/{topology}'
+        self.name=System.linker.join(self.system)
+        self.name_folder=os.path.abspath(f'{System.linker.join(self.system[:-1])}/{self.replica_name}{self.system[-1]}')        
+        self.results_folder=os.path.abspath(f'{self.name_folder}/results')
+        self.trajectory=Trajectory.Trajectory.findTrajectory(self.name_folder)
+        self.topology=Trajectory.Trajectory.findTopology(self.name_folder, topology)
         self.data={}
         self.features={}
         

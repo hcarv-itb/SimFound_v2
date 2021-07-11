@@ -7,12 +7,17 @@ Created on Wed Jul 22 15:11:07 2020
 import numpy as np
 import pandas as pd
 import os
-import pyemma
+
 import matplotlib.pyplot as plt
 from matplotlib import colors
 
-import base
+#import base
 
+try:
+    import pyemma
+except:
+    
+    print('some modules not loaded')
 
 def plot_layout(parameters):
     """Function to optimize plot layout based on number of subplots generated."""
