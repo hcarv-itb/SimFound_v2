@@ -5,30 +5,28 @@ Created on Fri Nov  6 21:50:14 2020
 
 """
 
-
+import os
+import simtk.openmm as omm
+import simtk.unit as unit
+import pandas as pd
 
 class Functions:
     
     @staticmethod
-    def fileHandler(path_or_file, confirmation=False, _new=False, *args):
+    def fileHandler(path, confirmation=False, _new=False, *args):
         """
-        
+        Handles the creation of folders.
 
 
         """
         
         import os
-        
-    
-        #print(f'Handling: {path_or_file}')
-        
-        for item in path_or_file:
+
+        for item in path:
+            #print(f'Handling: {item}')
             if not os.path.exists(item):
                 os.makedirs(item)
-                print(f'Item created: {item}')
-                
-                return item
-                
+                #print(f'Item created: {item}')
             else:
                 #print(f'Item exists: {item}')
                 if confirmation:
@@ -38,13 +36,47 @@ class Functions:
                         pass
                 elif _new == True:
                     os.makedirs(item+'_new', exist_ok=True)    
-                    return item+'_new'
-                else:
-                    return item
-                
 
+
+    @staticmethod
+    def setScalar(parameters, get_uniques=False):
         
+        parameter_dict = {}
+            
+        for idx, p in enumerate(parameters):
 
+            try:
+                scalar=float(str(p).split('K')[0])*unit.kelvin
+                #self.parameter_scalar.append(scalar)
+                #parameter_label.append(str(scalar).replace(" ",""))
+                print(f'Converted parameter "temperature" (in K) into scalar: {scalar}')
+            except ValueError:
+                try:
+                    scalar=float(str(p).split('M')[0])*unit.molar
+                except:
+                    scalar=float(str(p).split('mM')[0])/1000*unit.molar
+                #print(f'Converted parameter "concentration" (in Molar) into scalar: {scalar}')
+            except:
+                scalar=idx
+                print(f'Converted unidentified parameter into scalar: {scalar}')
+                
+            parameter_dict[p]=str(scalar)
+        
+        if get_uniques:    
+
+            scalars_unique=set(parameter_dict.values())
+            scalars= {}
+            for unique in scalars_unique:
+                unique_set= []
+                for it, scalar in parameter_dict.items():
+                    if scalar == unique:
+                        unique_set.append(it)
+                if len(unique_set):
+                    scalars[unique]=unique_set
+            return scalars
+        
+        else:
+           return parameter_dict 
 
     @staticmethod
     def regionLabels(regions, labels):
@@ -151,6 +183,86 @@ class Functions:
 
 
         return state_df.to_frame()
+    
+    
+    def get_descriptors(input_df, level, iterable, describe='sum', quantiles=[0.1, 0.5, 0.99]):
+        """
+        Get properties of input_df.
+
+        Parameters
+        ----------
+        input_df : TYPE
+            DESCRIPTION.
+        level : TYPE
+            DESCRIPTION.
+        describe : TYPE, optional
+            DESCRIPTION. The default is 'sum'.
+        quantiles : TYPE, optional
+            DESCRIPTION. The default is [0.1, 0.5, 0.99].
+
+        Returns
+        -------
+        df : TYPE
+            DESCRIPTION.
+        pairs : TYPE
+            DESCRIPTION.
+        replicas : TYPE
+            DESCRIPTION.
+        molecules : TYPE
+            DESCRIPTION.
+        frames : TYPE
+            DESCRIPTION.
+
+        """
+        """
+        
+        
+        """
+        
+        
+        #print(f'Descriptor of: {describe}')
+   
+        df_it=input_df.loc[:,input_df.columns.get_level_values(f'l{level+1}') == iterable] #level +1 due to index starting at l1
+
+        pairs=len(df_it.columns.get_level_values(f'l{level+2}'))
+        replicas=len(df_it.columns.get_level_values(f'l{level+2}').unique()) #level +2 is is the replicates x number of molecules
+        molecules=int(pairs/replicas)
+        
+        #frames=int(df_it.sum(axis=0).unique()[0])
+        total=df_it.sum(axis=0).sum()/replicas
+
+        print(f'Iterable: {iterable}\n\tPairs: {pairs}\n\treplicas: {replicas}\n\tmolecules: {molecules}\n\tCounts: {total}')
+
+        if describe == 'single':
+            descriptor=df_it.quantile(q=0.5)/total #frames*molecules
+
+        elif describe == 'mean':
+            descriptor=df_it.mean(axis=1)/total #frames*molecules
+
+            descriptor.name=iterable
+            descriptor_sem=df_it.sem(axis=1)/total
+            
+            descriptor_sem.name=f'{iterable}-St.Err.'
+            descriptor=pd.concat([descriptor, descriptor_sem], axis=1)
+        
+        elif describe == 'quantile':
+            descriptor=pd.DataFrame()                    
+            for quantile in quantiles:        
+                descriptor_q=df_it.quantile(q=quantile, axis=1)/total
+                descriptor_q.name=f'{iterable}-Q{quantile}'
+                descriptor=pd.concat([descriptor, descriptor_q], axis=1)
+        
+            #print(descriptor)
+            #descriptor.plot(logy=True, logx=True)
+    
+        else: #TODO: make more elif statements if need and push this to elif None.
+            descriptor=df_it
+    
+        descriptor.name=iterable           
+        
+        return descriptor, pairs, replicas, molecules, total
+    
+
     
     @staticmethod
     def density_stats(level_unique, stride, results, unique=None, method='histogram'):
@@ -388,14 +500,197 @@ class XML:
 class Tasks:
     """
     
-    Base class to spwan multiproc (Jupyter and Pandas compatible)
-    
+    Base class to job-specific tasks. 
     
     """
     
+    env_name = 'SFv2'
+    
+    def __init__(self,
+                 machine ='Local',
+                 n_gpu=1,
+                 run_time='12:00:00'):
+        
+        self.machine = machine
+        self.n_gpu = n_gpu
+        self.run_time = run_time
+        
+        
+        
+    def setMachine(self, gpu_index_='0', force_platform=False):
+        """
+        Method to get the fastest available platform. 
+        Uses [openmmtools] to query platform properties.
+        Sets the GPU index with "gpu_index".
+
+        Parameters
+        ----------
+        gpu_index : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        platform : TYPE
+            DESCRIPTION.
+        platformProperties : TYPE
+            DESCRIPTION.
+
+        """
+        
+        import openmmtools
+        
+        #TODO: Use a test to check the number of available gpu (2 Pixar,3 Snake/Packman, 4 or 8 HPC) 
+        
+        avail=openmmtools.utils.get_available_platforms()
+        
+        for idx, plat in enumerate(avail, 1):
+            
+            print(f'\tAvaliable platform {idx}: {plat.getName()}')
+            
+        fastest=openmmtools.utils.get_fastest_platform()
+        
+        if force_platform:
+            self.platform = omm.Platform.getPlatformByName('CUDA')
+            self.platformProperties = {'Precision': 'mixed', 'DeviceIndex': gpu_index_}
+        
+        #print('Fastest: ', fastest.getName())
+        else:
+            if fastest.getName() == 'CUDA':
+                self.platform = fastest
+                self.platformProperties = {'Precision': 'mixed',
+                                  'DeviceIndex': gpu_index_}
+                
+                print('Using CUDA as fastest platform: ', gpu_index_)
+                
+            else:
+                print('Cannot set CUDA as fastest platform.')
+                try:
+                    self.platform = omm.Platform.getPlatformByName('CUDA')
+                    self.platformProperties = {'Precision': 'mixed', 'DeviceIndex': gpu_index_}
+                    print('Warning. Using a CUDA device found by openMM, maybe its not the best.')
+                except:
+                    try:
+                        self.platform = omm.Platform.getPlatformByName('OpenCL')
+                        self.platformProperties = None
+                    except:
+                        self.platform = omm.Platform.getPlatformByName('CPU')
+                        self.platformProperties = None
+                        
+            
+                print(f"Using platform {self.platform.getName()}")
+                
+        return self
+    
+
+    
+
+        
+    def getSpecs(self, machine):
+        
+        
+        #Automate fetch partition.
+        
+        hosts = {'BwUniCluster' : {'scheduler' : 'SBATCH',
+                           'cpu_gpu' : 1, 
+                           'gpu_node' : self.n_gpu, 
+                           'req_gpu' : f'gpu:{self.n_gpu}', 
+                           'n' : 1, 
+                           'mem' : '2gb', 
+                           'time' : self.run_time,
+                           'partition' : 'gpu_4',
+                           'script_path' : '/pfs/work7/workspace/scratch/st_ac131353-SETD2-0/SETD2/',
+                           'chain_jobs' : 2},
+                 
+                 'Local' : {'n_gpu' : self.n_gpu,
+                            'gpu_index' : 0,
+                            'time' : self.run_time}}
+        try:
+            return hosts[machine]
+        except KeyError:
+            print('Try: ', hosts.keys()) 
+    
+    def setSpecs(self, *args):
+        
+
+        specs = self.getSpecs(self.machine)
+
+            
+        print('Machine set: ') 
+        for k, v in specs.items():
+            self.__dict__[k] = v
+        
+        for arg_tuple in args:
+            
+            print('adding ', arg_tuple)
+            self.__dict__[arg_tuple[0]] = arg_tuple[1]
+        
+        print(self.__dict__)            
+        return self
+
+    def generateSripts(self, name, workdir, *args):
+        
+        self.setSpecs(*args)
+        
+        chain_file = os.path.abspath(f'{workdir}/{name}_chain.sh')
+        job_file = os.path.abspath(f'{workdir}/{name}.sh')
+        
+        with open(job_file, 'w') as f:
+            f.write(
+f'''#!/bin/bash
+
+#{self.scheduler} -J {name}
+#{self.scheduler} --cpus-per-gpu={self.cpu_gpu}
+#{self.scheduler} --gpus-per-node={self.gpu_node}
+#{self.scheduler} --gres={self.req_gpu}
+#{self.scheduler} --ntasks={self.n}
+#{self.scheduler} --mem-per-cpu={self.mem}
+#{self.scheduler} --time={self.time}
+#{self.scheduler} --partition={self.partition}
+
+
+set +eu
+module purge
+module load compiler/pgi/2020
+module load devel/cuda/11.0
+module load devel/miniconda
+eval "$(conda shell.bash hook)"
+conda activate {self.env_name}
+set -eu
+echo "----------------"
+echo {name}
+echo $(date -u) "Job was started"
+echo "----------------"
+
+python {self.script_path}/SFv2_standAlone.py {name}
+exit 0''')
+
+    @staticmethod
     def parallel_task(input_function, container, fixed, n_cores=-1):
-        """Core function for multiprocessing of a given task.Takes as input a function and an iterator.
-        Warning: Spawns as many threads as the number of elements in the iterator."""
+        """
+        
+        Core function for multiprocessing of a given task.Takes as input a function and an iterator.
+        Warning: Spawns as many threads as the number of elements in the iterator.
+        (Jupyter and Pandas compatible)
+    
+
+        Parameters
+        ----------
+        input_function : TYPE
+            DESCRIPTION.
+        container : TYPE
+            DESCRIPTION.
+        fixed : TYPE
+            DESCRIPTION.
+        n_cores : TYPE, optional
+            DESCRIPTION. The default is -1.
+
+        Returns
+        -------
+        out : TYPE
+            DESCRIPTION.
+
+        """
+
         
         import psutil
         from functools import partial
@@ -417,68 +712,5 @@ class Tasks:
         process_pool.close()
         process_pool.join()
         
-
-        
         #print(out)
         return out
-    
-    
-# =============================================================================
-#     
-#     def parallel_task(input_function=None, collection=None):
-#         """
-#         
-#         Core function for multiprocessing of a given task.Takes as input a function and an iterator.
-#         Warning: Spawns as many threads as the number of elements in the iterator.
-#             
-# 
-#         """
-#         
-#         
-#         from pathlib import Path
-#         import multiprocessing
-#         from multiprocessing import Manager, Process
-# 
-#         n_cpus=multiprocessing.cpu_count()
-#         temp_dir='/tmp'
-#         
-#         
-#         
-#         def task_exec(manager, input_function, idx, c) -> dict:
-#             """
-#             Execution of the input function. Output is stored in the manager, which is handled to the job
-# 
-#             Parameters
-#             ----------
-#             manager : TYPE
-#                 DESCRIPTION.
-#             input_function : TYPE
-#                 DESCRIPTION.
-#             idx : TYPE
-#                 DESCRIPTION.
-#             c : TYPE
-#                 DESCRIPTION.
-# 
-# 
-#             """
-#             
-#             task=manager
-#             function=input_function
-#             task[idx]=function(c)           
-#         
-#         if input_function != None and collection != None:
-#         
-#             manager=Manager().list()
-#             job=[Process(target=task_exec, args=(manager, input_function, idx, c)) for idx, c in enumerate(collection)]
-#             _=[p.start() for p in job]
-#             _=[p.join() for p in job]
-#        
-#             return manager
-#         
-#         else:
-#             print('No input function or container provided')
-#             
-#             
-# =============================================================================
-    
-    

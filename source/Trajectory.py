@@ -14,6 +14,8 @@ import MDAnalysis as mda
 import mdtraj as md
 import glob
 import re
+import pickle
+from time import process_time_ns
 
 #SFv2
 try:
@@ -24,7 +26,8 @@ except:
 class Trajectory:
     """Class to perform operatoin on trajectories using MDTRAJ."""
     
-    trj_types=['xtc', 'dcd', 'h5']
+
+    trj_types=['h5', 'dcd', 'xtc']
     top_types=['pdb', 'gro']
     
     def __init__(self, systems, results):
@@ -48,30 +51,107 @@ class Trajectory:
         
         
     @staticmethod
-    def eq_prod_filter(trajectories, equilibration, production):
+    def fileFilter(name, 
+                   file, 
+                   equilibration, 
+                   production,
+                   def_file=None,
+                   warnings=False, 
+                   filterW=False):
+        """
         
-        #Handle multiple trajectory files
-            
+
+        Parameters
+        ----------
+        name : TYPE
+            DESCRIPTION
+        trajectories : TYPE
+            DESCRIPTION.
+        equilibration : TYPE
+            DESCRIPTION.
+        production : TYPE
+            DESCRIPTION.
+        warnings : TYPE, optional
+            DESCRIPTION. The default is False.
+        filterW : TYPE, optional
+            DESCRIPTION. The default is False.
+
+        Returns
+        -------
+        trajectories : TYPE
+            DESCRIPTION.
+
+        """
+        
+
+
         to_del = []
-            
-        for idx, t in enumerate(trajectories):
-                
+        for idx, t in enumerate(file):
+                    
             if not equilibration:
                 if re.search('equilibration', t):
                     to_del.append(idx)
             if not production:
                 if re.search('production', t):
                     to_del.append(idx)
-                    
+                        
         if len(to_del) > 0:
             for d in reversed(to_del):
-                trajectories.pop(d)
-                
-        return trajectories
+                file.pop(d)
+    
+        if filterW:
+            filtered = []
+            for t in file:
+                if re.search('_noW', t):
+                    filtered.append(t)
+            if len(filtered) > 0:
+                file = filtered
+    
+        if def_file == None:
+            if len(file) > 1 and warnings:
+                print(f'Warning: Found more than one file for {name}:')
+                for idx, t in enumerate(file):
+                    print(f'\t{idx} : {t}')
+                    
+                select=input('Select one or more by index: ').split()
+                file = [file[int(i)] for i in select]
+        
+        else:
+            select = []
+            for def_f in def_file:
+                for f in file:
+                    if re.search(def_f, f):
+                        select.append(f)
+            if len(select) > 0:
+                file = select
+                #print('Selected ', file)
+                 
+        to_load = []
+        for f in file:
+            file_format=str(f).split('.')[-1]
+            if (file_format in Trajectory.trj_types or Trajectory.top_types):
+                to_load.append(f)
+        
+        #print('to load', to_load)
+        return to_load
         
 
     @staticmethod
     def findTrajectory(workdir):
+        """
+        
+
+        Parameters
+        ----------
+        workdir : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        trajectories : TYPE
+            DESCRIPTION.
+
+        """
         
         trajectories = []
         for trj_type in Trajectory.trj_types:
@@ -86,38 +166,45 @@ class Trajectory:
                                 
     @staticmethod
     def findTopology(workdir, ref_name):
+        """
         
 
-        
+        Parameters
+        ----------
+        workdir : TYPE
+            DESCRIPTION.
+        ref_name : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        TYPE
+            DESCRIPTION.
+
+        """
+
         topologies = []
 
-        files=glob.glob(f'{workdir}/{ref_name}')  
-
-        if not len(files):
-            print('ref not found')
-            
+        files=glob.glob(f'{workdir}/{ref_name}')
+        
+        if len(files) > 0:
+            return files[0]
+        
+        else:
+            #print(f'Reference structure {ref_name} not found')
             for top_type in Trajectory.top_types:
-            
                 files=glob.glob(f'{workdir}/*.{top_type}')
-            
                 for f in files:
                     topologies.append(f)
-        
-        if not len(topologies):
-            
-            topologies = None
-        
-        try:
-            return topologies[0]
-        except:
+                    
+            if len(topologies) == 0:
+                topologies = None
+            #print('Defined topology: ', topologies)
             return topologies
+
     
     @staticmethod
-    def loadTrajectory(topology, 
-                       trajectory, 
-                       task, 
-                       subset='not water', 
-                       priority=('h5', 'dcd', 'xtc')):
+    def loadTrajectory(system_specs, specs):
         """
         Workhorse function to load a trajectory.
 
@@ -140,57 +227,54 @@ class Trajectory:
             DESCRIPTION.
 
         """
-        """
+        clock_start=process_time_ns()   
+        traj = None
         
-
-        Parameters
-        ----------
-        topology : TYPE
-            DESCRIPTION.
-        trajectory : TYPE
-            DESCRIPTION.
-        
-
-        Returns
-        -------
-        traj : TYPE
-            DESCRIPTION.
-        status : TYPE
-            DESCRIPTION.
-
-        """
-        
+        (trajectories, topologies, results_folder, name)=system_specs
+        (selection,  start, stop, timestep, stride, units_x, units_y, task, store_traj, subset)=specs 
         #TODO: not water is hardcoded. pass it up.
-        for p in priority:
-            to_load = []
         
-            for t in trajectory:
-                trj_name, trj_format=str(t).split('.')
+        pkl_path = os.path.abspath(f'{results_folder}/{name}_{start}_{stop}_{stride}.pkl')
+        
+        if os.path.exists(pkl_path) and store_traj:
+            
+            print('\tUnpickling for', name)
+            pkl_file=open(pkl_path, 'rb')
+            traj = pickle.load(pkl_file)
+            
+        else:
+            trj_formats=[t.split('.')[1] for t in trajectories]
+            for trj_format in set(trj_formats):
+                for topology in topologies:
+                    try:    
+                        if task == 'MDTraj':
+                            if trj_format == 'h5':
+                                    traj=md.load(trajectories, top=topology)
+                            else:  
+                                ref_top_indices=md.load(topology).topology.select(subset)
+                                traj=md.load(trajectories, top=topology, atom_indices=ref_top_indices)
+                        elif task == 'MDAnalysis':
+                            if trj_format == 'xtc':
+                                traj=mda.Universe(topology, trajectories, continuous=True)
+                            elif trj_format != 'h5':
+                                traj=mda.Universe(topology, trajectories)
                         
-                if trj_format == p:
-                    to_load.append(t)
-                
-            if len(to_load) > 0:
-                    
-                if task == 'MDTraj':
-                    ref_top_indices=md.load(topology).topology.select(subset)
-                    traj=md.load(to_load, top=topology, atom_indices=ref_top_indices)
-        
-                elif task == 'MDAnalysis':
-                    traj=mda.Universe(topology, to_load)
-    
-                print('loaded: ', traj)
-                
-                break
-            
-            else:
-                traj = None                   
+                    except:
+                        pass
 
-        return traj        
+                    
+            if store_traj and traj != None:
             
+                traj_pkl=open(pkl_path, 'wb')
+                pickle.dump(traj, traj_pkl)
+                traj_pkl.close()
+
+        if traj == None:
+            print('Warning! Could not load ', name)    
+        
+        #print(f'Load time: {np.round((process_time_ns() - clock_start)*1e-9, decimals=3)} s.')
+        return traj
             
-            
-    
     @staticmethod
     def trj_filter(df, name, value):
         """

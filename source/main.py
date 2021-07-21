@@ -11,7 +11,7 @@ Created on Fri Jul  3 11:30:16 2020
 @author: hca
 """
    
-from Decorators import MLflow, MLflow_draft
+#from Decorators import MLflow, MLflow_draft
 
 #SFv2
 try:
@@ -35,17 +35,19 @@ import os
 import simtk.unit as unit
 
 
-@MLflow_draft
-def test():
-    
-    
-    import numpy as np
-    
-    x=np.random.rand(1,10)
-
-    y=np.random.rand(2,3)
-
-    return x, y
+# =============================================================================
+# @MLflow_draft
+# def test():
+#     
+#     
+#     import numpy as np
+#     
+#     x=np.random.rand(1,10)
+# 
+#     y=np.random.rand(2,3)
+# 
+#     return x, y
+# =============================================================================
 
 
 class Project:
@@ -56,8 +58,8 @@ class Project:
     """
 
     
-    def __init__(self, workdir, 
-                 results, 
+    def __init__(self, 
+                 workdir,  
                  title="Untitled",
                  hierarchy=("protein", "ligand", "parameter"), 
                  parameter=None, 
@@ -66,7 +68,8 @@ class Project:
                  ligand='ligand', 
                  timestep=1*unit.picoseconds, 
                  topology='system.pdb',
-                 initial_replica=1):
+                 initial_replica=1,
+                 results='path'):
         
         """
     
@@ -92,7 +95,7 @@ class Project:
             Name of the ligand(s). The default is "ligand".
         timestep : int
             The physical time of frame (ps). The default is 1.
-        results : path
+        results : path (optional)
             The path where results will be stored.
         
         
@@ -107,43 +110,22 @@ class Project:
         self.title=title
         self.hierarchy=hierarchy
         self.parameter=parameter
+        self.parameter_dict=tools.Functions.setScalar(self.parameter)
+        
         self.replicas=int(replicas)
         self.initial_replica=initial_replica
+        
         self.protein=protein
         self.ligand=ligand
         self.timestep=timestep
-        self.results=results
-        #TODO: make confirmation tasks
         
+        self.results=f'{self.workdir}/results'
         self.def_input_struct=f'{self.workdir}/inputs/structures'
         self.def_input_ff=f'{self.workdir}/inputs/forcefields'
         self.input_topology=f'{self.def_input_struct}/{topology}'
         
-        self.parameter_dict={}
+        tools.Functions.fileHandler([self.results, self.def_input_struct, self.def_input_ff])
         
-        for idx, p in enumerate(self.parameter):
-
-            try:
-                scalar=float(str(p).split('K')[0])*unit.kelvin
-
-                #self.parameter_scalar.append(scalar)
-                #parameter_label.append(str(scalar).replace(" ",""))
-                
-                print(f'Converted parameter "temperature" (in K) into scalar: {scalar}')
-            except ValueError:
-                
-                try:
-                    scalar=float(str(p).split('M')[0])*unit.molar
-                except:
-                    scalar=float(str(p).split('mM')[0])/1000*unit.molar
-            except:
-                scalar=idx
-                self.parameter_scalar.append(scalar)
-                print(f'Converted unidentified parameter into scalar: {scalar}')
-                
-                
-
-            self.parameter_dict[p]=scalar
     
     def getProperties(self, *args) -> str:
        """
@@ -182,15 +164,11 @@ class Project:
         import itertools
         
         #tools.Functions.fileHandler([self.workdir, self.results], confirmation=defaults[confirmation])
-        
         elements=[self.getProperties(element) for element in self.hierarchy] #retrieve values for each element in hierarchy.
         replicas=[str(i) for i in range(self.initial_replica,self.replicas+1)]
-        #TODO: allow init replica > 1
         elements.append(replicas)
-        
         systems=list(itertools.product(*elements)) #generate all possible combinations of elements: systems.
         systems_obj=[] #Retrieve the systems from class System.
-        
         for system in systems:
             
             #TODO: This is hardcoding protein, ligand and parameter. Flexible is REQUIRED!!!
@@ -204,14 +182,6 @@ class Project:
                                       replicate=system[3],
                                       timestep=self.timestep,
                                       replica_name=replica_name))
-            
-# =============================================================================
-#             systems_obj.append(System(system, 
-#                                       self.timestep, 
-#                                       topology=self.topology_input, 
-#                                       trajectory=self.trajectory_output,
-#                                       workdir=self.workdir))
-# =============================================================================
         
         systems={}
         for system in systems_obj:
@@ -280,24 +250,28 @@ class System(Project):
         self.ligand=ligand
         self.parameter=parameter        
         self.scalar=parameter_dict[parameter]
-        self.replicate=replicate
-        self.system=system
-        self.workdir=workdir
-        self.input_topology=input_topology
         self.timestep=timestep
+        
+        self.replicate=replicate
+        self.system_ID=system
+        self.workdir=workdir
+        
         self.replica_name=replica_name
-        self.name=System.linker.join(self.system)
-        self.name_folder=os.path.abspath(f'{System.linker.join(self.system[:-1])}/{self.replica_name}{self.system[-1]}')        
+        self.name=System.linker.join(self.system_ID)
+        self.name_folder=os.path.abspath(f'{self.workdir}/{System.linker.join(self.system_ID[:-1])}/{self.replica_name}{self.system_ID[-1]}')   
         self.results_folder=os.path.abspath(f'{self.name_folder}/results')
+        
         self.trajectory=Trajectory.Trajectory.findTrajectory(self.name_folder)
         self.topology=Trajectory.Trajectory.findTopology(self.name_folder, topology)
+        self.input_topology=input_topology
+        self.structures = {}
         self.data={}
         self.features={}
+        self.traj = None
         
-        if not os.path.exists(self.results_folder):
-            os.makedirs(os.path.abspath(self.results_folder))
+        tools.Functions.fileHandler([self.results_folder])
 
-        print(f'System defined: {self.system}, ID: {self.scalar}')
+        print(f'System {self.name} with parameter {self.scalar} defined')
     
                 
     @classmethod

@@ -15,6 +15,9 @@ import pandas as pd
 
 import Trajectory
 import tools_plots
+import tools
+
+import mdtraj as md
 
 
 class MSM:
@@ -27,7 +30,15 @@ class MSM:
     skip=0
     
     
-    def __init__(self, systems, timestep, results, chunksize=None, stride=1):
+    def __init__(self, 
+                 systems, 
+                 timestep, 
+                 results, 
+                 chunksize=None, 
+                 stride=1,
+                 skip=0,
+                 confirmation=False,
+                 _new=False):
         """
         
 
@@ -47,14 +58,18 @@ class MSM:
         """
         
         self.systems=systems
-        self.results=results
+        self.results=os.path.abspath(f'{results}/MSM')
+        self.stored=os.path.abspath(f'{self.results}/MSM_storage')
+        tools.Functions.fileHandler([self.results, self.stored], confirmation=confirmation, _new=_new)
         self.features={}
         self.chunksize=chunksize
         self.stride=stride
+        self.skip=skip
         self.timestep=timestep
         self.unit='ps'
         
         print('Results will be stored under: ', self.results)
+        print('PyEMMA calculations will be stored under: ', self.stored)
  
         
     def calculate(self,
@@ -118,6 +133,7 @@ class MSM:
         for system in systems_specs: #trajectory, topology, results_folder, name 
             
             #TODO: Fix this for differente "separator" value. This is now hardcorded to '-'.
+            #TODO: de-hardcode for SAM
             indexes=[n for n in system[3].split('-')]
             
             if indexes[1] == 'SAM':
@@ -156,8 +172,7 @@ class MSM:
                          lag,
                          ft_name=None,
                          dim=-1, 
-                         var_cutoff=0.95,
-                         opt_dim=10):
+                         overwrite=False):
         
         ticas = {}
         
@@ -166,60 +181,109 @@ class MSM:
 
         for data_tuple in features:
             (data, name, dimensions)=data_tuple
-            print(f'\tCalculating TICA for {name} and lag {lag*self.timestep}')
-            tica = pyemma.coordinates.tica(data, lag=lag, dim=dim, stride=self.stride)
-            tica_output = np.concatenate(tica.get_output())
-            #print(tica_output)
-            ticas[name] = tica
             
-
+            file_name = f'{self.stored}/TICA_{ft_name}_{name}_lag{lag}_dim{dimensions}.npy'
             
-            if tica.dimension() > 10 and dim == -1:
-                print(f'\tWarning: TICA for {var_cutoff*100}% variance cutoff yields {tica.dimension()} dimensions. \n\tReducting to {opt_dim} dimensions.')
-                dims_plot=opt_dim
-            elif tica.dimension() > dim and dim > 0:
-                dim_plot=tica.dimension()
+            if not os.path.exists(file_name) or overwrite:
+                print(f'\tCalculating TICA of {name} with lag {lag*self.timestep} ({dimensions}).')
                 
-            
-            fig=plt.figure(figsize=(10, 8))
-            gs = gridspec.GridSpec(nrows=2, ncols=2)
-            
-            #plot histogram
-            ax0 = fig.add_subplot(gs[0, 0])
-            pyemma.plots.plot_feature_histograms(tica_output[:, :dims_plot], ax=ax0, ylog=True)
-            ax0.set_title('Histogram')
-            
-            #plot projection along main components
-            ax1 = fig.add_subplot(gs[0, 1])
-            pyemma.plots.plot_density(*tica_output[:, :2].T, ax=ax1, logscale=True)
-            ax1.set_xlabel('IC 1')
-            ax1.set_ylabel('IC 2')
-            ax1.set_title('IC density')
+                try:
+                    tica = pyemma.coordinates.tica(data, lag=lag, dim=dim, skip=self.skip, stride=self.stride, chunksize=self.chunksize)
+                    tica.save(file_name)
+                    
+                    self.plot_TICA(tica, lag, dim, ft_name, name) #TODO: Consider pushing back var_cutoff and opt_dim up.
+                    
+                except ValueError:
+                    print(f'Failed for {name}. Probably trajectories are too short for selected lag time.')
+                    break
 
-            #plot discretized trajectories
-            ax2=fig.add_subplot(gs[1,:])
+            else:
+                print(f'\tFound TICA of {name} with lag {lag*self.timestep} ({dimensions}).')
+                tica = pyemma.load(file_name)
             
-            x = self.timestep * np.arange(tica.get_output()[0].shape[0])
-    
-            for idx, tic in enumerate(tica.get_output()[0].T):
-                
-                if idx <= dims_plot:
-                    ax2.plot(x, tic, label=f'IC {idx}')
-                    ax2.set_ylabel('Feature values')
-            ax2.legend()
-            ax2.set_xlabel(f'Total simulation time  (in {self.unit})')
-            ax2.set_title('Discretized trajectories')
-        
-            fig.suptitle(fr'TICA: {ft_name} {name} @ $\tau$ ={self.timestep*lag}', weight='bold')
-            fig.tight_layout()
-            
-            fig.savefig(f'{self.results}/TICA_{ft_name}_{name}_lag{self.timestep*lag}.png', dpi=600, bbox_inches="tight")
-            plt.show()    
-        
-            
+            ticas[name] = tica        
+
         return ticas
 
+    def plot_TICA(self, 
+                  tica,
+                  lag,
+                  dim, 
+                  ft_name, 
+                  name, 
+                  var_cutoff=0.95, 
+                  opt_dim=10):
+        """
+        
+
+        Parameters
+        ----------
+        tica : TYPE
+            DESCRIPTION.
+        dim : TYPE
+            DESCRIPTION.
+        lag : TYPE
+            DESCRIPTION.
+        ft_name : TYPE
+            DESCRIPTION.
+        name : TYPE
+            DESCRIPTION.
+        var_cutoff : TYPE, optional
+            DESCRIPTION. The default is 0.95.
+        opt_dim : TYPE, optional
+            DESCRIPTION. The default is 10.
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        tica_output = np.concatenate(tica.get_output())
+        
+        if tica.dimension() > 10 and dim == -1:
+            print(f'\tWarning: TICA for {var_cutoff*100}% variance cutoff yields {tica.dimension()} dimensions. \n\tReducing to {opt_dim} dimensions.')
+            dims_plot=opt_dim
+        elif tica.dimension() > dim and dim > 0:
+            dims_plot=tica.dimension()
+                
+            
+        fig=plt.figure(figsize=(10, 8))
+        gs = gridspec.GridSpec(nrows=2, ncols=2)
+            
+        #plot histogram
+        ax0 = fig.add_subplot(gs[0, 0])
+        pyemma.plots.plot_feature_histograms(tica_output[:, :dims_plot], ax=ax0, ylog=True)
+        ax0.set_title('Histogram')
+            
+        #plot projection along main components
+        ax1 = fig.add_subplot(gs[0, 1])
+        pyemma.plots.plot_density(*tica_output[:, :2].T, ax=ax1, logscale=True)
+        ax1.set_xlabel('IC 1')
+        ax1.set_ylabel('IC 2')
+        ax1.set_title('IC density')
+
+        #plot discretized trajectories
+        ax2=fig.add_subplot(gs[1,:])
+            
+        x = self.timestep * np.arange(tica.get_output()[0].shape[0])
     
+        for idx, tic in enumerate(tica.get_output()[0].T):
+                
+            if idx <= dims_plot:
+                ax2.plot(x, tic, label=f'IC {idx}')
+                ax2.set_ylabel('Feature values')
+        ax2.legend()
+        ax2.set_xlabel(f'Total simulation time  (in {self.unit})')
+        ax2.set_title('Discretized trajectories')
+        
+        fig.suptitle(fr'TICA: {ft_name} {name} @ $\tau$ ={self.timestep*lag}', weight='bold')
+        fig.tight_layout()
+            
+        fig.savefig(f'{self.results}/TICA_{ft_name}_{name}_lag{self.timestep*lag}.png', dpi=600, bbox_inches="tight")
+        plt.show()
+        
+        
     
     def VAMP_dimensions(self, features, lags, ft_name):
         
@@ -314,15 +378,49 @@ class MSM:
         
                     
     @staticmethod
-    def load_features(topology, trajectories, features, inputs=None):
+    def load_features(topology, 
+                      trajectories, 
+                      features, 
+                      subset='not water', 
+                      inputs=None):
+        """
+        
+
+        Parameters
+        ----------
+        topology : TYPE
+            DESCRIPTION.
+        trajectories : TYPE
+            DESCRIPTION.
+        features : TYPE
+            DESCRIPTION.
+        subset : TYPE, optional
+            DESCRIPTION. The default is 'not water'.
+        inputs : TYPE, optional
+            DESCRIPTION. The default is None.
+
+        Returns
+        -------
+        features_list : TYPE
+            DESCRIPTION.
+
+        """
         
         pyemma.config.show_progress_bars = False
         
         features_list=[]
         
-        #print(inputs)
+        
+        ref_atom_indices=md.load(topology).topology.select(subset)
+        md_top=md.load(topology, atom_indices=ref_atom_indices)
+        
         for f in features:
-            feat=pyemma.coordinates.featurizer(topology)
+            try:
+                feat=pyemma.coordinates.featurizer(md_top)
+                print('\tWarning: subset loaded')
+            except:
+                feat=pyemma.coordinates.featurizer(topology)
+                print('default')
             print('Extracting feature: ', f)
             if type(inputs) is tuple:
                 if f == 'distances':
