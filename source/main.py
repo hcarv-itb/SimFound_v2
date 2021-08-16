@@ -260,7 +260,6 @@ class System(Project):
         self.name=System.linker.join(self.system_ID)
         self.name_folder=os.path.abspath(f'{self.workdir}/{System.linker.join(self.system_ID[:-1])}/{self.replica_name}{self.system_ID[-1]}')   
         self.results_folder=os.path.abspath(f'{self.name_folder}/results')
-        
         self.trajectory=Trajectory.Trajectory.findTrajectory(self.name_folder)
         self.topology=Trajectory.Trajectory.findTopology(self.name_folder, topology)
         self.input_topology=input_topology
@@ -272,7 +271,12 @@ class System(Project):
         tools.Functions.fileHandler([self.results_folder])
 
         print(f'System {self.name} with parameter {self.scalar} defined')
-    
+        
+        if self.topology == None:
+             
+            print('top', self.name)
+        if self.trajectory == None:
+            print('traj', self.name)
                 
     @classmethod
     def plot(cls, input_df, level='l3'):

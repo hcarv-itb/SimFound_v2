@@ -15,6 +15,8 @@ try:
 except:
     pass
 
+
+import functools
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -29,6 +31,32 @@ import MDAnalysis.analysis.distances as D
 
 import mdtraj as md
 from simtk.unit import picoseconds
+
+
+def calculator(func):
+     
+     @functools.wraps(func)
+     def wrapper(system_specs, specs):
+         
+        print('Calculator')
+        (trajectory, topology, results_folder, name)=system_specs
+        (selection,  start, stop, timestep, stride, units_x, units_y, task, store_traj, subset)=specs   
+        names, indexes, column_index=Featurize.Featurize.df_template(system_specs, unit=[units_y])
+        traj=Trajectory.Trajectory.loadTrajectory(system_specs, specs)
+        
+
+        if traj != None and topology != None:
+            
+            result=func(selection, traj, start, stop, stride)
+            rows=pd.Index(np.arange(0, len(result), stride)*timestep, name=units_x)
+            df_system=pd.DataFrame(result, columns=column_index, index=rows)
+    
+        else:
+            df_system = pd.DataFrame()
+        
+        return df_system
+ 
+     return wrapper
 
 
 
@@ -238,6 +266,97 @@ class Featurize:
             print('Try: ', [method for method in methods_hyp.keys()])
 
 
+    def clustering(self,
+                   inputs='name CA',
+                   start=0,
+                   stop=-1,
+                   level=2,  
+                   stride=1,
+                   clusters=10,
+                   rmsd=False,
+                   equilibration=False,
+                   production=True,
+                   def_top=None,
+                   def_traj=None):
+        
+        level_values=[]
+    
+        #Access individual systems. 
+        #The id of project upon feature level should match the current id of project 
+        for name, system in self.systems.items(): 
+            name_=name.split('-')
+            level_values.append(name_[level])       
+        
+  
+        level_values_unique=np.unique(np.asarray(level_values))
+        
+        collect={}
+
+        for level_unique in level_values_unique: #The concentration
+            print(f'Level: {level_unique}')
+                
+            file_concat=os.path.abspath(f'{self.results}/structures/superposed_{level_unique}-s{stride}')
+            tools.Functions.fileHandler([file_concat], confirmation=False, _new=False)
+            trj=f'{file_concat}.xtc'
+            top=f'{file_concat}.pdb'
+            
+            files_to_concatenate=[]
+            
+            #Iterate though all systems and proceed if level match
+            for name, system in self.systems.items(): 
+                #print(name)
+                
+                topology=Trajectory.Trajectory.fileFilter(name, 
+                                                        system.topology, 
+                                                        equilibration, 
+                                                        production, 
+                                                        def_file=def_top,
+                                                        warnings=self.warnings, 
+                                                        filterW=self.heavy_and_fast)
+
+                trajectory=Trajectory.Trajectory.fileFilter(name, 
+                                                        system.trajectory, 
+                                                        equilibration, 
+                                                        production,
+                                                        def_file=def_traj,
+                                                        warnings=self.warnings, 
+                                                        filterW=self.heavy_and_fast)
+                
+                
+                if name.split('-')[level] == level_unique:
+                    files_to_concatenate.append((trajectory, topology))            
+            
+            #print(f'Files to concatenate: {files_to_concatenate}')
+            
+            if len(files_to_concatenate) != 0:  
+                
+                if type(top) == list:
+                    print('Warning! top is list', top)
+                    top = top[0]
+                superposed=Trajectory.Trajectory.concatenate_superpose(files_to_concatenate,
+                                                                       start=start,
+                                                                       stop=stop,
+                                                                       atom_set=inputs, 
+                                                                       trajectory=trj, 
+                                                                       topology=top, 
+                                                                       stride=stride)
+
+                cluster=Trajectory.Trajectory.clusterMDAnalysis(file_concat, 
+                                                                select=inputs, 
+                                                                n_clusters_=clusters, 
+                                                                trajectory=trj, 
+                                                                topology=top)
+       
+                collect[level_unique]=(superposed, cluster) 
+                #print(collect[level_unique])   
+            else:
+                print('\tNo frames found.')
+
+
+        return collect
+
+
+
     @staticmethod
     def rdf_calculation(system_specs, specs):
         """
@@ -322,23 +441,30 @@ class Featurize:
                 other_atom_indices=other_traj.topology.select(selection[0])
                 common_atom_indices=list(set(atom_indices).intersection(other_atom_indices))
                 
+                traj.image_molecules(inplace=True)
                 traj.atom_slice(atom_indices, inplace=True)
                 other_traj.atom_slice(other_atom_indices, inplace=True)
+                
+                
+                
                 rmsd=md.rmsd(traj[start:stop:stride],
                              other_traj,
                              frame=0,
-                             precentered=False)
+                             precentered=False,
+                             parallel=False)
             
             else:
                 atom_indices=traj.topology.select(selection)
-                
+                traj.image_molecules(inplace=True)
                 traj.atom_slice(atom_indices, inplace=True)
-                traj[start:stop:stride].center_coordinates()
                 
+                #traj[start:stop:stride].center_coordinates()
+                #traj.image_molecules(inplace=True, anchor_molecules=[atom_indices])
                 rmsd=md.rmsd(traj[start:stop:stride], 
                          traj, 
                          frame=0,
-                         precentered=True)  
+                         precentered=False,
+                         parallel=False)  
 
             rows=pd.Index(np.arange(0, len(rmsd), stride)*timestep, name=units_x)
             df_system=pd.DataFrame(rmsd, columns=column_index, index=rows)
@@ -742,9 +868,10 @@ class Featurize:
                 
                 #level +1 to access elements below in hierarchy
                 df_it=sup_df.loc[:,sup_df.columns.get_level_values(f'l{level+1}') == iterable]
-                if kind == 'global':
-                     df_it=df_it.min(axis=1)
-                     feature_name = feature_name+'(min)'
+                title_=f'{method}: {feature_name}'
+                #if kind == 'global':
+                #     df_it=df_it.min(axis=1)
+                #     title_ = f'{feature_name}(min)'
                 df_it.plot(kind='line', 
                        subplots=subplots_, 
                        sharey=True,  
@@ -754,7 +881,7 @@ class Featurize:
                        linewidth='1',
                        ax=ax_it)
 
-                title_=f'{method}: {feature_name}' #{df_it.index.values[0]} to {df_it.index.values[-1]} {df_it.index.name}'
+                 #{df_it.index.values[0]} to {df_it.index.values[-1]} {df_it.index.name}'
                 #print(units)
                 ax_it.set_xlabel(df_it.index.name)
                 ax_it.set_ylabel(f'{method} ({units})')
@@ -791,6 +918,7 @@ class Featurize:
                                      kde = True,
                                      kde_kws = {'shade': True, 'linewidth': 2})
                     ax_.set_xscale('log')
+                    ax_.set_yscale('log')
                         
                     #ax_.hist(sup_df.to_numpy
                 ax_.set_xlabel(f'{method} ({levels[-1].to_list()[0]})')

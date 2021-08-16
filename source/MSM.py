@@ -38,7 +38,9 @@ class MSM:
                  stride=1,
                  skip=0,
                  confirmation=False,
-                 _new=False):
+                 _new=False,
+                 warnings=False,
+                 heavy_and_fast=False):
         """
         
 
@@ -67,6 +69,8 @@ class MSM:
         self.skip=skip
         self.timestep=timestep
         self.unit='ps'
+        self.warnings=warnings
+        self.heavy_and_fast=heavy_and_fast
         
         print('Results will be stored under: ', self.results)
         print('PyEMMA calculations will be stored under: ', self.stored)
@@ -79,7 +83,11 @@ class MSM:
                        ft_name=None, 
                        features=['torsions', 'positions', 'distances'], 
                        lags=[1], 
-                       dim=-1):
+                       dim=-1,
+                       equilibration=False,
+                       production=True,
+                       def_top=None,
+                       def_traj=None):
         """
         Wrapper function to calculate VAMP2 scores using pyEMMA. 
         
@@ -114,10 +122,27 @@ class MSM:
         
         for name, system in self.systems.items():
             
-            topology=system.topology #input_topology
             results_folder=system.results_folder
             timestep=system.timestep
-            trajectory=Trajectory.Trajectory.eq_prod_filter(system.trajectory, False, True)
+            
+            topology=Trajectory.Trajectory.fileFilter(name, 
+                                                        system.topology, 
+                                                        equilibration, 
+                                                        production, 
+                                                        def_file=def_top,
+                                                        warnings=self.warnings, 
+                                                        filterW=self.heavy_and_fast)
+
+            trajectory=Trajectory.Trajectory.fileFilter(name, 
+                                                        system.trajectory, 
+                                                        equilibration, 
+                                                        production,
+                                                        def_file=def_traj,
+                                                        warnings=self.warnings, 
+                                                        filterW=self.heavy_and_fast)
+            
+            
+            
 
             systems_specs.append((trajectory, topology, results_folder, name))            
         
@@ -499,8 +524,6 @@ class MSM:
             set during a split.
         """
     
-        # we temporarily suppress very short-lived progress bars
-        #print(f'\tCalculating VAMP2 scores, dimension = {dim}')
         nval = int(len(data) * validation_fraction)
         scores = np.zeros(number_of_splits)
         for n in range(number_of_splits):

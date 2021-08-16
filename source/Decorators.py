@@ -8,6 +8,7 @@ Created on Fri May  7 17:41:53 2021
 
 #SFv2
 try:
+    import Featurize
     import Trajectory
 except:
     pass
@@ -21,54 +22,34 @@ import functools
 import os
 
 import pandas as pd
+import numpy as np
 
 
 
 
 # =============================================================================
-def calculator(func, *args):
+def calculator(func):
      
      @functools.wraps(func)
      def wrapper(system_specs, specs):
          
         print('Calculator')
-         
         (trajectory, topology, results_folder, name)=system_specs
-        (selection,  start, stop, timestep, stride, units_x, units_y, multi, package)=specs
+        (selection,  start, stop, timestep, stride, units_x, units_y, task, store_traj, subset)=specs   
+        names, indexes, column_index=Featurize.Featurize.df_template(system_specs, unit=[units_y])
+        traj=Trajectory.Trajectory.loadTrajectory(system_specs, specs)
         
-        
-        if package == 'MDAnalysis':
-            traj, status=Trajectory.Trajectory.loadTraj(topology, trajectory, name)
-    
-        elif package == 'MDTraj':
+
+        if traj != None and topology != None:
             
-            traj, status=Trajectory.Trajectory.loadMDTraj(topology, trajectory, name)
-    
-        #Only work with managable simulations
-        indexes=[[n] for n in name.split('-')]
-        if status == ('full' or 'incomplete'):
-        
-            #Get values from task.
-            rows_values, columns_values=func
-            
-            if multi:
-                multi_len=len(columns_values)
-                pairs=[i for i in range(1, multi_len+1)]
-                indexes.append(pairs)
-            indexes.append(units_x, units_y)
-            
-            #Build output dataFrame
-            names=[f'l{i}' for i in range(1, len(indexes)+1)]
-            column_index=pd.MultiIndex.from_product(indexes, names=names)    
-            rows=pd.Index(rows_values.bins, name=units_x)
-            df_system=pd.DataFrame(columns_values, columns=column_index, index=rows)
-            #df_system=df_system.mask(df_system > 90)
-            
-            return df_system
+            result=func(selection, traj, start, stop, stride)
+            rows=pd.Index(np.arange(0, len(result), stride)*timestep, name=units_x)
+            df_system=pd.DataFrame(result, columns=column_index, index=rows)
     
         else:
-            return pd.DataFrame()
+            df_system = pd.DataFrame()
         
+        return df_system
  
      return wrapper
 

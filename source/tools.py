@@ -39,9 +39,12 @@ class Functions:
 
 
     @staticmethod
-    def setScalar(parameters, get_uniques=False):
+    def setScalar(parameters, ordered=False, get_uniques=False):
         
         parameter_dict = {}
+        
+        if ordered:
+            parameters= ['50mM', '150mM', '300mM', '600mM', '1M', '2.5M', '5.5M']
             
         for idx, p in enumerate(parameters):
 
@@ -228,29 +231,37 @@ class Functions:
         replicas=len(df_it.columns.get_level_values(f'l{level+2}').unique()) #level +2 is is the replicates x number of molecules
         molecules=int(pairs/replicas)
         
-        #frames=int(df_it.sum(axis=0).unique()[0])
-        total=df_it.sum(axis=0).sum()/replicas
+        frames = 0
+        #Access the replicate level
+        for i in df_it.columns.get_level_values(f'l{level+2}').unique():         
+            sub_df = df_it.loc[:,df_it.columns.get_level_values(f'l{level+2}') == i]
+            frames_i=int(sub_df.sum(axis=0).unique())
+            frames += frames_i
+            
+        
+        frames=int(df_it.sum(axis=0).unique()[0])
 
-        print(f'Iterable: {iterable}\n\tPairs: {pairs}\n\treplicas: {replicas}\n\tmolecules: {molecules}\n\tCounts: {total}')
+
+        #print(f'Iterable: {iterable}\n\tPairs: {pairs}\n\treplicas: {replicas}\n\tmolecules: {molecules}\n\tCounts: {total}')
 
         if describe == 'single':
-            descriptor=df_it.quantile(q=0.5)/total #frames*molecules
+            descriptor=df_it.quantile(q=0.5)/frames*molecules
 
         elif describe == 'mean':
-            descriptor=df_it.mean(axis=1)/total #frames*molecules
-
-            descriptor.name=iterable
-            descriptor_sem=df_it.sem(axis=1)/total
-            
-            descriptor_sem.name=f'{iterable}-St.Err.'
-            descriptor=pd.concat([descriptor, descriptor_sem], axis=1)
+            descriptor=pd.DataFrame()
+            mean=df_it.mean(axis=1)/frames*molecules
+            mean.name=iterable
+            sem=df_it.sem(axis=1)/frames*molecules    
+            sem.name=f'{iterable}-St.Err.'
+            descriptor=pd.concat([mean, sem], axis=1)
         
         elif describe == 'quantile':
             descriptor=pd.DataFrame()                    
             for quantile in quantiles:        
-                descriptor_q=df_it.quantile(q=quantile, axis=1)/total
+                descriptor_q=df_it.quantile(q=quantile, axis=1)/frames*molecules
                 descriptor_q.name=f'{iterable}-Q{quantile}'
                 descriptor=pd.concat([descriptor, descriptor_q], axis=1)
+                
         
             #print(descriptor)
             #descriptor.plot(logy=True, logx=True)
@@ -260,7 +271,7 @@ class Functions:
     
         descriptor.name=iterable           
         
-        return descriptor, pairs, replicas, molecules, total
+        return descriptor
     
 
     

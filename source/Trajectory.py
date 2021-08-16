@@ -82,10 +82,10 @@ class Trajectory:
             DESCRIPTION.
 
         """
-        
-
 
         to_del = []
+        if type(file) == str:
+            file = [file]
         for idx, t in enumerate(file):
                     
             if not equilibration:
@@ -94,7 +94,7 @@ class Trajectory:
             if not production:
                 if re.search('production', t):
                     to_del.append(idx)
-                        
+                    
         if len(to_del) > 0:
             for d in reversed(to_del):
                 file.pop(d)
@@ -115,6 +115,8 @@ class Trajectory:
                     
                 select=input('Select one or more by index: ').split()
                 file = [file[int(i)] for i in select]
+            else:
+                file = file
         
         else:
             select = []
@@ -127,11 +129,13 @@ class Trajectory:
                 #print('Selected ', file)
                  
         to_load = []
+
         for f in file:
             file_format=str(f).split('.')[-1]
             if (file_format in Trajectory.trj_types or Trajectory.top_types):
                 to_load.append(f)
-        
+
+                    
         #print('to load', to_load)
         return to_load
         
@@ -191,7 +195,7 @@ class Trajectory:
             return files[0]
         
         else:
-            #print(f'Reference structure {ref_name} not found')
+            print(f'Reference structure {workdir}/{ref_name} not found')
             for top_type in Trajectory.top_types:
                 files=glob.glob(f'{workdir}/*.{top_type}')
                 for f in files:
@@ -199,7 +203,7 @@ class Trajectory:
                     
             if len(topologies) == 0:
                 topologies = None
-            #print('Defined topology: ', topologies)
+            print('Defined topology: ', topologies)
             return topologies
 
     
@@ -243,12 +247,16 @@ class Trajectory:
             traj = pickle.load(pkl_file)
             
         else:
+            if len(topologies) > 1:
+                print('Warning! more than one topology for ', name)
+
             trj_formats=[t.split('.')[1] for t in trajectories]
             for trj_format in set(trj_formats):
                 for topology in topologies:
                     try:    
                         if task == 'MDTraj':
                             if trj_format == 'h5':
+                                    print('loading h5')
                                     traj=md.load(trajectories, top=topology)
                             else:  
                                 ref_top_indices=md.load(topology).topology.select(subset)
@@ -259,6 +267,8 @@ class Trajectory:
                             elif trj_format != 'h5':
                                 traj=mda.Universe(topology, trajectories)
                         
+                        #print(name, task, topology, trajectories, end='\r')
+                        break
                     except:
                         pass
 
@@ -761,7 +771,7 @@ class Trajectory:
     
     
     @staticmethod
-    def clusterMDAnalysis(base_name, trajectory, topology, select="all"):
+    def clusterMDAnalysis(base_name, trajectory, topology, n_clusters_=20, select="name CA", n_cores=6):
         """
         Function to obtain cluster using the encore.cluster tool from MDAnalysis.
 
@@ -788,28 +798,26 @@ class Trajectory:
 
         #if base_name == '/media/dataHog/hca/proLig_CalB-Methanol/project_results/superposed_50mM-it13-s1':
 
+        
             
-        cluster_file=f'{base_name}-clusters.pdb'
-            
+        cluster_file=f'{base_name}-{n_clusters_}clusters.pdb'
+        #print(trajectory, topology, cluster_file)  
+        
         if not os.path.exists(cluster_file):
             print('\tLoading files...')
             u=mda.Universe(topology, trajectory)
         
         
-            print(f'\tNumber of frames: {len(u.trajectory)}')
+            print(f'\tNumber of frames to cluster: {len(u.trajectory)}')
             if len(u.trajectory) > 1:
                 print('\tCluster file not found. Calculating...')
-                n_c=20
-                finished = False
-                while finished == False:
-                    try:
-                        clusters = encore.cluster(u, method=encore.KMeans(n_clusters=n_c))
-                        #clusters = encore.cluster(u, method=encore.DBSCAN(eps=3, min_samples=200, n_jobs=60))
-                        print('\t', clusters)
-                        finished = True
+
+                try:
+                    clusters = encore.cluster(u, select=select, ncores=n_cores, method=encore.KMeans(n_clusters=n_clusters_))
+                    #clusters = encore.cluster(u, method=encore.DBSCAN(eps=3, min_samples=200, n_jobs=60))
                     
-                    except ValueError:
-                        print('not possible')
+                except ValueError:
+                    print('not possible')
                         
                 centroids=[]
                 elements=[]
@@ -839,7 +847,14 @@ class Trajectory:
         return cluster_file
 
     @staticmethod
-    def concatenate_superpose(files_to_concatenate, trajectory, topology, ref_frame=0, stride=1, atom_set='backbone') -> object:
+    def concatenate_superpose(files_to_concatenate, 
+                              trajectory, 
+                              topology, 
+                              ref_frame=0, 
+                              stride=1, 
+                              atom_set='backbone',
+                              start=0,
+                              stop=-1):
         """
         
 
@@ -867,29 +882,25 @@ class Trajectory:
         
         import mdtraj as md
         
-        try:    
-   
-            if not os.path.exists(trajectory): 
+        if not os.path.exists(trajectory): 
                 
-                concatenated_trajectories=md.join([md.load(file[0], top=file[1], stride=stride) for file in files_to_concatenate]) 
-                print(f'\tN. frames: {concatenated_trajectories.n_frames}')   
+            #concatenated_trajectories=md.join([md.load(file[0], top=file[1][0], stride=stride) for file in files_to_concatenate])
+            concatenated_trajectories=md.join([md.load(file[0], top=file[1][0])[start:stop:stride] for file in files_to_concatenate])
+            print(f'\tNumber of frames to superpose: {concatenated_trajectories.n_frames}')   
+            
+            print('\tSuperposing...')
+            concatenated_trajectories.image_molecules(inplace=True)
+            atom_indices=concatenated_trajectories.topology.select(atom_set)
+            superposed=concatenated_trajectories.superpose(concatenated_trajectories, frame=ref_frame, atom_indices=atom_indices)
+            
+            superposed.save_xtc(trajectory)
+            superposed[0].save(topology)
                 
-                print('\tSuperposing')
-                concatenated_trajectories.image_molecules(inplace=True)
-                atom_indices=concatenated_trajectories.topology.select(atom_set)
-                superposed=concatenated_trajectories.superpose(concatenated_trajectories, frame=ref_frame, atom_indices=atom_indices)
-                
-                superposed.save_xtc(trajectory)
-                superposed[0].save(topology)
-                
-            return (topology, trajectory)
-        
-        except OSError:
-            print('tFile not found.')
-            pass
     
     @staticmethod
-    def densityCalc(base_name, trajectory, topology, 
+    def densityCalc(base_name, 
+                    trajectory, 
+                    topology, 
                     selection='name OA', 
                     convert=True, 
                     unit='Molar', 
@@ -971,37 +982,3 @@ class Trajectory:
         
         return density_file  
     
-    
-    
-    @staticmethod
-    def distances(self,  dists, trajectory, topology, stride=1, skip_frames=0):
-        """
-        
-        Calculates distances between pairs of atom groups (dist) for each set of selections "dists" using MDAnalysis D.distance_array method.
-        Stores the distances in results_dir. Returns the distances as dataframes.
-	    Uses the NAC_frames files obtained in extract_frames(). 
-	    NOTE: Can only work for multiple trajectories if the number of atoms is the same (--noWater)
-        
-        """
-         
-        
-        import MDAnalysis.analysis.distances as D
-        
-        u=mda.Universe(topology, trajectory)
-                
-        #print(f'\tBase name: {base_name}')
-                
-        distances={} # This is the dictionary of d distances.
-                
-        for idx, dist in enumerate(dists, 1): 
-                    
-            sel1, sel2 =u.select_atoms(dist[0]), u.select_atoms(dist[1])
-				
-            distance=np.around([D.distance_array(sel1.positions, sel2.positions, box=u.dimensions) for ts in u.trajectory], decimals=3)
-				
-            q=np.quantile(distance.flat, q=np.arange(0,1.05, 0.05))
-            print(q)
-            plt.plot(np.arange(0,1.05, 0.05), q, label=topology)
-            #plt.show()
-                    
-            distances[idx]=distance
