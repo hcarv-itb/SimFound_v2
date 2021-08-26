@@ -64,12 +64,12 @@ class Project:
                  hierarchy=("protein", "ligand", "parameter"), 
                  parameter=None, 
                  replicas=1, 
-                 protein='protein', 
-                 ligand='ligand', 
+                 protein=None, 
+                 ligand=None, 
                  timestep=1*unit.picoseconds, 
                  topology='system.pdb',
                  initial_replica=1,
-                 results='path'):
+                 results='results'):
         
         """
     
@@ -119,7 +119,7 @@ class Project:
         self.ligand=ligand
         self.timestep=timestep
         
-        self.results=f'{self.workdir}/results'
+        self.results=f'{self.workdir}/{results}'
         self.def_input_struct=f'{self.workdir}/inputs/structures'
         self.def_input_ff=f'{self.workdir}/inputs/forcefields'
         self.input_topology=f'{self.def_input_struct}/{topology}'
@@ -163,6 +163,7 @@ class Project:
         
         import itertools
         
+        
         #tools.Functions.fileHandler([self.workdir, self.results], confirmation=defaults[confirmation])
         elements=[self.getProperties(element) for element in self.hierarchy] #retrieve values for each element in hierarchy.
         replicas=[str(i) for i in range(self.initial_replica,self.replicas+1)]
@@ -171,25 +172,30 @@ class Project:
         systems_obj=[] #Retrieve the systems from class System.
         for system in systems:
             
-            #TODO: This is hardcoding protein, ligand and parameter. Flexible is REQUIRED!!!
+            #TODO: Flexible parameter and ligand on/off.
+            protein_=system[self.hierarchy.index('protein')] # system[0],
+            if self.ligand != None:
+                ligand_=system[self.hierarchy.index('ligand')] #system[1],
+            else:
+                ligand_= self.ligand
+            parameter_=system[self.hierarchy.index('parameter')] #system[2],
+
             systems_obj.append(System(system, 
                                       self.workdir, 
                                       self.input_topology,
-                                      protein=system[0],
-                                      ligand=system[1],
-                                      parameter=system[2],
+                                      protein=protein_, 
+                                      ligand=ligand_,
+                                      parameter=parameter_,
                                       parameter_dict=self.parameter_dict,
-                                      replicate=system[3],
+                                      replicate=system[-1],
                                       timestep=self.timestep,
                                       replica_name=replica_name))
         
         systems={}
         for system in systems_obj:
             systems[system.name]=system
-            #print(f'{system.name} \n\t{system}\n\t{system.name_folder}\n\t{system.path}')
-            
-        for k, v in systems.items():
-            v.name_folder=tools.Functions.fileHandler([v.name_folder]) #Update the path if fileHandler generates a new folder
+            #print(f'{system.name} \n\t{system}\n\t{system.name_folder}')
+            tools.Functions.fileHandler([system.name_folder]) #Update the path if fileHandler generates a new folder
             
         self.systems=systems
 
@@ -236,8 +242,8 @@ class System(Project):
                  workdir,
                  input_topology,
                  timestep=1*unit.picoseconds,
-                 protein='protein',
-                 ligand='ligand',
+                 protein=None,
+                 ligand=None,
                  parameter='parameter',
                  parameter_dict={'parameter':0},
                  replicate=1,
@@ -248,9 +254,10 @@ class System(Project):
         #TODO: class inheritance to fix it.
         self.protein=protein
         self.ligand=ligand
-        self.parameter=parameter        
+        self.parameter=parameter       
         self.scalar=parameter_dict[parameter]
         self.timestep=timestep
+        self.input_topology=input_topology
         
         self.replicate=replicate
         self.system_ID=system
@@ -260,9 +267,10 @@ class System(Project):
         self.name=System.linker.join(self.system_ID)
         self.name_folder=os.path.abspath(f'{self.workdir}/{System.linker.join(self.system_ID[:-1])}/{self.replica_name}{self.system_ID[-1]}')   
         self.results_folder=os.path.abspath(f'{self.name_folder}/results')
+        
         self.trajectory=Trajectory.Trajectory.findTrajectory(self.name_folder)
-        self.topology=Trajectory.Trajectory.findTopology(self.name_folder, topology)
-        self.input_topology=input_topology
+        self.topology=Trajectory.Trajectory.findTopology(self.name_folder, topology, input_topology=input_topology)
+        
         self.structures = {}
         self.data={}
         self.features={}
@@ -277,35 +285,7 @@ class System(Project):
             print('top', self.name)
         if self.trajectory == None:
             print('traj', self.name)
-                
-    @classmethod
-    def plot(cls, input_df, level='l3'):
-            
-            print(input_df)
-
-            levels=input_df.columns.levels[:-1] #Exclude last, the values of states
-            
-            print(levels)
-    
-            for iterable in levels[2]:
-                
-                df_it=input_df.loc[:,input_df.columns.get_level_values(level) == iterable]
-                
-                
-                print(df_it.columns.unique(level=2).tolist())
-                df_it.plot(#kind='line',
-                               subplots=True,
-                               sharey=True,
-                               title=iterable,
-                               figsize=(6,8),
-                               legend=False,
-                               sort_columns=True)
-            
-                plt.savefig(f'{cls.results}/discretized_{cls.name}_{iterable}.png', dpi=300)
-                plt.show()
-    
-        
-        
+                       
     
 class Visualize():
     """

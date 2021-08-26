@@ -169,7 +169,7 @@ class Trajectory:
         return trajectories
                                 
     @staticmethod
-    def findTopology(workdir, ref_name):
+    def findTopology(workdir, ref_name, input_topology=None):
         """
         
 
@@ -202,7 +202,11 @@ class Trajectory:
                     topologies.append(f)
                     
             if len(topologies) == 0:
-                topologies = None
+                topologies = input_topology
+                
+            
+            
+            
             print('Defined topology: ', topologies)
             return topologies
 
@@ -237,7 +241,7 @@ class Trajectory:
         (trajectories, topologies, results_folder, name)=system_specs
         (selection,  start, stop, timestep, stride, units_x, units_y, task, store_traj, subset)=specs 
         #TODO: not water is hardcoded. pass it up.
-        
+        store_traj = False
         pkl_path = os.path.abspath(f'{results_folder}/{name}_{start}_{stop}_{stride}.pkl')
         
         if os.path.exists(pkl_path) and store_traj:
@@ -256,16 +260,22 @@ class Trajectory:
                     try:    
                         if task == 'MDTraj':
                             if trj_format == 'h5':
-                                    print('loading h5')
+                                    
                                     traj=md.load(trajectories, top=topology)
+                            
                             else:  
                                 ref_top_indices=md.load(topology).topology.select(subset)
                                 traj=md.load(trajectories, top=topology, atom_indices=ref_top_indices)
+                                print('not loading h5')
+                                
+                            print(len(traj))
                         elif task == 'MDAnalysis':
                             if trj_format == 'xtc':
                                 traj=mda.Universe(topology, trajectories, continuous=True)
                             elif trj_format != 'h5':
                                 traj=mda.Universe(topology, trajectories)
+                            
+                            print(traj.n_frames)
                         
                         #print(name, task, topology, trajectories, end='\r')
                         break

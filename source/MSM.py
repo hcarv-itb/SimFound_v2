@@ -169,14 +169,14 @@ class MSM:
                     trajectories_to_load.append(trj_list[0])
                     tops_to_load.append(top)
         
-        features=self.load_features(tops_to_load[0], trajectories_to_load, features, inputs=inputs)
-        #self.features[ft_name]=features            
+        features_=self.load_features(tops_to_load[0], trajectories_to_load, features, inputs=inputs)
+           
         
         if method == 'VAMP':
             if evaluate == 'features':
-                vamps=self.VAMP2_features(features, lags, dim, ft_name)
+                vamps=self.VAMP2_features(features_, lags, dim, ft_name)
             elif evaluate == 'dimensions': 
-                vamps = self.VAMP_dimensions(features, lags, ft_name)   
+                vamps = self.VAMP_dimensions(features_, lags, ft_name)   
             else:
                 print('No evaluation defined.')
             
@@ -184,12 +184,13 @@ class MSM:
    
         if method == 'TICA':
             
-            out_data=self.TICA_calculation(features, lags, ft_name=ft_name, dim=dim)
+            out_data=self.TICA_calculation(features_, lags, ft_name=ft_name, dim=dim)
             self.features[f'{method}'] = out_data
         
         else:
             print('No method defined')
             out_data=None
+        
          
         
     def TICA_calculation(self, 
@@ -213,7 +214,12 @@ class MSM:
                 print(f'\tCalculating TICA of {name} with lag {lag*self.timestep} ({dimensions}).')
                 
                 try:
-                    tica = pyemma.coordinates.tica(data, lag=lag, dim=dim, skip=self.skip, stride=self.stride, chunksize=self.chunksize)
+                    tica = pyemma.coordinates.tica(data, 
+                                                   lag=lag, 
+                                                   dim=dim, 
+                                                   skip=self.skip, 
+                                                   stride=self.stride, 
+                                                   chunksize=self.chunksize)
                     tica.save(file_name)
                     
                     self.plot_TICA(tica, lag, dim, ft_name, name) #TODO: Consider pushing back var_cutoff and opt_dim up.
@@ -226,8 +232,9 @@ class MSM:
                 print(f'\tFound TICA of {name} with lag {lag*self.timestep} ({dimensions}).')
                 tica = pyemma.load(file_name)
             
-            ticas[name] = tica        
+            ticas[f'{name}-{lag}'] = tica        
 
+        self.tica=ticas
         return ticas
 
     def plot_TICA(self, 
@@ -262,9 +269,14 @@ class MSM:
         -------
         None.
 
+        Notes
+        -----
+        
+        tica_concat is the trajectories concatenated.
+        ticas is the individual trajectories
         """
         
-        tica_output = np.concatenate(tica.get_output())
+        tica_concat = np.concatenate(tica.get_output())
         
         if tica.dimension() > 10 and dim == -1:
             print(f'\tWarning: TICA for {var_cutoff*100}% variance cutoff yields {tica.dimension()} dimensions. \n\tReducing to {opt_dim} dimensions.')
@@ -273,50 +285,83 @@ class MSM:
             dims_plot=tica.dimension()
                 
             
-        fig=plt.figure(figsize=(10, 8))
-        gs = gridspec.GridSpec(nrows=2, ncols=2)
+        fig=plt.figure(figsize=(8,6))
+        gs = gridspec.GridSpec(nrows=1, ncols=2)
             
         #plot histogram
         ax0 = fig.add_subplot(gs[0, 0])
-        pyemma.plots.plot_feature_histograms(tica_output[:, :dims_plot], ax=ax0, ylog=True)
+        pyemma.plots.plot_feature_histograms(tica_concat[:, :dims_plot], ax=ax0, ylog=True)
         ax0.set_title('Histogram')
             
         #plot projection along main components
         ax1 = fig.add_subplot(gs[0, 1])
-        pyemma.plots.plot_density(*tica_output[:, :2].T, ax=ax1, logscale=True)
+        pyemma.plots.plot_density(*tica_concat[:, :2].T, ax=ax1, logscale=True)
         ax1.set_xlabel('IC 1')
         ax1.set_ylabel('IC 2')
         ax1.set_title('IC density')
 
-        #plot discretized trajectories
-        ax2=fig.add_subplot(gs[1,:])
-            
-        x = self.timestep * np.arange(tica.get_output()[0].shape[0])
-    
-        for idx, tic in enumerate(tica.get_output()[0].T):
-                
-            if idx <= dims_plot:
-                ax2.plot(x, tic, label=f'IC {idx}')
-                ax2.set_ylabel('Feature values')
-        ax2.legend()
-        ax2.set_xlabel(f'Total simulation time  (in {self.unit})')
-        ax2.set_title('Discretized trajectories')
-        
         fig.suptitle(fr'TICA: {ft_name} {name} @ $\tau$ ={self.timestep*lag}', weight='bold')
         fig.tight_layout()
             
         fig.savefig(f'{self.results}/TICA_{ft_name}_{name}_lag{self.timestep*lag}.png', dpi=600, bbox_inches="tight")
         plt.show()
+
+
+        #plot discretized trajectories
+        ticas=tica.get_output()
+        n_trajs=len(ticas)
+        
+        rows, columns, fix_layout=tools_plots.plot_layout(ticas)
+        fig_trajs,axes_=plt.subplots(columns, rows*2, sharex=True, sharey=True, constrained_layout=True, figsize=(9,6))
+
+        try:
+            flat=axes_.flat
+        except AttributeError:
+            flat=axes_
+            
+            flat=[flat]
+        
+
+        #loop for the trajectories
+        for (idx_t, trj_tica), ax in zip(enumerate(ticas), flat): #len trajs?
+            
+            
+            x = self.timestep * np.arange(trj_tica.shape[0])
+    
+            for idx, tic in enumerate(trj_tica.T):
+                
+                if idx <= dims_plot:
+                    ax.plot(x, tic, label=f'IC {idx}')
+                    ax.set_ylabel('Feature values')
+        
+                    ax.set_xlabel(f'Total simulation time  (in {self.unit})')
+                    #ax_trj.set_title('Discretized trajectory: ', idx)
+        
+        #fig_trajs.legend()
+        fig_trajs.suptitle(fr'TICA: {ft_name} {name} @ $\tau$ ={self.timestep*lag}', weight='bold')
+        fig_trajs.tight_layout()
+            
+        fig_trajs.savefig(f'{self.results}/TICA_{ft_name}_{name}_lag{self.timestep*lag}_discretized.png', dpi=600, bbox_inches="tight")
+        plt.show()
         
         
     
-    def VAMP_dimensions(self, features, lags, ft_name):
+    def VAMP_dimensions(self, 
+                        features, 
+                        lags, 
+                        ft_name):
         
         rows, columns, fix_layout=tools_plots.plot_layout(features)
         fig, axes = plt.subplots(rows, columns, figsize=(9,6))
 
+        try:
+            flat=axes.flat
+        except AttributeError:
+            flat=axes
+            flat=[flat]
+
         
-        for ax, data_tuple in zip (axes.flat, features):
+        for ax, data_tuple in zip (flat, features):
             
             (data, name, dimensions)=data_tuple #as defined in load features
             
@@ -326,7 +371,7 @@ class MSM:
             legends = []
 
             for lag in lags:
-                print('\tLag: ', lag*self.timestep)
+                print(f'\tLag: {lag*self.timestep}\n' )
                 scores_dim= []
                 #scores_=np.array([self.score_cv(data, dim, lag)[1] for dim in dims])
 
@@ -352,8 +397,8 @@ class MSM:
 
         fig.legend(legends, ncol=1, bbox_to_anchor=(1.08, 0.5), loc='center left')
         
-        if not axes[-1].lines: 
-            axes[-1].set_visible(False)
+        #if not axes[-1].lines: 
+        #    axes[-1].set_visible(False)
 
         fig.tight_layout()
         plt.show()
@@ -366,7 +411,7 @@ class MSM:
         rows, columns, fix_layout=tools_plots.plot_layout(lags)
         fig, axes = plt.subplots(rows, columns, figsize=(9,6), sharex=True, sharey=True)
         for ax, lag in zip(axes.flat, lags):
-            print('lag time: ', lag)
+            print(f'lag time: {lag} \n')
             scores=[]
             errors=[]
             labels=[]
@@ -523,12 +568,12 @@ class MSM:
             Fraction of trajectories which should go into the validation
             set during a split.
         """
-    
+        print(f'\tCalculating VAMP2 scores for {dim} dimensions \n')
         nval = int(len(data) * validation_fraction)
         scores = np.zeros(number_of_splits)
         for n in range(number_of_splits):
             try:
-                print(f'\tCalculating VAMP2 scores for {dim} dimensions, cycle {n+1}/{number_of_splits}', end='\r')
+                print(f'\tcycle {n+1}/{number_of_splits}', end='\r')
                 ival = np.random.choice(len(data), size=nval, replace=False)
                 vamp = pyemma.coordinates.vamp([d for i, d in enumerate(data) if i not in ival], 
                                            lag=lag, 
@@ -547,7 +592,88 @@ class MSM:
 
 
 
+def cluster_calculation(self, 
+                        features,
+                        lag=[1,2],
+                        n_centres=[1, 5, 10, 30, 75, 200, 450], 
+                        n_iter=7, 
+                        method='kmeans'):
+    
+    try:
+        tica = self.tica
+        print('TICA loaded: ', tica)
+    except:
+        print('TICA not found. Calculating...')
+        tica=self.TICA_calculation(features, 
+                         lag,
+                         ft_name=None,
+                         dim=-1, 
+                         overwrite=False)
+        
+    optk_features={}
+    
 
+    
+    
+    for feature in features:
+        
+        rows, columns, fix_layout=tools_plots.plot_layout(lag)
+        fig, axes=plt.subplots(rows, columns, sharex=True, sharey=True, constrained_layout=True, figsize=(9,6))
+        
+        try:
+            flat=axes.flat
+        except AttributeError:
+            flat=axes
+            flat=[flat]
+        
+        for l, ax in zip(lag, flat):
+        
+            try:
+                tica=tica[f'{feature}-{l}'].get_output()
+    
+            except KeyError:
+                print(f'No {feature}-{l} combination found in stored TICA')    
+                break
+            
+            if method == 'kmeans':
+                scores = np.zeros((len(n_centres),1))
+                for n, t in enumerate(n_centres):
+                    print(f'Calculating score for {t} cluster centres.')
+                    for m in range(n_iter):
+                        _cl=pyemma.coordinates.cluster_kmeans(tica,
+                                                              max_iter=200,
+                                                              k=t)
+                        
+                        _msm=pyemma.msm.estimate_markov_model(_cl.dtrajs,
+                                                              lag=l,
+                                                              dt_traj=self.timestep,
+                                                              maxerr=1e-08)
+                        scores[n,m]=_msm.score_cv(_cl.dtrajs,
+                                                  n=1,
+                                                  score_method='VAMP2')
+                        
+                        print('Scores: ',scores)
+                        
+                fig, ax=plt.subplots()
+                lower, upper=pyemma.util.statistics.confidence_interval(scores.T.tolist(), conf=0.9)
+                ax.fill_between(n_centres, lower, upper, alpha=0.3)
+                ax.semilogx()
+                ax.set_xlabel('Number of cluster centres')
+                ax.set_ylabel('VAMP2 score')
+                ax.plot(n_centres, np.mean(scores, axis=1), '-o')
+                
+                
+                optk=dict(zip(n_centres, np.mean(scores, axis=1)))
+                print(f'Cluster centres for feature {feature}', optk)
+    
+                
+                optk_features[feature]=optk
+            else:
+                print('no method defined')
+        
+    self.clusters=optk_features
+    
+    return optk_features
         
         
         
@@ -586,8 +712,6 @@ class MSM:
 #         
 #         return out_df
 # =============================================================================
-
-
 
 
 

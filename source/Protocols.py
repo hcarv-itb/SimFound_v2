@@ -66,12 +66,9 @@ class Protocols:
         self.ow_mode = overwrite_mode
 
         for name, system in project.systems.items():
-            print(f'Setting openMM simulation of {name} protocols in {project.workdir}')
+            print(f'Setting openMM simulation of {name} protocols in {system.name_folder}')
             
-            self.check_omm(system, self.ow_mode)
-            self.protocols[name]=system
-
-        print(self.protocols)  
+            self.protocols[name]=system #self.check_omm(system, self.ow_mode) #system
                                 
         self.workdir =project.workdir
         self.def_input_struct=project.def_input_struct
@@ -123,6 +120,8 @@ class Protocols:
                       
             system.topology_omm=pdb.topology
             system.positions=pdb.positions
+        
+        return system
             
         
 
@@ -183,17 +182,19 @@ class Protocols:
         
         from openmmforcefields.generators import GAFFTemplateGenerator
         from openff.toolkit.topology import Molecule
-        
 
-        for name, system in self.protocols.items():
+
+        self.protocols_omm={}
+
+        for name, system_protocol in self.protocols.items():
         
-            system.structures = {}
+            system=self.check_omm(system_protocol, self.ow_mode) 
             
-            if system.status != 'new' and self.ow_mode == True:
-                print('Warning! There is already a pickled version of ', self.name)
-            else:
-                print('\tGenerating new openMM system for .', name)
-
+                
+            if system.status == 'new' or self.ow_mode:
+                print('\tGenerating new openMM system for: ', name, system)
+                
+                system.structures = {}
                 system.structures['input_pdb']=system.input_topology
             
                 #Fix the input_pdb with PDBFixer
@@ -216,8 +217,6 @@ class Protocols:
     
                     pre_system, self.extra_molecules=self.addExtraMolecules_PDB(pre_system, extra_input_pdb)
     
-    
-        
                 #Create a ForceField instance with provided XMLs with setForceFields()
                 forcefield, ff_paths=self.setForceFields(ff_files=ff_files)
         
@@ -275,9 +274,12 @@ class Protocols:
                 #Update attributes
                 system.system_omm=system_omm
                 system.status = 'open'
-                system.structures['system']=self.writePDB(pre_system.topology, pre_system.positions, name='system')   
-                print(f"\tSystem is now converted to openMM type: \n\tFile: {system.structures['system']}, \n\tTopology: {system.topology}")     
+                system.structures['system']=self.writePDB(system.name_folder, pre_system.topology, pre_system.positions, name='system')   
+                print(f"\tSystem is now converted to openMM type: \n\tFile: {system.structures['system']}, \n\tTopology: {system.topology_omm}")     
   
+            self.protocols_omm[name]=system
+        
+        print(self.protocols_omm)
 
     def setSimulations(self, 
                        dt = 0.002*picoseconds, 
@@ -322,7 +324,7 @@ class Protocols:
         self.steps={}
         self.trj_write={} 
         
-        for name, system in self.protocols.items():
+        for name, system in self.protocols_omm.items():
             
             print('setting up: ', name)
             selection_reference_topology = md.Topology().from_openmm(system.topology_omm)
@@ -334,12 +336,12 @@ class Protocols:
             for eq in equilibrations:
             
                 eq=self.convert_Unit_Step(eq, self.dt)
-                self.equilibrations.append(eq)
+                system.equilibrations.append(eq)
 
             for prod in productions:
         
                 prod=self.convert_Unit_Step(prod, self.dt)
-                self.productions.append(prod)
+                system.productions.append(prod)
                 
 
     #TODO: Get platform features from setSimulations, useful for multiprocessing.
@@ -390,9 +392,12 @@ class Protocols:
         #TODO: Make call here for generation of corresponding .sh file generattion and .sh spawner.
         
 
-        for name, system in self.protocols.items():
+        for name, system in self.protocols_omm.items():
         
+            print('System: ', name)
             if system.status != 'complete':
+                
+                
             
                 job=tools.Tasks(machine=where,
                                      n_gpu=len(gpu_index),
@@ -406,23 +411,23 @@ class Protocols:
                                 
                 else:
                     system.simulations = {}
-                    job.setMachine(gpu_index_= gpu_index, force_platform=True)
+                    self.platform, self.platformProperties=job.setMachine(gpu_index_= gpu_index, force_platform=True)
             
                     if run_Emin:
                         print("\nEnergy minimization")
-                        system.simulations['minimization']=self.simulationSpawner(system.minimization,
-                                                                       index=1,
-                                                                       kind='minimization',
-                                                                       label='Emin',
-                                                                       overwrite=overwrite_,
-                                                                       resume=resume_,
-                                                                       compute_time_=compute_time)
+                        system.simulations['minimization']=self.simulationSpawner(system,
+                                                                                  index=1,
+                                                                                  kind='minimization',
+                                                                                  label='Emin',
+                                                                                  overwrite=overwrite_,
+                                                                                  resume=resume_,
+                                                                                  compute_time_=compute_time)
         
                     if run_equilibrations:
-                        for idx, p in enumerate(system.equilibrations, 1):
+                        for idx, protocol in enumerate(system.equilibrations, 1):
                             print(f"\nEQ run {idx}: {protocol['ensemble']}")
                             system.simulations[f"EQ-{protocol['ensemble']}"]=self.simulationSpawner(system,
-                                                                                                    protocol, 
+                                                                                                    protocol=protocol, 
                                                                                                     index=idx, 
                                                                                                     kind='equilibration', 
                                                                                                     label=protocol['ensemble'],
@@ -439,7 +444,7 @@ class Protocols:
                         
                             print(f"\nProduction run {idx}: {protocol['ensemble']}")
                             system.simulations[f"MD-{protocol['ensemble']}"]=self.simulationSpawner(system,
-                                                                                                    protocol, 
+                                                                                                    protocol=protocol, 
                                                                                                     index=idx, 
                                                                                                     kind='production', 
                                                                                                     label=protocol['ensemble'],
@@ -449,9 +454,10 @@ class Protocols:
                                                                                                     reportFactor_=reportFactor,
                                                                                                     fixed_step=minimum_effort)
             
+                    
     def simulationSpawner(self,
                           system,
-                          protocol, 
+                          protocol=None, 
                           label='NPT', 
                           kind='production', 
                           index=0,
@@ -491,22 +497,24 @@ class Protocols:
 
         """
         
-        print(system.status)
+        #print(system.status)
         #TODO: Set integrator types    
-        integrator = omm.LangevinIntegrator(system.temperature, system.friction, system.dt)
+        integrator = omm.LangevinIntegrator(self.temperature, self.friction, self.dt)
         
         name=f'{kind}_{label}-{index}'
         trj_file=f'{system.name_folder}/{name}' 
         
+        print(name)
+        
         reportTime=compute_time_ * reportFactor_
         
         #Initiate simulation from stored state.
-        simulation_init = app.Simulation(system.topology, 
+        simulation_init = app.Simulation(system.topology_omm, 
                                         system.system_omm, 
                                         integrator, 
                                         self.platform, 
                                         self.platformProperties)
-        simulation_init.context.setPositions(self.positions)
+        simulation_init.context.setPositions(system.positions)
         state_init=simulation_init.context.getState(getPositions=True, getVelocities=True, getEnergy=True)
         energy_init = state_init.getPotentialEnergy()
         positions_init = state_init.getPositions()
@@ -515,31 +523,39 @@ class Protocols:
         #Check for checkpoints and update simulation state
         simulation, system.status, last_step, checkpoints=self.setSimulationState(simulation_init, self.dt, trj_file, resume, overwrite)
         
-        
-        #Deliver final state from loaded checkpoint    
-        if system.status != 'complete':
+        if system.status == 'complete':
+            state_sim=simulation_init.context.getState(getPositions=True, getVelocities=True, getEnergy=True)
+            print('\tSystem is complete.')
             
-            #Write initial 
-            system.structures['f{name}_init']=self.writePDB(system.topology, positions_init, name=f'{name}_init')
-            print(f'\tSystem initial potential energy: {energy_init}')
-            
-            #Run the Eminimization
-            if kind == 'minimization':
+        #Run the Eminimization
+        elif kind == 'minimization' and system.status == 'new':
                
-                print('\tEnergy minimization')
-                simulation.minimizeEnergy()
-                simulation.saveState(checkpoints['final'])
-                state_sim=simulation.context.getState(getPositions=True, getVelocities=True, getEnergy=True)
-                system.structures[name]=self.writePDB(system.topology, state_sim.getPositions(), name=name)
-           
-            #Run the equilibrations or productions  
-            else:
+            print('\tEnergy minimization')
+            simulation.minimizeEnergy()
+            simulation.saveState(checkpoints['final'])
+            state_sim=simulation.context.getState(getPositions=True, getVelocities=True, getEnergy=True)
+            system.structures[name]=self.writePDB(system.name_folder, system.topology_omm, state_sim.getPositions(), name=name)
+        
+        else:
                 
-                #Fetch number of steps
-                steps_, append_, total_step=self.getSteps(protocol, simulation, last_step, self.dt)
- 
+            #Fetch number of steps
+            steps_, append_, total_step=self.getSteps(protocol, simulation, last_step, self.dt)
+            
+                
+            if system.status == 'new':
+                
+                #Write initial 
+                print('\tSetting new system:', system.name)
+                
+                system.structures['f{name}_init']=self.writePDB(system.name_folder, system.topology_omm, positions_init, name=f'{name}_init')
+                print(f'\tSystem initial potential energy: {energy_init}')
+               
+                #Run the equilibrations or productions  
+    
+
+     
                 #Simulation has not started. Generate new.
-                if steps_ == total_step and system.status == 'new':
+                if steps_ == total_step:
                     
                     print(f'\tPopulating file(s) {trj_file}.*')
             
@@ -557,7 +573,7 @@ class Protocols:
                     #TODO: Set other barostats.
                     if label == 'NPT':
                         print(f'\tAdding MC barostat for {label} ensemble')      
-                        self.system.addForce(omm.MonteCarloBarostat(self.pressure, self.temperature, 25)) 
+                        system.system_omm.addForce(omm.MonteCarloBarostat(self.pressure, self.temperature, 25)) 
         
                     #TODO: Emulate temperature increase
                     #Set velocities if continuation run
@@ -571,85 +587,87 @@ class Protocols:
             
                     #Set velocities if continuation run    
                     else:
-                        print(f'\tWarning! Continuation run. Assigning velocities from stored state.')
+                        print('\tWarning! Continuation run. Assigning velocities from stored state.')
                         simulation.context.setVelocities(system.velocities)
                     
-                    
-                #TODO: Pass this to Trajectory for more flexible handling.
-                simulation.reporters.append(HDF5Reporter(f'{trj_file}.h5', protocol['report'], atomSubset=system.trj_indices))
-                simulation.reporters.append(DCDReporter(f'{trj_file}.dcd', protocol['report'], append=append_))
+                simulation.reporters.append(HDF5Reporter(f'{trj_file}-{last_step}.h5', protocol['report'], atomSubset=system.trj_indices))
                 simulation.reporters.append(app.StateDataReporter(f'{trj_file}.csv', protocol['report'], 
-                                                              step=True, totalEnergy=True, temperature=True, density=True,
-                                                              progress=True, remainingTime=True, speed=True, 
-                                                              totalSteps=steps_, separator=','))
-                
-                
-                #Execute the two types of simulation run
-                if fixed_step:
-                    
-                    simulation.reporters.append(CheckpointReporter(f'{trj_file}.chk', protocol['report']))
-                    print('\tSimulating...')
-                    
-                    try:
-                        simulation.step(steps_)
-                        simulation.saveState(checkpoints['final'])
-                        last_step = simulation.currentStep
-                        system.status = 'complete'
-                    
-                    except:
-                        last_step = simulation.currentStep
-                        print(f'\t Warning! Could not run all steps: {last_step}/{total_step}')
-                        simulation.saveState(checkpoints['timeout'][1])
-                        simulation.saveCheckpoint(checkpoints['timeout'][0])
-                        system.status = 'open'
-                
-                else:
-                    print(f'\tSimulating for {str(datetime.timedelta(hours=compute_time_))} ({str(datetime.timedelta(hours= reportTime))} checkpoints)...')
-                    simulation.runForClockTime(compute_time_, 
-                                               checkpointFile=checkpoints['checkpoint'][0],
-                                               stateFile=checkpoints['checkpoint'][1], 
-                                               checkpointInterval=reportTime)
-                    simulation.saveState(checkpoints['timeout'][1])
-                    simulation.saveCheckpoint(checkpoints['timeout'][0])
+                                                                  step=True, totalEnergy=True, temperature=True, density=True,
+                                                                  progress=True, remainingTime=True, speed=True, 
+                                                                  totalSteps=steps_, separator=',')) 
+            
+            simulation.reporters.append(DCDReporter(f'{trj_file}.dcd', protocol['report'], append=append_))
+      
 
-                    last_step = simulation.currentStep
+
+            #Execute the two types of simulation run
+            if fixed_step:
                 
-                remaining_step_end = total_step - last_step
-                state_sim=simulation.context.getState(getPositions=True, getVelocities=True, getEnergy=True)
+                simulation.reporters.append(CheckpointReporter(f'{trj_file}.chk', protocol['report']))
+                print('\tSimulating...')
                 
-                
-                #Evaluate status of current execution
-                if remaining_step_end > 0:
-                        
-                    print(f"\tWarning! Simulation terminated by timeout: {last_step}/{total_step} = {remaining_step_end} steps to complete.")
-                    system.structures['f{name}_chk']=self.writePDB(system.topology, state_sim.getPositions(), name=f'{name}_chk')
-                    system.status = 'open'
-                    
-                else:
-                    
-                    print(f"\tSimulation completed or extended: {last_step}/{total_step} (+{np.negative(remaining_step_end)}) steps.")
+                try:
+                    simulation.step(steps_)
                     simulation.saveState(checkpoints['final'])
-                    system.structures[name]=self.writePDB(system.topology, state_sim.getPositions(), name=name)
+                    last_step = simulation.currentStep
                     system.status = 'complete'
                     
-                    #Remove forces if simulation is over.
-                    if label == 'NPT':
-                        system.system_omm=self.forceHandler(system.system_omm, kinds=['CustomExternalForce', 'MonteCarloBarostat'])
-                    elif label == 'NVT':
-                        system.system_omm=self.forceHandler(system.system_omm, kinds=['CustomExternalForce'])
+                except:
+                     last_step = simulation.currentStep
+                     print(f'\t Warning! Could not run all steps: {last_step}/{total_step}')
+                     simulation.saveState(checkpoints['timeout'][1])
+                     simulation.saveCheckpoint(checkpoints['timeout'][0])
+                     system.status = 'open'
+            
+            else:
+                print(f'\tSimulating for {str(datetime.timedelta(hours=compute_time_))} ({str(datetime.timedelta(hours= reportTime))} checkpoints)...')
+                print(compute_time_)
+                simulation.runForClockTime(compute_time_, 
+                                           checkpointFile=checkpoints['checkpoint'][0],
+                                           stateFile=checkpoints['checkpoint'][1], 
+                                           checkpointInterval=reportTime)
+                simulation.saveState(checkpoints['timeout'][1])
+                simulation.saveCheckpoint(checkpoints['timeout'][0])
+
+                last_step = simulation.currentStep
+            
+            remaining_step_end = total_step - last_step
+            state_sim=simulation.context.getState(getPositions=True, getVelocities=True, getEnergy=True)
+            
+            
+            #Evaluate status of current execution
+            if remaining_step_end > 0:
+                    
+                print(f"\tWarning! Simulation terminated by timeout: {last_step}/{total_step} = {remaining_step_end} steps to complete.")
+                system.structures['f{name}_chk']=self.writePDB(system.name_folder, system.topology_omm, state_sim.getPositions(), name=f'{name}_chk')
+                system.status = 'open'
+                
+            else:
+                
+                print(f"\tSimulation completed or extended: {last_step}/{total_step} (+{np.negative(remaining_step_end)}) steps.")
+                simulation.saveState(checkpoints['final'])
+                system.structures[name]=self.writePDB(system.name_folder, system.topology_omm, state_sim.getPositions(), name=name)
+                system.status = 'complete'
+                
+                #Remove forces if simulation is over.
+                if label == 'NPT':
+                    system.system_omm=self.forceHandler(system.system_omm, kinds=['CustomExternalForce', 'MonteCarloBarostat'])
+                elif label == 'NVT':
+                    system.system_omm=self.forceHandler(system.system_omm, kinds=['CustomExternalForce'])
         
-        
-        else:
-            state_sim=simulation_init.context.getState(getPositions=True, getVelocities=True, getEnergy=True)
+
         
         #Update attributes
         system.state=state_sim
         system.positions = state_sim.getPositions()
         system.velocities = state_sim.getVelocities()
         system.energy=state_sim.getPotentialEnergy()     
-        system.simulation = simulation    
+        system.simulation = simulation 
             
-        print(f'\tSystem final potential energy: {self.energy} ({self.status})')
+        print(f'\tSystem final potential energy: {system.energy} ({system.status})')
+        
+        return system
+        
         
     @staticmethod
     def getSteps(protocol, simulation, last_step, dt):
@@ -768,7 +786,7 @@ class Protocols:
         #trajectory_out_atoms = 'protein or resname SAM or resname ZNB'
         
 
-        topology = md.Topology().from_openmm(system.topology)  
+        topology = md.Topology().from_openmm(system.topology_omm)  
         
         equation="\t(k/2)*periodicdistance(x, y, z, x0, y0, z0)^2"
         
@@ -855,9 +873,8 @@ class Protocols:
                 
         return forcefield, ff_list  
     
-    
-    
-    def writePDB(self,
+    @staticmethod
+    def writePDB(workdir,
                  topology, 
                  positions,
                  name='test',
@@ -883,7 +900,7 @@ class Protocols:
         
         
         #TODO: allow other extensions
-        out_pdb=f'{self.workdir}/{name}.pdb'
+        out_pdb=f'{workdir}/{name}.pdb'
         app.PDBFile.writeFile(topology, positions, open(out_pdb, 'w'), keepIds=keepIds)
             
         print(f'\tPDB file generated: {out_pdb}')

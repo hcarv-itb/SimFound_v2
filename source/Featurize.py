@@ -81,7 +81,7 @@ class Featurize:
                  timestep, 
                  results,
                  warnings=False,
-                 heavy_and_fast=False):
+                 heavy_and_fast=True):
         """
         
 
@@ -440,9 +440,14 @@ class Featurize:
                 atom_indices=traj.topology.select(selection[0])
                 other_atom_indices=other_traj.topology.select(selection[0])
                 common_atom_indices=list(set(atom_indices).intersection(other_atom_indices))
-                
-                traj.image_molecules(inplace=True)
+                try:
+                    traj.image_molecules(inplace=True)
+                except ValueError:
+                    pass
+                    #print('could not image traj')
                 traj.atom_slice(atom_indices, inplace=True)
+                
+                other_traj.image_molecules(inplace=True)
                 other_traj.atom_slice(other_atom_indices, inplace=True)
                 
                 
@@ -454,8 +459,12 @@ class Featurize:
                              parallel=False)
             
             else:
+                try:
+                    traj.image_molecules(inplace=True)
+                except:
+                    pass
+                    #print('could not image traj')
                 atom_indices=traj.topology.select(selection)
-                traj.image_molecules(inplace=True)
                 traj.atom_slice(atom_indices, inplace=True)
                 
                 #traj[start:stop:stride].center_coordinates()
@@ -917,7 +926,7 @@ class Featurize:
                                      hist = False, 
                                      kde = True,
                                      kde_kws = {'shade': True, 'linewidth': 2})
-                    ax_.set_xscale('log')
+                    #ax_.set_xscale('log')
                     ax_.set_yscale('log')
                         
                     #ax_.hist(sup_df.to_numpy

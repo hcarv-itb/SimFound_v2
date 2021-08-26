@@ -590,7 +590,7 @@ class Tasks:
             
                 print(f"Using platform {self.platform.getName()}")
                 
-        return self
+        return self.platform, self.platformProperties
     
 
     
