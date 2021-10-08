@@ -260,27 +260,26 @@ class Trajectory:
                     try:    
                         if task == 'MDTraj':
                             if trj_format == 'h5':
-                                    
-                                    traj=md.load(trajectories, top=topology)
-                            
+                                traj=md.load(trajectories, top=topology)
+                                print('loading h5 for', name)
                             else:  
                                 ref_top_indices=md.load(topology).topology.select(subset)
                                 traj=md.load(trajectories, top=topology, atom_indices=ref_top_indices)
-                                print('not loading h5')
                                 
-                            print(len(traj))
+                            print(f'Load time for {name} ({len(traj)} frames): {np.round((process_time_ns() - clock_start)*1e-9, decimals=3)} s.')
                         elif task == 'MDAnalysis':
                             if trj_format == 'xtc':
                                 traj=mda.Universe(topology, trajectories, continuous=True)
                             elif trj_format != 'h5':
                                 traj=mda.Universe(topology, trajectories)
                             
-                            print(traj.n_frames)
+                            print(f'Load time for {name} ({traj.n_frames} frames): {np.round((process_time_ns() - clock_start)*1e-9, decimals=3)} s.')
                         
                         #print(name, task, topology, trajectories, end='\r')
                         break
                     except:
                         pass
+                        #print('\tWarning! Trajectory not loaded for',  name)
 
                     
             if store_traj and traj != None:
@@ -292,7 +291,7 @@ class Trajectory:
         if traj == None:
             print('Warning! Could not load ', name)    
         
-        #print(f'Load time: {np.round((process_time_ns() - clock_start)*1e-9, decimals=3)} s.')
+        
         return traj
             
     @staticmethod
@@ -315,27 +314,92 @@ class Trajectory:
             An array of index values of the trajectory where value was found.
         
         """
-            
-        #n=name.split('-') #alternative of n, ready for hierarchical operator     
+        
+        print(name)
+        
+        n=name.split('-') #alternative of n, ready for hierarchical operator     
         
         for index, level in enumerate(name.split('-'), 1):
+            print(index, level)
             if index == 1:
                 filtered=df
             else:
                 filtered=filtered
                 
             filtered=filtered.loc[:,filtered.columns.get_level_values(f'l{index}').isin([level])]
-                       
 
         sel_frames=filtered.loc[(filtered.values == value)]
         frames=sel_frames.index.values #np.array(list(sel_frames.index.values))
-        
-        #print(frames)
+
         return frames
     
     
     
-    def extractFrames_by_iterable(self, df, iterable, feature, t_start=20000, extract='not water'):
+    @staticmethod
+    def pre_process_MSM(trajectories, 
+                    topology, 
+                    superpose_to='Protein and backbone',
+                    slice_traj='not water',
+                    ref_frame=0):
+        """
+        
+        Serves MSM module. Trajectory files are loaded and superposed to the provided Topology object, the one used for feature extraction.
+
+        Parameters
+        ----------
+        trajectories : TYPE
+            DESCRIPTION.
+        topology : TYPE
+            DESCRIPTION.
+        superpose_to : TYPE, optional
+            DESCRIPTION. The default is 'Protein and backbone'.
+        ref_frame : TYPE, optional
+            DESCRIPTION. The default is 0.
+        slice_traj : TYPE, optional
+            DESCRIPTION. The default is False.
+
+        Returns
+        -------
+        trajectories_mod : TYPE
+            DESCRIPTION.
+
+        """
+        
+        trajectories_mod=[]
+        
+        for trajectory in trajectories:
+            
+            file_name, ext=trajectory.split('.')
+            
+            mod_file_name=f'{file_name}_superposed.{ext}'
+            
+            if not os.path.exists(mod_file_name):
+                print(f'\tPre-processing {trajectory}', end='\r')
+                traj=md.load(trajectory, top=topology)
+                traj.image_molecules(inplace=True)
+                atom_indices=traj.topology.select(slice_traj)
+                traj.atom_slice(atom_indices, inplace=True)
+                traj.superpose(topology, frame=ref_frame, atom_indices=superpose_to)
+                
+                if ext == 'xtc':
+                    traj.save_xtc(f'{file_name}_superposed.xtc')
+                elif ext == 'dcd':
+                    traj.save_dcd(f'{file_name}_superposed.dcd')
+            
+            trajectories_mod.append(mod_file_name)   
+    
+        return trajectories_mod
+
+    def extractFrames_by_iterable(self, 
+                                  df, 
+                                  iterable, 
+                                  feature, 
+                                  t_start=20000, 
+                                  extract='not water',
+                                  equilibration=False, 
+                                  production=True, 
+                                  def_top=None, 
+                                  def_traj=None):
         """
         
         Extract frames trajectories based on iterable and dataframe.
@@ -373,8 +437,6 @@ class Trajectory:
         
         import mdtraj as md
         
-        #print(iterable)
-        #print(feature)
             
         def calculate(name, system):
             
@@ -383,38 +445,53 @@ class Trajectory:
             
             for value in iterable:
                 
-                #print(f'Applying filter for iterable {value}')
+                
                 frames=Trajectory.trj_filter(df, name, value)   #Call to method for df filtering
-                frames_iterables.append(frames)
+                frames_iterables.append(frames)            
             
+            topology=self.fileFilter(name, 
+                                     system.topology, 
+                                     equilibration, 
+                                     production, 
+                                     def_file=def_top)[0]
+
+            trajectory=self.fileFilter(name, 
+                                       system.trajectory, 
+                                       equilibration, 
+                                       production,
+                                       def_file=def_traj)[0]
             
+
             frames_iterables_dict={}    
             for frames, value in zip(frames_iterables, iterable):
 
                 ref_topology=f'{system.results_folder}frames_{name}_it{value}_{feature}.pdb'
                 
                 if len(frames) != 0:
-                    frames=frames+t_start #IMPORTANT NOTE.      
+                    
+                    print(f'Applying filter for iterable {value}')
+                    #TODO: Fix this for automated fetch of propert t_start. input df is reseting to 0, should keep track of what featurization did.
+                    frames=frames+t_start #IMPORTANT NOTE. 
+                    
                     file=f'{system.results_folder}frames_{name}_it{value}_{feature}.xtc'
                     if not os.path.exists(file):
-                        ref_topology_obj=md.load_frame(system.trajectory, index=0, top=system.topology)
+                        ref_topology_obj=md.load_frame(trajectory, index=0, top=topology)
                         atom_indices=ref_topology_obj.topology.select(extract)
                         ref_topology_obj.atom_slice(atom_indices, inplace=True)
                         ref_topology_obj.save_pdb(ref_topology)
                     
-                        print(ref_topology_obj)
-                    
+                        #print(ref_topology_obj)
                         system.frames.append(file)   #Update system attribute
                 
                         print(f'\tLoading full trajectory of {name}...')
-                        traj=md.load(system.trajectory, top=system.topology)
+                        traj=md.load(trajectory, top=topology)
                         atom_indices=traj.topology.select(extract)
                         
                         traj.atom_slice(atom_indices, inplace=True)
                     
                         print('\tExtracting...')
                         extracted_frames=traj[frames]
-                        print(extracted_frames)
+                        print('\t', extracted_frames)
                     
                         print('\tSaving')
                         extracted_frames.save_xtc(file)
@@ -584,7 +661,8 @@ class Trajectory:
                 pass
                         
     
-    def DensityMap_frames(self, frames={}, 
+    def DensityMap_frames(self, 
+                          frames, 
                           level=2, 
                           density_selection='not protein', 
                           convert=True, 
@@ -653,8 +731,9 @@ class Trajectory:
             for unique in uniques: #The iterable
                 
                 file_concat=f'{self.results}/superposed_{level_unique}-it{unique}-s{stride}'
-                trj=f'{file_concat}.xtc'
-                top=f'{file_concat}.pdb'
+                trj=os.path.abspath(f'{file_concat}.xtc')
+                top=os.path.abspath(f'{file_concat}.pdb')
+                
                 files_to_concatenate=[]
                 for name, v in frames.items():
                     if name.split('-')[level] == level_unique:
@@ -668,18 +747,14 @@ class Trajectory:
                 
                 if len(files_to_concatenate) != 0:
                     
+                    #important stuff going on here
                     superposed=self.concatenate_superpose(files_to_concatenate, trajectory=trj, topology=top, stride=stride)
-                    
                     density=self.densityCalc(file_concat, trajectory=trj, topology=top)
-                    
-                    conf=self.distances(file_concat, dists, trajectory=trj, topology=top, stride=1, skip_frames=0)
-                    
                     cluster=self.clusterMDAnalysis(file_concat, trajectory=trj, topology=top)
+                    #conf=self.distances(file_concat, dists, trajectory=trj, topology=top, stride=1, skip_frames=0)
                     stats_unique=tools.Functions.density_stats(level_unique, stride, self.results, unique=unique)
                     
-                    unique_dict[unique]=(superposed, density, cluster) #THIS IS IT
-                    
-
+                    unique_dict[unique]=(density, cluster) #THIS IS IT
                     
                 else:
                     print('\tNo frames found.')
@@ -805,29 +880,23 @@ class Trajectory:
         
         import MDAnalysis.analysis.encore as encore
 
-
-        #if base_name == '/media/dataHog/hca/proLig_CalB-Methanol/project_results/superposed_50mM-it13-s1':
-
-        
-            
-        cluster_file=f'{base_name}-{n_clusters_}clusters.pdb'
-        #print(trajectory, topology, cluster_file)  
+        #TOODO: make cluster file name more specific    
+        cluster_file=f'{base_name}-{n_clusters_}clusters.pdb'  
         
         if not os.path.exists(cluster_file):
-            print('\tLoading files...')
+            print('\tCalculating cluster: \n\tLoading files...')
             u=mda.Universe(topology, trajectory)
-        
         
             print(f'\tNumber of frames to cluster: {len(u.trajectory)}')
             if len(u.trajectory) > 1:
-                print('\tCluster file not found. Calculating...')
+                print('\tCluster file not found. Clustering...')
 
                 try:
                     clusters = encore.cluster(u, select=select, ncores=n_cores, method=encore.KMeans(n_clusters=n_clusters_))
                     #clusters = encore.cluster(u, method=encore.DBSCAN(eps=3, min_samples=200, n_jobs=60))
                     
                 except ValueError:
-                    print('not possible')
+                    print('\tWarning! Clustering failed.')
                         
                 centroids=[]
                 elements=[]
@@ -837,11 +906,12 @@ class Trajectory:
                     centroids.append(cluster.centroid)
                     elements.append(len(cluster.elements))
                 
-                for c, e in zip(centroids, elements):
-                    print(f'\t\tCentroid: {c}, Element(s): {e}')
-
-                
-                print('\t\tSaving file')
+# =============================================================================
+#                 for c, e in zip(centroids, elements):
+#                     print(f'\t\tCentroid: {c}, Element(s): {e}')
+# =============================================================================
+       
+                print('\tSaving cluster file...')
                 selection = u.select_atoms(select)
                 with mda.Writer(cluster_file, selection) as W:
                     for centroid in centroids:
@@ -849,10 +919,9 @@ class Trajectory:
                         W.write(selection)
                 
                 #print(W)
-            
-            
+
         else:
-            print('\tCluster file found')
+            print('\Cluster file found')
                 
         return cluster_file
 
@@ -895,7 +964,7 @@ class Trajectory:
         if not os.path.exists(trajectory): 
                 
             #concatenated_trajectories=md.join([md.load(file[0], top=file[1][0], stride=stride) for file in files_to_concatenate])
-            concatenated_trajectories=md.join([md.load(file[0], top=file[1][0])[start:stop:stride] for file in files_to_concatenate])
+            concatenated_trajectories=md.join([md.load(file[0], top=file[1])[start:stop:stride] for file in files_to_concatenate])
             print(f'\tNumber of frames to superpose: {concatenated_trajectories.n_frames}')   
             
             print('\tSuperposing...')
@@ -905,7 +974,13 @@ class Trajectory:
             
             superposed.save_xtc(trajectory)
             superposed[0].save(topology)
-                
+      
+            
+
+        
+        
+        
+    
     
     @staticmethod
     def densityCalc(base_name, 
@@ -957,7 +1032,7 @@ class Trajectory:
         
             if not os.path.exists(density_file):
             
-                print("\tCalculating density")
+                print("\tCalculating density...")
                 u= mda.Universe(topology, trajectory)
                     
                 selected_set=u.select_atoms(selection)

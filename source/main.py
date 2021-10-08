@@ -169,7 +169,9 @@ class Project:
         replicas=[str(i) for i in range(self.initial_replica,self.replicas+1)]
         elements.append(replicas)
         systems=list(itertools.product(*elements)) #generate all possible combinations of elements: systems.
-        systems_obj=[] #Retrieve the systems from class System.
+        systems_obj=[] 
+        
+        #Retrieve the systems from class System.
         for system in systems:
             
             #TODO: Flexible parameter and ligand on/off.

@@ -244,7 +244,7 @@ class Featurize:
     def getMethod(self, method):
         
         #TODO: revert to simtk.unit?
-        # {method name : function, kind, xy_units(tuple)}
+        # {method name : function, kind, xy_units(tuple), package}
         methods_hyp= {'RMSD' : (Featurize.rmsd_calculation, 'global', ('ps', 'nm'), 'MDTraj'),
                      'RMSF' : (Featurize.rmsf_calculation, 'by_element', ('Index', 'nm'), 'MDTraj'),
                      'RDF' : (Featurize.rdf_calculation, 'by_element', (r'$G_r$', r'$\AA$'), 'MDTraj'), 
@@ -582,8 +582,7 @@ class Featurize:
 
 
 
-    @staticmethod
-    def distance_calculation(system_specs, specs): #system_specs, measurements):
+    def distance_calculation(self, system_specs, specs): #system_specs, measurements):
         """
         The workhorse function to calculate distances. Uses MDAnalysis.
         Retrieves infromation from two tuples passed by callers contained in "Parameters".
@@ -628,8 +627,8 @@ class Featurize:
             
             ref, sel = traj.select_atoms(selection[0]), traj.select_atoms(selection[1]) 
             
-            #print(f'\tReference: {ref[0]} x {len(ref)}')
-            #print(f'\tSelection: {sel[0]} x {len(sel)}')
+            print(f'\tReference: {ref[0]} x {len(ref)}')
+            print(f'\tSelection: {sel[0]} x {len(sel)}')
             
             names, indexes, column_index=Featurize.df_template(system_specs, unit=[r'$\AA$'], multi=True, multi_len=len(ref)*len(sel))
             
@@ -642,7 +641,7 @@ class Featurize:
             print(f'{name} \n\tNumber of frames: {frames}\n\tSelections: {sel}\n\tReferences: {ref}')
             print(f'\tLimits: {np.round(np.min(dist_reshape), decimals=2)} and {np.round(np.max(dist_reshape), decimals=2)}')
         
-            rows=pd.Index(np.arange(0, frames, stride)*timestep, name='ps')
+            rows=pd.Index(np.arange(start, frames)*(stride*timestep), name=self.unit)
             df_system=pd.DataFrame(dist_reshape, columns=column_index, index=rows)
             #df_system=df_system.mask(df_system > 90)
             
@@ -653,7 +652,6 @@ class Featurize:
         else:
             return pd.DataFrame()
       
-
     @staticmethod
     def nac_calculation(system_specs, specs=(), results_folder=os.getcwd()):
         """
@@ -710,12 +708,13 @@ class Featurize:
             dist_reshape=np.asarray(nac_array).reshape(frames, ref*sel)
             print(f'{name} \n\tNumber of frames: {frames}\n\tSelections: {sel}\n\tReferences: {ref}')
             print(f'\tLimits: {np.round(np.min(dist_reshape), decimals=2)} and {np.round(np.max(dist_reshape), decimals=2)}')
-            
-            names, indexes, column_index=Featurize.df_template(system_specs, 
-                                                               multi=True, 
-                                                               multi_len=ref*sel, 
+
+            names, indexes, column_index, rows=Featurize.df_template(name,
+                                                               (start, stride, timestep, 'ps'),
+                                                               (frames, sel, ref), 
                                                                unit=[units_y])
-            rows=pd.Index(np.arange(0, frames, stride)*timestep, name='ps')
+            
+            #rows=pd.Index(np.arange(start, frames)*(stride*timestep), name=self.unit)
             df_system=pd.DataFrame(dist_reshape, columns=column_index, index=rows)            
             #print(df_system)
             
@@ -727,7 +726,7 @@ class Featurize:
 
 
     @staticmethod
-    def df_template(system_specs, unit=['nm'], multi=False, multi_len=1):
+    def df_template(name, traj_tuple, dims_tuple, unit=['nm']):
         """
         
 
@@ -753,21 +752,27 @@ class Featurize:
 
         """
 
-        (trajectory, topology, results_folder, name)=system_specs
-
+        (start, stride, timestep, unit_) = traj_tuple
+        (frames, sel, ref) = dims_tuple
         
         #TODO: Fix this for differente "separator" value. This is now hardcorded to '-'.
         indexes=[[n] for n in name.split('-')]
 
-        if multi:        
-            pairs=[i for i in range(1, multi_len+1)]
-            indexes.append(pairs)
+        refs=[f'ref_{i}' for i in range(1, ref+1)]
+        indexes.append(refs)
+        
+        sels=[f'sel_{i}' for i in range(1, sel+1)]
+        indexes.append(sels)
         
         indexes.append(unit)
+        
         names=[f'l{i}' for i in range(1, len(indexes)+1)]
         column_index=pd.MultiIndex.from_product(indexes, names=names)
         
-        return names, indexes, column_index
+        rows=pd.Index(np.arange(start, frames)*(stride*timestep), name=unit_)
+        
+        
+        return names, indexes, column_index, rows
 
     @staticmethod
     def plot_hv(input_df):

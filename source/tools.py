@@ -111,13 +111,26 @@ class Functions:
     @staticmethod
     def sampledStateLabels(shells, sampled_states=None, labels=None):
         """
+
         Static method that generates state labels for sampled states.
         Requires the *regions* to be provided and optionally the *sampled_states* and *labels*.
+        
 
+        Parameters
+        ----------
+        shells : TYPE
+            DESCRIPTION.
+        sampled_states : TYPE, optional
+            DESCRIPTION. The default is None.
+        labels : TYPE, optional
+            DESCRIPTION. The default is None.
 
+        Returns
+        -------
+        TYPE
+            DESCRIPTION.
 
-        """
-      
+        """      
         
         state_names=Functions.stateEncoder(shells, labels)[1] #Call to stateEncoder[0] = state_names
         
@@ -133,6 +146,21 @@ class Functions:
     @staticmethod    
     def stateEncoder(shells, labels):
         """
+        
+
+        Parameters
+        ----------
+        shells : TYPE
+            DESCRIPTION.
+        labels : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        state_encodings : TYPE
+            DESCRIPTION.
+        state_names : TYPE
+            DESCRIPTION.
 
         """
          
@@ -157,14 +185,29 @@ class Functions:
     @staticmethod
     def state_mapper(shells, array, labels=None):
         """
+        
 
+        Parameters
+        ----------
+        shells : TYPE
+            DESCRIPTION.
+        array : TYPE
+            DESCRIPTION.
+        labels : TYPE, optional
+            DESCRIPTION. The default is None.
+
+        Returns
+        -------
+        TYPE
+            DESCRIPTION.
 
         """
+
 
         
         import numpy as np
         import pandas as pd
-  
+        
         def state_evaluator(x):
             """
  
@@ -183,12 +226,17 @@ class Functions:
         for s in range(0, len(shells)+1):
             state_comb[s]=(state_map == s).any(1).astype(int)
         state_df=state_comb.apply(state_evaluator, axis=1)
+        
+        state_df=state_df.reindex_like(array)
 
-
-        return state_df.to_frame()
+        return state_df
     
-    
-    def get_descriptors(input_df, level, iterable, describe='sum', quantiles=[0.1, 0.5, 0.99]):
+    @staticmethod
+    def get_descriptors(input_df, 
+                        level, 
+                        iterable, 
+                        describe=None, 
+                        quantiles=[0.1, 0.5, 0.99]):
         """
         Get properties of input_df.
 
@@ -227,22 +275,31 @@ class Functions:
    
         df_it=input_df.loc[:,input_df.columns.get_level_values(f'l{level+1}') == iterable] #level +1 due to index starting at l1
 
+
         pairs=len(df_it.columns.get_level_values(f'l{level+2}'))
         replicas=len(df_it.columns.get_level_values(f'l{level+2}').unique()) #level +2 is is the replicates x number of molecules
+        
+
+        
         molecules=int(pairs/replicas)
         
         frames = 0
+        
+        #TODOTODODOTODOTODOTODOTODO: Fix this for multi selection.
+        
         #Access the replicate level
         for i in df_it.columns.get_level_values(f'l{level+2}').unique():         
             sub_df = df_it.loc[:,df_it.columns.get_level_values(f'l{level+2}') == i]
+            
+            print(pairs, replicas, molecules)
+            print(sub_df.sum(axis=0))
+            
+            
             frames_i=int(sub_df.sum(axis=0).unique())
             frames += frames_i
             
-        
         frames=int(df_it.sum(axis=0).unique()[0])
-
-
-        #print(f'Iterable: {iterable}\n\tPairs: {pairs}\n\treplicas: {replicas}\n\tmolecules: {molecules}\n\tCounts: {total}')
+        print(f'Iterable: {iterable}\n\tPairs: {pairs}\n\treplicas: {replicas}\n\tmolecules: {molecules}')
 
         if describe == 'single':
             descriptor=df_it.quantile(q=0.5)/frames*molecules
@@ -262,7 +319,6 @@ class Functions:
                 descriptor_q.name=f'{iterable}-Q{quantile}'
                 descriptor=pd.concat([descriptor, descriptor_q], axis=1)
                 
-        
             #print(descriptor)
             #descriptor.plot(logy=True, logx=True)
     

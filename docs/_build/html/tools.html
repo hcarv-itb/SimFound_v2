@@ -212,8 +212,37 @@
 
 <dl class="py method">
 <dt id="source.tools.Functions.fileHandler">
-<em class="property">static </em><code class="sig-name descname">fileHandler</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path_or_file</span></em>, <em class="sig-param"><span class="n">confirmation</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">_new</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Functions.fileHandler" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<em class="property">static </em><code class="sig-name descname">fileHandler</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span></em>, <em class="sig-param"><span class="n">confirmation</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">_new</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Functions.fileHandler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handles the creation of folders.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.tools.Functions.get_descriptors">
+<code class="sig-name descname">get_descriptors</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">level</span></em>, <em class="sig-param"><span class="n">iterable</span></em>, <em class="sig-param"><span class="n">describe</span><span class="o">=</span><span class="default_value">'sum'</span></em>, <em class="sig-param"><span class="n">quantiles</span><span class="o">=</span><span class="default_value">[0.1, 0.5, 0.99]</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Functions.get_descriptors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get properties of input_df.</p>
+<dl class="simple">
+<dt>input_df<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>level<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>describe<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is ‘sum’.</p>
+</dd>
+<dt>quantiles<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is [0.1, 0.5, 0.99].</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>df<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>pairs<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>replicas<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>molecules<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>frames<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt id="source.tools.Functions.regionLabels">
@@ -230,6 +259,11 @@ Requires the <em>regions</em> to be provided and optionally the <em>sampled_stat
 </dd></dl>
 
 <dl class="py method">
+<dt id="source.tools.Functions.setScalar">
+<em class="property">static </em><code class="sig-name descname">setScalar</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parameters</span></em>, <em class="sig-param"><span class="n">ordered</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">get_uniques</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Functions.setScalar" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
 <dt id="source.tools.Functions.stateEncoder">
 <em class="property">static </em><code class="sig-name descname">stateEncoder</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">shells</span></em>, <em class="sig-param"><span class="n">labels</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Functions.stateEncoder" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -243,15 +277,68 @@ Requires the <em>regions</em> to be provided and optionally the <em>sampled_stat
 
 <dl class="py class">
 <dt id="source.tools.Tasks">
-<em class="property">class </em><code class="sig-prename descclassname">source.tools.</code><code class="sig-name descname">Tasks</code><a class="headerlink" href="#source.tools.Tasks" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">source.tools.</code><code class="sig-name descname">Tasks</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">machine</span><span class="o">=</span><span class="default_value">'Local'</span></em>, <em class="sig-param"><span class="n">n_gpu</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">run_time</span><span class="o">=</span><span class="default_value">'12:00:00'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Tasks" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Base class to spwan multiproc (Jupyter and Pandas compatible)</p>
+<p>Base class to job-specific tasks.</p>
+<dl class="py attribute">
+<dt id="source.tools.Tasks.env_name">
+<code class="sig-name descname">env_name</code><em class="property"> = 'SFv2'</em><a class="headerlink" href="#source.tools.Tasks.env_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="source.tools.Tasks.generateSripts">
+<code class="sig-name descname">generateSripts</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">workdir</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Tasks.generateSripts" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="source.tools.Tasks.getSpecs">
+<code class="sig-name descname">getSpecs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">machine</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Tasks.getSpecs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
 <dt id="source.tools.Tasks.parallel_task">
-<code class="sig-name descname">parallel_task</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">container</span></em>, <em class="sig-param"><span class="n">fixed</span></em>, <em class="sig-param"><span class="n">n_cores</span><span class="o">=</span><span class="default_value">- 1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Tasks.parallel_task" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="sig-name descname">parallel_task</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_function</span></em>, <em class="sig-param"><span class="n">container</span></em>, <em class="sig-param"><span class="n">fixed</span></em>, <em class="sig-param"><span class="n">n_cores</span><span class="o">=</span><span class="default_value">- 1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Tasks.parallel_task" title="Permalink to this definition">¶</a></dt>
 <dd><p>Core function for multiprocessing of a given task.Takes as input a function and an iterator.
-Warning: Spawns as many threads as the number of elements in the iterator.</p>
+Warning: Spawns as many threads as the number of elements in the iterator.
+(Jupyter and Pandas compatible)</p>
+<dl class="simple">
+<dt>input_function<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>container<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>fixed<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>n_cores<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is -1.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>out<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
 </dd></dl>
+
+<dl class="py method">
+<dt id="source.tools.Tasks.setMachine">
+<code class="sig-name descname">setMachine</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">gpu_index_</span><span class="o">=</span><span class="default_value">'0'</span></em>, <em class="sig-param"><span class="n">force_platform</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Tasks.setMachine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to get the fastest available platform. 
+Uses [openmmtools] to query platform properties.
+Sets the GPU index with “gpu_index”.</p>
+<dl class="simple">
+<dt>gpu_index<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>platform<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>platformProperties<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.tools.Tasks.setSpecs">
+<code class="sig-name descname">setSpecs</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.tools.Tasks.setSpecs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 
@@ -446,7 +533,7 @@ Warning: Spawns as many threads as the number of elements in the iterator.</p>
 
 <dl class="py method">
 <dt id="source.Trajectory.Trajectory.clusterMDAnalysis">
-<em class="property">static </em><code class="sig-name descname">clusterMDAnalysis</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">base_name</span></em>, <em class="sig-param"><span class="n">trajectory</span></em>, <em class="sig-param"><span class="n">topology</span></em>, <em class="sig-param"><span class="n">select</span><span class="o">=</span><span class="default_value">'all'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.clusterMDAnalysis" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="sig-name descname">clusterMDAnalysis</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">base_name</span></em>, <em class="sig-param"><span class="n">trajectory</span></em>, <em class="sig-param"><span class="n">topology</span></em>, <em class="sig-param"><span class="n">n_clusters_</span><span class="o">=</span><span class="default_value">20</span></em>, <em class="sig-param"><span class="n">select</span><span class="o">=</span><span class="default_value">'name CA'</span></em>, <em class="sig-param"><span class="n">n_cores</span><span class="o">=</span><span class="default_value">6</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.clusterMDAnalysis" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to obtain cluster using the encore.cluster tool from MDAnalysis.</p>
 <dl class="simple">
 <dt>base_name<span class="classifier">str</span></dt><dd><p>The base name of the system to be processed (incl. path).</p>
@@ -466,7 +553,7 @@ Warning: Spawns as many threads as the number of elements in the iterator.</p>
 
 <dl class="py method">
 <dt id="source.Trajectory.Trajectory.concatenate_superpose">
-<em class="property">static </em><code class="sig-name descname">concatenate_superpose</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">files_to_concatenate</span></em>, <em class="sig-param"><span class="n">trajectory</span></em>, <em class="sig-param"><span class="n">topology</span></em>, <em class="sig-param"><span class="n">ref_frame</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">stride</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">atom_set</span><span class="o">=</span><span class="default_value">'backbone'</span></em><span class="sig-paren">)</span> &#x2192; object<a class="headerlink" href="#source.Trajectory.Trajectory.concatenate_superpose" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="sig-name descname">concatenate_superpose</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">files_to_concatenate</span></em>, <em class="sig-param"><span class="n">trajectory</span></em>, <em class="sig-param"><span class="n">topology</span></em>, <em class="sig-param"><span class="n">ref_frame</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">stride</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">atom_set</span><span class="o">=</span><span class="default_value">'backbone'</span></em>, <em class="sig-param"><span class="n">start</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">stop</span><span class="o">=</span><span class="default_value">- 1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.concatenate_superpose" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="simple">
 <dt>files_to_concatenate<span class="classifier">tuple</span></dt><dd><p>A list of tuples (trajectory, topology).</p>
 </dd>
@@ -517,17 +604,6 @@ Uses the ‘DensityAnalysis’ tool from MDAnalysis.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="source.Trajectory.Trajectory.distances">
-<em class="property">static </em><code class="sig-name descname">distances</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">dists</span></em>, <em class="sig-param"><span class="n">trajectory</span></em>, <em class="sig-param"><span class="n">topology</span></em>, <em class="sig-param"><span class="n">stride</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">skip_frames</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.distances" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculates distances between pairs of atom groups (dist) for each set of selections “dists” using MDAnalysis D.distance_array method.
-Stores the distances in results_dir. Returns the distances as dataframes.</p>
-<blockquote>
-<div><p>Uses the NAC_frames files obtained in extract_frames(). 
-NOTE: Can only work for multiple trajectories if the number of atoms is the same (–noWater)</p>
-</div></blockquote>
-</dd></dl>
-
-<dl class="py method">
 <dt id="source.Trajectory.Trajectory.extractFrames_by_iterable">
 <code class="sig-name descname">extractFrames_by_iterable</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">iterable</span></em>, <em class="sig-param"><span class="n">feature</span></em>, <em class="sig-param"><span class="n">t_start</span><span class="o">=</span><span class="default_value">20000</span></em>, <em class="sig-param"><span class="n">extract</span><span class="o">=</span><span class="default_value">'not water'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.extractFrames_by_iterable" title="Permalink to this definition">¶</a></dt>
 <dd><p>Extract frames trajectories based on iterable and dataframe.
@@ -553,6 +629,29 @@ Legacy: option to save also the waters controlled with –noWater.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt id="source.Trajectory.Trajectory.fileFilter">
+<em class="property">static </em><code class="sig-name descname">fileFilter</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">file</span></em>, <em class="sig-param"><span class="n">equilibration</span></em>, <em class="sig-param"><span class="n">production</span></em>, <em class="sig-param"><span class="n">def_file</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">warnings</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">filterW</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.fileFilter" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>name<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION</p>
+</dd>
+<dt>trajectories<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>equilibration<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>production<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>warnings<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is False.</p>
+</dd>
+<dt>filterW<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is False.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>trajectories<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt id="source.Trajectory.Trajectory.filterTraj">
 <code class="sig-name descname">filterTraj</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t_start</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">extract</span><span class="o">=</span><span class="default_value">'not water'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.filterTraj" title="Permalink to this definition">¶</a></dt>
 <dd><p>Extract trajectory subsets.
@@ -568,39 +667,51 @@ Legacy: option to save also the waters controlled with –noWater.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="source.Trajectory.Trajectory.loadMDTraj">
-<em class="property">static </em><code class="sig-name descname">loadMDTraj</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">topology</span></em>, <em class="sig-param"><span class="n">trajectory</span></em>, <em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.loadMDTraj" title="Permalink to this definition">¶</a></dt>
+<dt id="source.Trajectory.Trajectory.findTopology">
+<em class="property">static </em><code class="sig-name descname">findTopology</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">workdir</span></em>, <em class="sig-param"><span class="n">ref_name</span></em>, <em class="sig-param"><span class="n">input_topology</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.findTopology" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="simple">
-<dt>topology<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+<dt>workdir<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
 </dd>
-<dt>trajectory<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
-</dd>
-<dt>name<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+<dt>ref_name<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
 </dd>
 </dl>
 <dl class="simple">
-<dt>traj<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
-</dd>
-<dt>status<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+<dt>TYPE</dt><dd><p>DESCRIPTION.</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="source.Trajectory.Trajectory.loadTraj">
-<em class="property">static </em><code class="sig-name descname">loadTraj</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">topology</span></em>, <em class="sig-param"><span class="n">trajectory</span></em>, <em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.loadTraj" title="Permalink to this definition">¶</a></dt>
+<dt id="source.Trajectory.Trajectory.findTrajectory">
+<em class="property">static </em><code class="sig-name descname">findTrajectory</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">workdir</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.findTrajectory" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="simple">
+<dt>workdir<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>trajectories<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="source.Trajectory.Trajectory.loadTrajectory">
+<em class="property">static </em><code class="sig-name descname">loadTrajectory</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">system_specs</span></em>, <em class="sig-param"><span class="n">specs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.loadTrajectory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Workhorse function to load a trajectory.</p>
+<dl class="simple">
 <dt>topology<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
 </dd>
 <dt>trajectory<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
 </dd>
-<dt>name<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+<dt>task<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+</dd>
+<dt>subset<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is ‘all’.</p>
+</dd>
+<dt>priority<span class="classifier">TYPE, optional</span></dt><dd><p>DESCRIPTION. The default is (‘h5’, ‘dcd’, ‘xtc’).</p>
 </dd>
 </dl>
 <dl class="simple">
-<dt>u<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
-</dd>
-<dt>status<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
+<dt>traj<span class="classifier">TYPE</span></dt><dd><p>DESCRIPTION.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -620,6 +731,11 @@ Legacy: option to save also the waters controlled with –noWater.</p>
 <p>IMPORTANT: automate t_start definition (equilibration phase discarded)</p>
 </dd></dl>
 
+<dl class="py attribute">
+<dt id="source.Trajectory.Trajectory.top_types">
+<code class="sig-name descname">top_types</code><em class="property"> = ['pdb', 'gro']</em><a class="headerlink" href="#source.Trajectory.Trajectory.top_types" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
 <dt id="source.Trajectory.Trajectory.trj_filter">
 <em class="property">static </em><code class="sig-name descname">trj_filter</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Trajectory.Trajectory.trj_filter" title="Permalink to this definition">¶</a></dt>
@@ -637,6 +753,11 @@ Legacy: option to save also the waters controlled with –noWater.</p>
 </dd>
 </dl>
 </dd></dl>
+
+<dl class="py attribute">
+<dt id="source.Trajectory.Trajectory.trj_types">
+<code class="sig-name descname">trj_types</code><em class="property"> = ['h5', 'dcd', 'xtc']</em><a class="headerlink" href="#source.Trajectory.Trajectory.trj_types" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 

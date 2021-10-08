@@ -22,7 +22,11 @@ except:
 def plot_layout(parameters):
     """Function to optimize plot layout based on number of subplots generated."""
     
-    length=len(parameters)
+    
+    if type(parameters) == int:
+        length=parameters
+    else:
+        length=len(parameters)
     
     if length < 4:
         rows=1
