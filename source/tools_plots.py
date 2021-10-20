@@ -46,7 +46,7 @@ def plot_layout(parameters):
     else:
         fix_layout=False
     
-    return rows, columns, fix_layout
+    return rows, columns
 
 
 def plot_feature_histogram(feature_dict):
