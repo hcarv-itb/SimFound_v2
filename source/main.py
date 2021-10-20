@@ -171,6 +171,8 @@ class Project:
         systems=list(itertools.product(*elements)) #generate all possible combinations of elements: systems.
         systems_obj=[] 
         
+
+        
         #Retrieve the systems from class System.
         for system in systems:
             
@@ -185,6 +187,7 @@ class Project:
             systems_obj.append(System(system, 
                                       self.workdir, 
                                       self.input_topology,
+                                      self.results,
                                       protein=protein_, 
                                       ligand=ligand_,
                                       parameter=parameter_,
@@ -196,7 +199,7 @@ class Project:
         systems={}
         for system in systems_obj:
             systems[system.name]=system
-            #print(f'{system.name} \n\t{system}\n\t{system.name_folder}')
+            #print(f'{system.name} \n\t{system}\n\t{system.project_results}')
             tools.Functions.fileHandler([system.name_folder]) #Update the path if fileHandler generates a new folder
             
         self.systems=systems
@@ -240,9 +243,10 @@ class System(Project):
     
     
     def __init__(self, 
-                 system,
+                 system_ID,
                  workdir,
                  input_topology,
+                 results,
                  timestep=1*unit.picoseconds,
                  protein=None,
                  ligand=None,
@@ -254,20 +258,20 @@ class System(Project):
 
         
         #TODO: class inheritance to fix it.
+        self.system_ID = system_ID
         self.protein=protein
         self.ligand=ligand
         self.parameter=parameter       
         self.scalar=parameter_dict[parameter]
         self.timestep=timestep
         self.input_topology=input_topology
-        
         self.replicate=replicate
-        self.system_ID=system
         self.workdir=workdir
-        
+        self.results=results
         self.replica_name=replica_name
-        self.name=System.linker.join(self.system_ID)
-        self.name_folder=os.path.abspath(f'{self.workdir}/{System.linker.join(self.system_ID[:-1])}/{self.replica_name}{self.system_ID[-1]}')   
+        self.name=System.linker.join(system_ID)
+        self.name_folder=os.path.abspath(f'{self.workdir}/{System.linker.join(self.system_ID[:-1])}/{self.replica_name}{self.system_ID[-1]}')
+        self.project_results = os.path.abspath(f'{self.results}/{System.linker.join(self.system_ID[:-1])}')
         self.results_folder=os.path.abspath(f'{self.name_folder}/results')
         
         self.trajectory=Trajectory.Trajectory.findTrajectory(self.name_folder)

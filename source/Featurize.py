@@ -445,18 +445,15 @@ class Featurize:
                 except ValueError:
                     pass
                     #print('could not image traj')
-                traj.atom_slice(atom_indices, inplace=True)
+                traj.atom_slice(common_atom_indices, inplace=True)
                 
                 other_traj.image_molecules(inplace=True)
-                other_traj.atom_slice(other_atom_indices, inplace=True)
-                
-                
-                
+                other_traj.atom_slice(common_atom_indices, inplace=True)
                 rmsd=md.rmsd(traj[start:stop:stride],
                              other_traj,
                              frame=0,
                              precentered=False,
-                             parallel=False)
+                             parallel=False) #TODO: make flexible if single run
             
             else:
                 try:
@@ -853,7 +850,7 @@ class Featurize:
         
         
         #plot level
-        rows, columns, fix_layout=tools_plots.plot_layout(level_iterables)
+        rows, columns=tools_plots.plot_layout(level_iterables)
         fig_,axes_=plt.subplots(rows, columns, sharex=True, sharey=True, constrained_layout=True, figsize=(9,6))
         
         
@@ -869,7 +866,7 @@ class Featurize:
             sup_df=input_df.loc[:,input_df.columns.get_level_values(f'l{level}') == sup_it]  
                 
             #Plot sublevel
-            rows_, columns_, fix_layout=tools_plots.plot_layout(sublevel_iterables)
+            rows_, columns_=tools_plots.plot_layout(sublevel_iterables)
             fig_it,axes_it=plt.subplots(rows_, columns_, sharex=True, sharey=True, constrained_layout=True, figsize=(9,6))
             
             try:

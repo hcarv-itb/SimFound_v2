@@ -370,7 +370,7 @@ class Discretize:
         
         def bulk_fitting():
             
-            rows, columns, fix_layout=tools_plots.plot_layout(iterables)
+            rows, columns=tools_plots.plot_layout(iterables)
             fig_fits,axes_fit=plt.subplots(rows, columns, sharex=True, sharey=True, constrained_layout=True, figsize=(6,6))
             
             try:
@@ -438,6 +438,9 @@ class Discretize:
             if describe == 'quantile':
                 legends.append(N_enz.name)
             
+            if not axes_fit.flat[-1].lines: 
+                axes_fit.flat[-1].set_visible(False)
+            
             if len(axes_fit.flat) > 7 and (len(axes_fit.flat % 2)) != 0:
                 axes_fit.flat[-1].axis("off")
                 locs=(0.9, 0.5)
@@ -479,7 +482,7 @@ class Discretize:
                         ord_scalars.append((scalar, iterables))
             #print(ord_scalars)
             
-            rows, columns, fix_layout=tools_plots.plot_layout(ord_scalars)
+            rows, columns=tools_plots.plot_layout(ord_scalars)
             fig_dG,axes_dG=plt.subplots(rows, columns, sharex=True, sharey=True, constrained_layout=True, figsize=(6,6))
             
             
@@ -735,7 +738,7 @@ class Discretize:
 
             
             level_iterables=df.columns.levels #Exclude last, the values of states
-            rows, columns, fix_layout=tools_plots.plot_layout(level_iterables[level])
+            rows, columns=tools_plots.plot_layout(level_iterables[level])
             fig_, axes_it =plt.subplots(rows, columns, sharex=True, sharey=False, constrained_layout=True, figsize=(12,9))
             
             try:
