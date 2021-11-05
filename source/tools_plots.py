@@ -27,24 +27,18 @@ def plot_layout(parameters):
         length=parameters
     else:
         length=len(parameters)
-    
     if length < 4:
         rows=1
-        columns=length
-    else:
+
+    elif 4 <= length <= 10:
         rows=2
+    elif length > 10:
+        rows=3
         
-        if not length % 2 == 0:
-            columns=int(np.rint((length/2)+0.1))
-    
-        else:
-            columns=int(length/2)
-        
-    if not length % 2 == 0 and length > 4:   
-        
-        fix_layout=True 
+    if not length % 2 == 0:
+        columns=int(np.rint((length/rows)+0.1))
     else:
-        fix_layout=False
+        columns=int(length/rows)
     
     return rows, columns
 

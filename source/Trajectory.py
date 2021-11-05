@@ -336,11 +336,12 @@ class Trajectory:
     
     
     @staticmethod
-    def pre_process_MSM(trajectories, 
+    def pre_process_MSM(trajectory_set, 
                     topology, 
                     superpose_to='Protein and backbone',
                     slice_traj='not water',
-                    ref_frame=0):
+                    ref_frame=0,
+                    overwrite=False):
         """
         
         Serves MSM module. Trajectory files are loaded and superposed to the provided Topology object, the one used for feature extraction.
@@ -366,27 +367,26 @@ class Trajectory:
         """
         
         trajectories_mod=[]
-        
-        for trajectory in trajectories:
-            
-            file_name, ext=trajectory.split('.')
-            
-            mod_file_name=f'{file_name}_superposed.{ext}'
-            
-            if not os.path.exists(mod_file_name):
-                print(f'\tPre-processing {trajectory}', end='\r')
-                traj=md.load(trajectory, top=topology)
-                traj.image_molecules(inplace=True)
-                atom_indices=traj.topology.select(slice_traj)
-                traj.atom_slice(atom_indices, inplace=True)
-                traj.superpose(topology, frame=ref_frame, atom_indices=superpose_to)
+        for trajectories in trajectory_set:
+            for trajectory in trajectories:
+                file_name, ext=trajectory.split('.')
                 
-                if ext == 'xtc':
-                    traj.save_xtc(f'{file_name}_superposed.xtc')
-                elif ext == 'dcd':
-                    traj.save_dcd(f'{file_name}_superposed.dcd')
+                mod_file_name=f'{file_name}_superposed.{ext}'
+                
+                if not os.path.exists(mod_file_name) or overwrite:
+                    print(f'\tPre-processing {trajectory}', end='\r')
+                    traj=md.load(trajectory, top=topology)
+                    traj.image_molecules(inplace=True)
+                    atom_indices=traj.topology.select(slice_traj)
+                    traj.atom_slice(atom_indices, inplace=True)
+                    traj.superpose(topology, frame=ref_frame, atom_indices=superpose_to)
+                    
+                    if ext == 'xtc':
+                        traj.save_xtc(f'{file_name}_superposed.xtc')
+                    elif ext == 'dcd':
+                        traj.save_dcd(f'{file_name}_superposed.dcd')
             
-            trajectories_mod.append(mod_file_name)   
+                trajectories_mod.append(mod_file_name)   
     
         return trajectories_mod
 
