@@ -142,55 +142,22 @@ class Trajectory:
 
     @staticmethod
     def findTrajectory(workdir):
-        """
-        
-
-        Parameters
-        ----------
-        workdir : TYPE
-            DESCRIPTION.
-
-        Returns
-        -------
-        trajectories : TYPE
-            DESCRIPTION.
-
-        """
         
         trajectories = []
         for trj_type in Trajectory.trj_types:
             files=glob.glob(f'{workdir}/*.{trj_type}')
-    
             for f in files:    
                 trajectories.append(f)
         
         #print(trajectories)
-        
         return trajectories
                                 
     @staticmethod
     def findTopology(workdir, ref_name, input_topology=None):
-        """
-        
 
-        Parameters
-        ----------
-        workdir : TYPE
-            DESCRIPTION.
-        ref_name : TYPE
-            DESCRIPTION.
-
-        Returns
-        -------
-        TYPE
-            DESCRIPTION.
-
-        """
 
         topologies = []
-
         files=glob.glob(f'{workdir}/{ref_name}')
-        
         if len(files) > 0:
             return files[0]
         
@@ -199,42 +166,17 @@ class Trajectory:
             for top_type in Trajectory.top_types:
                 files=glob.glob(f'{workdir}/*.{top_type}')
                 for f in files:
-                    topologies.append(f)
-                    
+                    topologies.append(f)       
             if len(topologies) == 0:
                 topologies = input_topology
-                
-            
-            
-            
+
             print('Defined topology: ', topologies)
             return topologies
 
     
     @staticmethod
     def loadTrajectory(system_specs, specs):
-        """
-        Workhorse function to load a trajectory.
 
-        Parameters
-        ----------
-        topology : TYPE
-            DESCRIPTION.
-        trajectory : TYPE
-            DESCRIPTION.
-        task : TYPE
-            DESCRIPTION.
-        subset : TYPE, optional
-            DESCRIPTION. The default is 'all'.
-        priority : TYPE, optional
-            DESCRIPTION. The default is ('h5', 'dcd', 'xtc').
-
-        Returns
-        -------
-        traj : TYPE
-            DESCRIPTION.
-
-        """
         clock_start=process_time_ns()   
         traj = None
         
@@ -244,8 +186,7 @@ class Trajectory:
         store_traj = False
         pkl_path = os.path.abspath(f'{results_folder}/{name}_{start}_{stop}_{stride}.pkl')
         
-        if os.path.exists(pkl_path) and store_traj:
-            
+        if os.path.exists(pkl_path) and store_traj:   
             print('\tUnpickling for', name)
             pkl_file=open(pkl_path, 'rb')
             traj = pickle.load(pkl_file)
@@ -253,7 +194,6 @@ class Trajectory:
         else:
             if len(topologies) > 1:
                 print('Warning! more than one topology for ', name)
-
             trj_formats=[t.split('.')[1] for t in trajectories]
             for trj_format in set(trj_formats):
                 for topology in topologies:
@@ -316,18 +256,14 @@ class Trajectory:
         """
         
         print(name)
-        
         n=name.split('-') #alternative of n, ready for hierarchical operator     
-        
         for index, level in enumerate(name.split('-'), 1):
             print(index, level)
             if index == 1:
                 filtered=df
             else:
-                filtered=filtered
-                
+                filtered=filtered             
             filtered=filtered.loc[:,filtered.columns.get_level_values(f'l{index}').isin([level])]
-
         sel_frames=filtered.loc[(filtered.values == value)]
         frames=sel_frames.index.values #np.array(list(sel_frames.index.values))
 
@@ -369,10 +305,8 @@ class Trajectory:
         trajectories_mod=[]
         for trajectories in trajectory_set:
             for trajectory in trajectories:
-                file_name, ext=trajectory.split('.')
-                
+                file_name, ext=trajectory.split('.')    
                 mod_file_name=f'{file_name}_superposed.{ext}'
-                
                 if not os.path.exists(mod_file_name) or overwrite:
                     print(f'\tPre-processing {trajectory}', end='\r')
                     traj=md.load(trajectory, top=topology)
@@ -380,14 +314,13 @@ class Trajectory:
                     atom_indices=traj.topology.select(slice_traj)
                     traj.atom_slice(atom_indices, inplace=True)
                     traj.superpose(topology, frame=ref_frame, atom_indices=superpose_to)
-                    
                     if ext == 'xtc':
                         traj.save_xtc(f'{file_name}_superposed.xtc')
                     elif ext == 'dcd':
                         traj.save_dcd(f'{file_name}_superposed.dcd')
             
                 trajectories_mod.append(mod_file_name)   
-    
+                
         return trajectories_mod
 
     def extractFrames_by_iterable(self, 
@@ -577,40 +510,26 @@ class Trajectory:
                    
                     name = re.split(r'/', file)[-1]                  
                     
-                    if v in name:
-                        
-                        if 'NPT' in name:
-                            
-                            return f'{label}-NPT'
-                        
-                        elif 'NVT' in name:
-                            
-                            return f'{label}-NVT'
-                        
-                        else:
-                            
+                    if v in name:                        
+                        if 'NPT' in name:                            
+                            return f'{label}-NPT'                        
+                        elif 'NVT' in name:                           
+                            return f'{label}-NVT'                      
+                        else:                            
                             print('this is bat country')
-                    
-                
-            
+   
             equilibrations = {}
-            for file in glob.glob(os.path.abspath(f'{system.path}/equilibration*')):
-                
+            for file in glob.glob(os.path.abspath(f'{system.path}/equilibration*')):       
                 label = checkFile(file)
                 #print(f'{label} : {file}') 
-                equilibrations[label]=file
-                
+                equilibrations[label]=file      
             productions = {}
-            for file in glob.glob(os.path.abspath(f'{system.path}/production*')):
-                
+            for file in glob.glob(os.path.abspath(f'{system.path}/production*')):    
                 label = checkFile(file)
                 #print(f'{label} : {file}') 
                 productions[label]=file
-            
             print(f'\tEquilibrations: {equilibrations}')
-            
             #print(f'\tProductions: {productions}')
-            
             #print(equilibrations['report'])
 
             
@@ -748,7 +667,7 @@ class Trajectory:
                 if len(files_to_concatenate) != 0:
                     
                     #important stuff going on here
-                    superposed=self.concatenate_superpose(files_to_concatenate, trajectory=trj, topology=top, stride=stride)
+                    superposed=self.concatenate_superpose(files_to_concatenate, trajectory_name=trj, topology=top, stride=stride)
                     density=self.densityCalc(file_concat, trajectory=trj, topology=top)
                     cluster=self.clusterMDAnalysis(file_concat, trajectory=trj, topology=top)
                     #conf=self.distances(file_concat, dists, trajectory=trj, topology=top, stride=1, skip_frames=0)
@@ -836,7 +755,7 @@ class Trajectory:
                 
             if len(files_to_concatenate) != 0:   
                 
-                superposed=self.concatenate_superpose(files_to_concatenate, trajectory=trj, topology=top, stride=stride)
+                superposed=self.concatenate_superpose(files_to_concatenate, trajectory_name=trj, topology=top, stride=stride)
                 
                 density=self.densityCalc(file_concat, trajectory=trj, topology=top)
                 
@@ -927,7 +846,7 @@ class Trajectory:
 
     @staticmethod
     def concatenate_superpose(files_to_concatenate, 
-                              trajectory, 
+                              trajectory_name, 
                               topology, 
                               ref_frame=0, 
                               stride=1, 
@@ -961,7 +880,7 @@ class Trajectory:
         
         import mdtraj as md
         
-        if not os.path.exists(trajectory): 
+        if not os.path.exists(trajectory_name): 
                 
             #concatenated_trajectories=md.join([md.load(file[0], top=file[1][0], stride=stride) for file in files_to_concatenate])
             concatenated_trajectories=md.join([md.load(file[0], top=file[1])[start:stop:stride] for file in files_to_concatenate])
@@ -972,7 +891,7 @@ class Trajectory:
             atom_indices=concatenated_trajectories.topology.select(atom_set)
             superposed=concatenated_trajectories.superpose(concatenated_trajectories, frame=ref_frame, atom_indices=atom_indices)
             
-            superposed.save_xtc(trajectory)
+            superposed.save_xtc(trajectory_name)
             superposed[0].save(topology)
       
             
