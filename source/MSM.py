@@ -7,6 +7,7 @@ Created on Thu Jan 21 18:52:02 2021
 
 import os
 import pyemma
+import re
 import matplotlib.pyplot as plt
 import matplotlib.pylab as pl
 import matplotlib.image as mpimg
@@ -16,6 +17,7 @@ from matplotlib import cm
 from matplotlib import colors as ml_colors
 import numpy as np
 import pandas as pd
+pd.options.plotting.backend = 'holoviews'
 import pickle
 import glob
 import nglview
@@ -113,95 +115,485 @@ class MSM:
         self.stored=os.path.abspath(f'{self.results}/MSM_storage')
         print('Results will be stored under: ', self.results)
         print('PyEMMA calculations will be stored under: ', self.stored)
+        if def_traj != None or def_top != None:
+            print(f'Using pre-defined trajectory or topology: {self.def_top} {self.def_traj}')
         tools.Functions.fileHandler([self.results, self.stored], confirmation=confirmation, _new=_new)
  
     
-    def model_comparison(self, get='mean', w_vamp=True):
-        
-        def get_mean(vamp_):
-            vamp_str = [i for i in vamp_.strip(' []').split(' ')]
-            vamps = []
-            for i in vamp_str:
-                try:
-                    vamps.append(float(i))
-                except:
-                    pass
-            return np.mean(vamps)
-        
-        files=glob.glob(f'{self.results}/ModelSelection_*.csv')
-        df_=pd.DataFrame()
-        print(f'{len(files)} files collected.')
-        for f in files:
-            df=pd.read_csv(f, index_col=[0,1,2])
-            df_=pd.concat([df_, df])
-
-        if get == 'mean':
-            df_['VAMP2'] = df_['VAMP2'].apply(get_mean)
+    def model_comparison(self, vamp_cross_val=True):
         
 # =============================================================================
-#         if get_top != None:
-#             highest_set = (-np.asarray(means)).argsort()[:get_top]
-#             top_index = df_.iloc[highest_set]
-#             print(df_.index[highest_set])
-#             top_df = pd.concat([top_df, df_.index[highest_set]])
-#             axes.errorbar(x=x, y=means, yerr=errors, label=labels)
+#         def get_mean(vamp_):
+#             vamp_str = [i for i in vamp_.strip(' []').split(' ')]
+#             vamps = []
+#             for i in vamp_str:
+#                 try:
+#                     vamps.append(float(i))
+#                 except:
+#                     pass
+#             return np.mean(vamps)
 # =============================================================================
+        
+        def plot_correlations(target='Score', evaluate=['Lag', 'tICA lag', 'Dimensions', 'States', 'Processes']):
+            corr=[]
+            corr_sp=[]
+            for feature in evaluate:
+                corr.append(passed_models['Score'].corr(passed_models[feature], method='pearson'))
+                corr_sp.append(passed_models['Score'].corr(passed_models[feature], method='spearman'))
+            string_features=['name', 'feature']
+            for str_ft in string_features:
+                corr.append(passed_models['Score'].corr(passed_models[str_ft].astype('category').cat.codes, method='pearson'))
+                corr_sp.append(passed_models['Score'].corr(passed_models[str_ft].astype('category').cat.codes, method='spearman'))
+                features_to_evaluate.append(str_ft)
+                
+            plt.bar(features_to_evaluate, corr, label='pearson')
+            plt.bar(features_to_evaluate, corr_sp, label='spearman', bottom=corr)
+            plt.xticks(rotation=30)
+            plt.legend()
             
+            return plt
+
+        files=glob.glob(f'{self.results}/ModelRegistry_*.csv')
+        df_=pd.DataFrame() 
+        if len(files) > 0:
+            print(f'{len(files)} files collected.')
+            for idx, f in enumerate(files, 1):
+                df=pd.read_csv(f, index_col=[0,1,2,3])
+                df_=pd.concat([df_, df])
+        else:
+            print('No files found.')
+        #print(count)
+        fix = ['Discretized feature', 'feature', 'name', 'model']
+        fix_=df_.loc[:,~df_.columns.str.contains('VAMP2')].columns.to_list()
+        fix+=fix_
+        if vamp_cross_val:
+            print('Subset with VAMP2 cv')
+            df_.reset_index(inplace=True)
+            df_= df_.melt(id_vars=fix, var_name="VAMP2cv", value_name="Score")  
+        else:
+            pass
+            print('Subset wit single VAMP2')
+            #To obtain vamp from bayesMSM
+# =============================================================================
+#             df_.drop(list(df_.filter(regex ='VAMP2 \d+')), axis = 1, inplace = True)
+#             #df_= df_.melt(id_vars=fix, var_name="VAMP2", value_name="Score")
+#             #df_ = df_.loc[:, fix]
+# =============================================================================
+       
         return df_
     
- 
+# =============================================================================
+#     def pca_models(self):
+#        from sklearn.preprocessing import StandardScaler
+#        from sklearn.impute import SimpleImputer
+#        from sklearn.decomposition import PCA
+#         from sklearn.decomposition import PCA
+#         import pandas as pd
+#     
+#         features_to_evaluate=['Lag', 'tICA lag', 'Score', 'Dimensions', 'States']
+#         extracted_features=passed_models.loc[:, features_to_evaluate].values
+#         scaled_features = StandardScaler().fit_transform(extracted_features)
+#         cleaned_features = SimpleImputer(missing_values=np.nan, strategy='mean').fit_transform(scaled_features)
+#         
+#         
+#         pca=PCA(0.95)
+#         principal_components=pca.fit_transform(cleaned_features)
+#         principal_components.explained_variance_ratio_(5)
+#         for idx, pc in enumerate(principal_components.T, 1):
+#         passed_models=pd.concat([passed_models, pd.DataFrame({f'PC {idx}': pc})], axis=1)
+# =============================================================================
+
+    def plot_correlations
+  
+        
     
-    def set_model(func):
+    
+    def log(func):
         """Decorator for system setup"""
         
         @wraps(func)
         def model(*args, **kwargs):
-            print(func.__name__ + " was called")
+            print(f'Executing {func.__name__} \n', end='\r')
             return func(*args, **kwargs)
         return model
-    
-    @set_model
-    def set_specs_wrap(self, lag, ft_name, feature, n_state):
-        """sets systems specifications"""
-        if self.disc_lag != None:
-           disc_lag_=str(self.disc_lag*self.timestep).replace(" ", "")
-           append = f'@{disc_lag_}'
+
+    @log  
+    def create_registry(self, msm, vamp_iters=10):
+        """
+        
+
+        Parameters
+        ----------
+        msm : TYPE
+            DESCRIPTION.
+        vamp_iters : TYPE, optional
+            DESCRIPTION. The default is 10.
+
+        Returns
+        -------
+        passed : TYPE
+            DESCRIPTION.
+
+        """
+
+        lag_ =str(self.lag*self.timestep).replace(" ", "")
+        msm_name = f'{self.n_state}@{lag_}'
+        stored_parameters = ['Test', 'Filters', 'Processes', 'States', 'Lag', 'Cluster method']
+        df_name = f'{self.results}/ModelRegistry_{self.ft_base_name}.csv'
+        try:
+            df=pd.read_csv(df_name, index_col=[0,1,2,3])
+        except FileNotFoundError:
+            df=pd.DataFrame()
+        
+        if msm != None:
+            resolved_processes = self.spectral_analysis(msm, self.lag, plot=False)
+            
+            if self.get_tica:
+                index_row= pd.MultiIndex.from_product([[self.disc_ft_name], [self.feature], [self.ft_name], [msm_name]], names=['Discretized feature', 'feature', 'name', 'model'])
+                location = (self.disc_ft_name, self.feature, self.ft_name, msm_name)
+                stored_parameters.append('Dimensions')
+                stored_parameters.append('tICA lag')
+                if self.tica_weights:
+                    stored_parameters.append('re-weighting')
+            else:
+                index_row= pd.MultiIndex.from_product([[self.feature], [self.ft_name], [msm_name]], names=['feature', 'name', 'model'])
+                location = (self.feature, self.ft_name, msm_name)
+            if self.get_vamp:
+                clusters=self.clustering(self.n_state)
+                if self.w_cv:
+                    vamp_scores = [f'VAMP2 {i}' for i in range(1, vamp_iters+1)]
+                    for v_s in vamp_scores:
+                        stored_parameters.append(v_s)
+                    try:
+                        print('\tCalculating a MSM surrogate and VAMP2 score with cross-validation...')
+                        score_model = pyemma.msm.estimate_markov_model(clusters.dtrajs, lag=self.lag, dt_traj=str(self.timestep))
+                        vamp = score_model.score_cv(clusters.dtrajs, n=vamp_iters, score_method='VAMP2', score_k=min(10, self.n_state)) 
+                    except Exception as v:
+                        passed = False
+                        print(f'\tMSM estimation failed: {v}')
+                        vamp = [np.nan]*vamp_iters
+                else:
+                    print('\tCalculating single VAMP2 score...', end='\r')
+                    stored_parameters.append('VAMP2')
+                    try:
+                        vamp = msm.score(clusters.dtrajs, score_method='VAMP2', score_k=min(10, self.n_state))
+                    except Exception as v:
+                        passed = False
+                        print(f'MSM estimation failed: {v}')
+                        vamp = np.nan  
+                        
+            keep = self.filter_model(msm)
+            
+            filters_ = ' '.join(list(compress(self.filters, keep)))
+            if all(keep):
+                #print(f'\tModel {self.full_name} passed all filters \n', end='\r')
+                passed = True
+            else:
+                passed = False
         else:
-            append = ''
+            print('Warning! no MSM model specified.')
+            passed = 'Failed'
+            
+        df_ = pd.DataFrame(index=index_row, columns=stored_parameters)
+        df_.loc[location,'Test'] = passed
+        
+        if passed != 'Failed':
+
+            if self.get_vamp:
+                if self.w_cv:
+                    for idx, v in enumerate(vamp, 1):
+                        df_.loc[location,f'VAMP2 {idx}'] = v
+                else:
+                    df_.loc[location, 'VAMP2'] = vamp
+            df_.loc[location,'Filters'] = filters_
+            df_.loc[location,'Processes'] = resolved_processes
+            df_.loc[location,'States'] = self.n_state
+            df_.loc[location,'Lag'] = self.lag
+            if self.get_tica and self.discretized_data != None:
+                df_.loc[location, 'Dimensions'] = self.discretized_data.dimension()
+                df_.loc[location, 'tICA lag'] = self.d_lag
+                if self.tica_weights:
+                    df_.loc[location, 're-weighting'] = self.tica_weights
+
+        df=pd.concat([df, df_])
+        df.to_csv(df_name)
+
+        return passed
+
+        
+    def check_registry(self):
+        """
+        
+
+        Returns
+        -------
+        TYPE
+            DESCRIPTION.
+
+        """
+        
+        df_name = f'{self.results}/ModelRegistry_{self.ft_base_name}.csv'
+
+        lag_ =str(self.lag*self.timestep).replace(" ", "")
+        msm_name = f'{self.n_state}@{lag_}'
+        if self.get_tica:
+            location = (self.disc_ft_name, self.feature, self.ft_name, msm_name)
+        else:
+            location = (self.feature, self.ft_name, msm_name)
+        try:
+            df=pd.read_csv(df_name, index_col=[0,1,2,3])
+            try:
+                passed = df.loc[location,'Test']
+                if isinstance(passed, np.bool_) or passed == 'Failed':
+                    return passed
+                elif isinstance(passed, pd.core.series.Series):
+                    print('Bad data: ', self.full_name)
+
+                    print(passed)
+                    passed = passed.iloc[input('Which one? ')]
+                    print(passed)
+                    return passed
+                
+                elif isinstance(passed, str):
+                    df.loc[location, 'Test'] = bool(passed)
+                    df.to_csv(df_name)
+                    return bool(passed)
+                else:
+                    print(passed)
+
+            except KeyError as v:
+                #print('No entry found for: ', self.full_name, v)
+                return None
+        except FileNotFoundError:
+            #print('DataFrame not found: ', df_name)
+            return None    
+ 
+    def filter_model(self, msm):
+        """
+        
+
+        Parameters
+        ----------
+        msm : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        keep : TYPE
+            DESCRIPTION.
+
+        """
+        resolved_processes = self.spectral_analysis(msm, self.lag, plot=False)
+        keep = []
+        #print('Filtering models based on filters:' , self.filters)
+        for filter_ in self.filters:
+            if filter_ == 'connectivity':
+                fraction_state = np.around(msm.active_state_fraction, 3)
+                if fraction_state == 1.000:
+                    keep.append(True)
+                else:
+                    keep.append(False)
+                    #print(f'\tWarning! Model {self.full_name} is disconnected: {fraction_state} states, {fraction_count} counts')
+            elif filter_ =='time_resolved':
+                
+                if resolved_processes > 1:
+                    keep.append(True)
+                else:
+                    keep.append(False)
+                    #print(f'\tWarning! Model {self.full_name} has no processes resolved above lag time.')
+            elif filter_ =='counts':
+                fraction_count = np.around(msm.active_count_fraction, 3)
+                if fraction_count == 1.000:
+                    keep.append(True)
+                else:
+                    keep.append(False)
+            elif filter_ == 'reversible':
+                reversible = msm.reversible
+                if reversible:
+                    keep.append(True)
+                else:
+                    keep.append(False)
+            elif filter_ =='first_eigenvector':
+                eigvec = msm.eigenvectors_right()
+                allclose = np.allclose(eigvec[:, 0], 1, atol=1e-15)
+                if allclose:
+                    keep.append(True)
+                else:
+                    keep.append(False)
+                    #print('\tWarning! first eigenvector is not 1 within error tol. 1e-15)')
+        return keep   
+
+    
+    @log
+    def load_models(self, load_discretized=True):
+        """
+        
+
+        Parameters
+        ----------
+        load_discretized : TYPE, optional
+            DESCRIPTION. The default is True.
+
+        Returns
+        -------
+        models_loaded : TYPE
+            DESCRIPTION.
+
+        """
+
+        
+        def load():
+            for lag in lags:
+                for n_state in n_states:
+                    self.set_specs(ft_name, feature, lag=lag, n_state=n_state, set_mode='MSM')
+                    if self.full_name in models:
+                        if self.method != 'generate':
+                            model = self.bayesMSM_calculation(lag)
+                        else:
+                            model = None
+                        models_loaded[self.full_name] = (model, ft_name, feature, n_state, lag, d_lag)
+                    elif self.full_name in models_to_load:
+                        model = self.bayesMSM_calculation(lag)
+                        filter_passed=self.create_registry(model, vamp_iters=10)
+                        if filter_passed:
+                            models_loaded[self.full_name] = (model, ft_name, feature, n_state, lag, d_lag)
+                        else:
+                            models_failed.append(self.full_name) 
+                    else:
+                        models_failed.append(self.full_name)
+                        pass #print('Something else: ', self.full_name)
+        def check():
+            for lag in lags:
+                for n_state in n_states:
+                    self.set_specs(ft_name, feature, lag=lag, n_state=n_state, set_mode='MSM')
+                    keep = self.check_registry()
+                    if keep == True:
+                        #print(f'Model {self.full_name} passed filter(s) ', end='\r')
+                        models.append(self.full_name)
+                        if self.method != 'generate':
+                            load_discretized_feature.append(self.ft_base_name)
+                    elif keep == False:
+                        #print(f'Model {self.full_name} failed filter(s) ', end='\r')
+                        models_discard.append(self.full_name)
+                    elif keep == None:
+                        #print('No model found for :', self.full_name)
+                        models_to_load.append(self.full_name)
+                        load_discretized_feature.append(self.ft_base_name)
+                    elif keep == 'Failed':
+                        #print('Failed model for :', self.full_name)
+                        models_failed.append(self.full_name)
+                    else:
+                        print('something wrong')
+                        pass
+            
+        self.set_systems()
+        models = []
+        models_to_load = []
+        models_loaded = {}
+        models_failed = []
+        models_discard = []
+        load_discretized_feature = []
+        
+        #check model status
+        for input_params in self.inputs:
+            (ft_name, feature, n_state_sets, lag_sets) = input_params[:4]
+            n_states = self.check_inputs(n_state_sets)
+            lags = self.check_inputs(lag_sets)
+            
+            if self.get_tica:
+                for d_lag in self.disc_lag:
+                    self.d_lag = d_lag
+                    self.set_specs(ft_name, feature, set_mode='base')
+                    check()
+            else:
+                self.set_specs(ft_name, feature, set_mode='base')
+                check()
+
+        print('\nModels calculated: ', len(models))
+        print('Models to discard: ', len(models_discard))
+        print('Models to calculate: ', len(models_to_load))  
+        print('Loading models...')
+
+        #load models and create new ones
+        for input_params in self.inputs:
+            (ft_name, feature, n_state_sets, lag_sets) = input_params[:4]
+            n_states = self.check_inputs(n_state_sets)
+            lags = self.check_inputs(lag_sets)
+            
+
+            if self.get_tica:
+                for d_lag in self.disc_lag:
+                    self.d_lag = d_lag
+                    self.set_specs(ft_name, feature, set_mode='base')
+                    if self.ft_base_name in set(load_discretized_feature):
+                        self.load_discretized_data(feature=feature)
+                    load()         
+            else:
+                self.load_discretized_data(feature=feature)
+                load()
+                
+        print('\nFailed models: ', len(models_failed))
+        print('Loaded models: ', len(models_loaded))
+        print('Total number of models :', len(models_failed)+len(models_loaded))
+        
+        return models_loaded
+    
+    
+
+    
+
+    def set_specs(self, ft_name, feature, lag=1, n_state=0, set_mode='base'):
+        """
+        
+
+        Parameters
+        ----------
+        ft_name : TYPE
+            DESCRIPTION.
+        feature : TYPE
+            DESCRIPTION.
+        lag : TYPE, optional
+            DESCRIPTION. The default is 1.
+        n_state : TYPE, optional
+            DESCRIPTION. The default is 0.
+        set_mode : TYPE, optional
+            DESCRIPTION. The default is 'base'.
+
+        Returns
+        -------
+        TYPE
+            DESCRIPTION.
+
+        """
+
         lag_ =str(lag*self.timestep).replace(" ", "")
-        self.selections = self.regions[ft_name]
+        
         self.ft_name = ft_name
         self.feature = feature
-        self.lag = lag
-        self.n_state = n_state
-        self.feature_name = f'{feature}{append}'
-        self.ft_base_name = f'{ft_name}_{self.feature_name}_s{self.stride}'
-        self.full_name = f'{self.ft_base_name}_{n_state}@{lag_}'
-        
-        return self.full_name
-
-    def set_specs(self, ft_name, feature, lag=1, n_state=0, set_mode='all'):
-        if self.disc_lag != None:
-            disc_lag_=str(self.disc_lag*self.timestep).replace(" ", "")
-            append = f'@{disc_lag_}'
+        if self.get_tica: 
+            disc_lag_=str(self.d_lag*self.timestep).replace(" ", "")
+            self.disc_ft_name = f'{feature}@{disc_lag_}'
+            if self.tica_weights:
+                append = f'@{disc_lag_}_w-{self.tica_weights}'
+            else:
+                append = f'@{disc_lag_}'
+                self.tica_weights='empirical'
         else:
             append = ''
-        lag_ =str(lag*self.timestep).replace(" ", "")
-        
-        feature_name = f'{feature}{append}'
-        
-        if set_mode == 'all':
+
+        self.ft_base_name = f'{ft_name}_{self.feature}{append}_s{self.stride}'
+        if set_mode == 'MSM':
+            if self.cluster_method == 'regspace':
+                append2 = f'_{self.cluster_method}'
+            else:
+                append2 = ''
             self.selections = self.regions[ft_name]
-            self.ft_name = ft_name
-            self.feature = feature
             self.lag = lag
             self.n_state = n_state
-            self.feature_name = feature_name
-            self.ft_base_name = f'{ft_name}_{self.feature_name}_s{self.stride}'
-            self.full_name = f'{self.ft_base_name}_{n_state}@{lag_}'
-        else:
-            ft_base_name = f'{ft_name}_{feature_name}_s{self.stride}'
-            return ft_base_name
+            self.full_name = f'{self.ft_base_name}_{n_state}@{lag_}{append2}'
+            return self.full_name
+        else:    
+            return self.ft_base_name
 
     def set_systems(self):
         systems_specs=[]
@@ -233,162 +625,42 @@ class MSM:
                 tops_to_load.append(top)
         self.tops_to_load=tops_to_load[0]
         self.trajectories_to_load=trajectories_to_load
-        
-    def load_models(self):
-
-        self.set_systems()
-        models = {}
-        for input_params in self.inputs:
-            (ft_name, feature, n_state_sets, lag_sets) = input_params[:4]
-            n_states = self.check_inputs(n_state_sets)
-            lags = self.check_inputs(lag_sets)
-            self.ft_base_name = self.set_specs(ft_name, feature, set_mode='base')
-            self.load_discretized_data(feature=feature) #placed here so that it's loaded only once. Bad if all done, good if not all done yet.
-            for lag in lags:    
-                for n_state in n_states:
-                    #self.set_specs_wrap(self, lag, ft_name, feature, n_state)
-                    self.set_specs(ft_name, feature, lag=lag, n_state=n_state)
-                    model_status = self.check_model()
-                    if model_status:
-                        print(f'Model {self.full_name} found and passed filter(s)')
-                        model = self.bayesMSM_calculation(lag) 
-                        models[self.full_name] = (model, ft_name, feature, n_state, lag)    
-                    elif model_status == False:
-                        print(f'Model {self.full_name} found but not passed filter(s)')
-                    elif model_status == None:
-                        model = self.bayesMSM_calculation(lag)
-                        if self.filter_model(model):
-                            models[self.full_name] = (model, ft_name, feature, n_state, lag)   
-
-        return models
     
-    def filter_model(self, msm, vamp_iters=3):
-        
-        print('Filtering models based on filters:' , self.filters)
-        def evaluate():
-            keep = []
-            for filter_ in self.filters:
-                if filter_ == 'connectivity':
-                    if fraction_state == 1.000:
-                        keep.append(True)
-                    else:
-                        keep.append(False)
-                        print(f'\tWarning! Model {self.full_name} is disconnected: {fraction_state} states, {fraction_count} counts')
-                elif filter_ =='time_resolved':
-                    if resolved_processes > 1:
-                        keep.append(True)
-                    else:
-                        keep.append(False)
-                        print(f'\tWarning! Model {self.full_name} has no processes resolved above lag time.')
-                elif filter_ =='first_eigenvector':
-                    eigvec = msm.eigenvectors_right()
-                    allclose = np.allclose(eigvec[:, 0], 1, atol=1e-15)
-                    if allclose:
-                        keep.append(True)
-                    else:
-                        keep.append(False)
-                        print('\tWarning! first eigenvector is not 1 within error tol. 1e-15)')
-            return keep
-        
-        df_name = f'{self.results}/ModelSelection_{self.ft_base_name}.csv'
-        try:
-            df=pd.read_csv(df_name, index_col=[0,1,2])
-        except FileNotFoundError:
-            df=pd.DataFrame()
-        
-        lag_ =str(self.lag*self.timestep).replace(" ", "")
-        msm_name = f'{self.n_state}@{lag_}'
-        index_row= pd.MultiIndex.from_product([[self.ft_name], [self.feature_name], [msm_name]], names=['name', 'feature', 'model'])
-            
-        fraction_state = np.around(msm.active_state_fraction, 3)
-        fraction_count = np.around(msm.active_count_fraction, 3)
-        resolved_processes = self.spectral_analysis(msm, self.lag, plot=False)
-        
-        df_ = pd.DataFrame(index=index_row, columns=['VAMP2', 'Test', 'Filters', 'Processes'])
-        
-        if self.get_vamp:
-            discretized_data = self.discretized_data
-            clusters=self.clusterKmeans_standalone(discretized_data, self.n_state)
-            try:
-                score_model = pyemma.msm.estimate_markov_model(clusters.dtrajs, lag=self.lag, dt_traj=str(self.timestep))
-                vamp = score_model.score_cv(clusters.dtrajs, n=vamp_iters, score_method='VAMP2', score_k=min(10, self.n_state))
-            except Exception as v:
-                print(v)
-                vamp = [np.nan]*vamp_iters
-                
-        else:
-            vamp = [np.nan]*vamp_iters
-        
-        keep = evaluate()
-        #filters_ = list(compress(filters, keep))
-        filters_ = ' '.join(list(compress(self.filters, keep)))
-        if all(keep):
-            print(f'\tModel {self.full_name} passed all filters')
-            passed = True
-            df_.loc[(self.ft_name, self.feature_name, msm_name),'Test'] = True
-        else:
-            passed = False
-            df_.loc[(self.ft_name, self.feature_name, msm_name),'Test'] = False
-        df_.loc[(self.ft_name, self.feature_name, msm_name),'VAMP2'] = vamp
-        df_.loc[(self.ft_name, self.feature_name, msm_name),'Filters'] = filters_
-        df_.loc[(self.ft_name, self.feature_name, msm_name),'Processes'] = f'{resolved_processes}/{self.n_state}'
-        
-        df=pd.concat([df, df_])
-        df.to_csv(df_name)
-
-        if passed:
-            return True
-        else:
-            return False
-        
-
-    def check_model(self):
-        if len(self.filters) > 0:
-            df_name = f'{self.results}/ModelSelection_{self.ft_base_name}.csv'
-    
-            lag_ =str(self.lag*self.timestep).replace(" ", "")
-            msm_name = f'{self.n_state}@{lag_}'
-            feature_name = self.feature_name
-            try:
-                df=pd.read_csv(df_name, index_col=[0,1,2])
-                try:
-                    passed = df.loc[(self.ft_name, feature_name, msm_name),'Test']
-                    #print('Found entry for: ', self.full_name, passed)
-                    if passed:
-                        return True
-                    else: 
-                        return False
-                except KeyError:
-                    print('No entry for: ', self.full_name)
-                    return None
-            except FileNotFoundError:
-                print('DataFrame not found: ', df_name)
-                return None
-        else:
-            return True
-        return passed
 
    
+    @log
     def load_discretized_data(self, feature=None):
-        if self.disc_lag != None:
-            self.discretized_data=self.TICA_calculation(self.disc_lag, feature)
+        if self.get_tica:
+            self.discretized_data=self.TICA_calculation(self.d_lag, feature)
         else:
             #TODO: make here entry for other discretization schemes
-            self.discretized_data = None
+            #As in TICA calculation call inside to get inputs
+            try: 
+                inputs_ = self.selections
+            except AttributeError:
+                print('No selections found. Getting input information from MSM.regions')
+                inputs_ = self.regions[self.ft_name]
+            self.discretized_data = self.load_features(self.tops_to_load, 
+                                          self.trajectories_to_load, 
+                                          [feature], 
+                                          inputs=inputs_)[0] #because its yielding a list.
 
     def load_discTrajs(self):
-        #TODO: some function calls might need np.concatenate(disc_trajs) others don't.
+        #Warning: some function calls might need np.concatenate(disc_trajs) others don't.
         #discretized_data = self.load_discretized_data(feature=self.feature)
-        if self.get_tica:
-            tica=self.discretized_data  
-            data_concat = np.concatenate(tica.get_output())
-            clusters=self.clusterKmeans_standalone(tica, self.n_state) #tica, n_clusters
+        if self.get_tica and self.discretized_data != None:
+            data_concat = np.concatenate(self.discretized_data.get_output())
+            clusters=self.clustering(self.n_state) #tica, n_clusters
             disc_trajs = clusters.dtrajs #np.concatenate(clusters.dtrajs)
         else:
-            #TODO: make here flexible for other types of disc traj. Evolve to own
-            data_concat = []
-            disc_trajs = []
-            clusters = []
+            data_concat = np.concatenate(self.discretized_data)
+            clusters=self.clustering(self.n_state) #tica, n_clusters
+            disc_trajs = clusters.dtrajs #np.concatenate(clusters.dtrajs)
+
+        #TODO: elif:
+            #data_concat = []
+            #disc_trajs = []
+            #clusters = []
         
         return data_concat, disc_trajs, clusters
 
@@ -397,25 +669,37 @@ class MSM:
 
     def analysis(self, 
                  inputs, 
-                 disc_lag=None, 
+                 tica_lag=None, 
                  method=None, 
                  dim=-1,
                  sample_frames = 10000,
-                 filters=['connectivity', 'time_resolved', 'first_eigenvector'],
+                 filters=['connectivity', 'counts', 'time_resolved', 'reversible', 'first_eigenvector'],
                  compare_pdbs = [],
+                 hmsm_lag = False,
                  eval_vamps=False,
-                 overwrite=False):
+                 vamp_cross_validation=True,
+                 overwrite=False,
+                 cluster_method='k-means',
+                 tica_weights=False):
         
         self.overwrite=overwrite
         self.viewer = {}
         self.dim = dim
         self.get_tica=False
         self.filters = filters
+        self.cluster_method= cluster_method
         self.get_vamp = eval_vamps
+        self.w_cv = vamp_cross_validation
         self.method = method
-        if disc_lag != None:
-            self.disc_lag = disc_lag
+        if tica_lag != None:
             self.get_tica=True
+            self.disc_lag = self.check_inputs(tica_lag)
+            self.tica_weights = tica_weights
+        if hmsm_lag != False:
+            self.CG = 'HMSM'
+        else:
+            self.CG = 'PCCA'
+        #TODO: make default CG None in case not required.
         
         if isinstance(inputs, list):
             for v in inputs:
@@ -427,11 +711,12 @@ class MSM:
 
         flux, committor, pathway = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
-        models = self.load_models() #(model, ft_name, feature, n_state, lag)
+        load=True
+        models = self.load_models(load_discretized=load) #(model, ft_name, feature, n_state, lag, d_lag)
 
         for name, model in models.items():
-            (msm, ft_name, feature, n_state, lag) = model
-            self.set_specs(ft_name, feature, lag, n_state)
+            (msm, ft_name, feature, n_state, lag, d_lag) = model
+            self.set_specs(ft_name, feature, lag, n_state, set_mode='MSM')
             #self.discretized_data = self.load_discretized_data(feature=feature)
             
             name_ = f'{ft_name}-{feature}'
@@ -441,7 +726,7 @@ class MSM:
                         macrostates = self.check_inputs(input_params[4])
                     except IndexError:
                         macrostates = None
-                        pass
+                        self.CG = None
             if method == 'PCCA':
                 self.PCCA_calculation(msm, macrostates, auto=False, dims_plot=10)
                 
@@ -451,23 +736,28 @@ class MSM:
             elif method == 'Spectral':
                 self.spectral_analysis(msm, lag, plot=True)
             elif method == 'MFPT':
-                self.MFPT_calculation(msm, macrostates)
+                self.MFPT_calculation(msm, macrostates, hmsm_lag)
             elif method == 'Visual':
                 for macrostate in macrostates:
-                    state_samples = self.extract_states(msm, macrostate, n_total_frames=40, visual=True) 
+                    state_samples = self.extract_metastates(msm, macrostate, visual=True, hmsm_lag=hmsm_lag) 
                     self.viewer[f'{self.full_name}-{macrostate}'] = self.visualize_metastable(state_samples)
             elif method == 'RMSD':
-                state_samples = self.extract_states(msm, macrostates, visual=False)
-                self.RMSD_source_sink(state_samples, msm, ref_sample=sample_frames, pdb_files = compare_pdbs)
+                for macrostate in macrostates:
+                    state_samples = self.extract_metastates(msm, macrostate, hmsm_lag=hmsm_lag, visual=False)
+                    self.RMSD_source_sink(state_samples, ref_sample=sample_frames, pdb_files = compare_pdbs)
             elif method == 'flux':
-                flux_inputs_ = self.inputs[self.ft_name][5]
-                flux_inputs = self.check_inputs(flux_inputs_)
-                flux_df, committor_df, pathway_df = self.flux_calculation(msm, macrostate=macrostates, between=flux_inputs)
-                flux = pd.concat([flux, flux_df], axis=0)
-                committor = pd.concat([committor, committor_df], axis=0)
-                pathway = pd.concat([pathway, pathway_df], axis=0)
-            elif method == 'inspect':
+                flux_inputs = input_params[5]
+                for macrostate in macrostates:
+                    flux_df, committor_df, pathway_df = self.flux_calculation(msm, macrostate=macrostate, between=flux_inputs)
+                    flux = pd.concat([flux, flux_df], axis=0)
+                    committor = pd.concat([committor, committor_df], axis=0)
+                    pathway = pd.concat([pathway, pathway_df], axis=0)
+            elif method == 'generate':
                 pass
+            elif method == 'HMSM':
+                self.HMSM(msm, macrostates, hmsm_lag)
+            elif method == 'ITS':
+                self.ITS_calculation(MSM.ITS_lags, c_stride=1)
             else:
                 raise SyntaxError('Analysis method not defined')
         
@@ -482,7 +772,6 @@ class MSM:
             return self.viewer
 
 
-
     def calculate(self,
                   inputs=None,
                   method=None,
@@ -493,7 +782,8 @@ class MSM:
                   cluster_lags=None,
                   VAMP_lags=None,
                   dim=-1,
-                  overwrite=False):
+                  overwrite=False,
+                  tica_weights=False):
         """
         Wrapper function to calculate VAMP2 scores using pyEMMA. 
         
@@ -527,6 +817,7 @@ class MSM:
         self.get_tica=False
         if TICA_lag != None:
             self.disc_lag = TICA_lag
+            self.tica_weights = tica_weights
             self.get_tica=True
         
         self.set_systems()
@@ -541,11 +832,16 @@ class MSM:
  
         #Loop through features
         for ft_name, ft_inputs_ in ft_names.items():
-            self.ft_name=ft_name 
+            print(ft_name, ft_inputs_)
+
+# =============================================================================
+#             self.ft_name=ft_name 
             self.selections = ft_inputs_ #The resid selections from input in __init__
+# =============================================================================
 
             #VAMPs
             if method == 'VAMP':
+                self.set_specs(ft_name, None, set_mode='base')
                 for ev in evaluate:
                     if ev == 'features':
                         self.VAMP2_features(VAMP_lags, dim)
@@ -554,16 +850,15 @@ class MSM:
                     else:
                         print('No evaluation defined.')
             else:
+                
                 ft_inputs = inputs[ft_name] #reads from input in __init__ and maps to current input
                 self.ft_inputs=ft_inputs #whatever inputs are
                 for feature in self.features:
-                    self.feature = feature
+                    self.set_specs(ft_name, feature, set_mode='base')
 
                     print('Feature: ', feature)
                     
-                    if TICA_lag != None:
-                        tica_lag_ = str(TICA_lag*self.timestep).replace(" ", "")
-                        self.ft_base_name = f'{ft_name}_{feature}@{tica_lag_}_s{self.stride}'
+                    if self.get_tica:
                         self.discretized_data = self.TICA_calculation(TICA_lag, feature, dim=dim)
                     else:
                         self.discretized_data = []
@@ -575,19 +870,11 @@ class MSM:
                     elif method == 'Clustering':
                         self.cluster_calculation(lags=cluster_lags, TICA_lag=TICA_lag, method='kmeans')
 
-                    elif method == 'ITS':
-                        if isinstance(self.ft_inputs, int):
-                             self.n_state = self.ft_inputs
-                             self.ITS_calculation(MSM.ITS_lags, c_stride=1)
-                        else:
-                             raise TypeError('Input values have to be a integer "number of states"')
 
                     elif method == 'bayesMSM':
                         if isinstance(self.ft_inputs, tuple) and len(self.ft_inputs) == 2:
                             (n_states, msm_lag) = inputs[ft_name]
-                            msm_lag_ = str(msm_lag*self.timestep).replace(" ", "")
-                            self.full_name = f'{self.ft_base_name}_{n_states}@{msm_lag_}'
-                            self.n_state = n_states
+                            self.set_specs(ft_name, feature, lag=1, n_state=0, set_mode='MSM')
                             self.bayesMSM_calculation(msm_lag)
                         else:
                             raise TypeError('Input values have to be a tuple of integers (number of states, lag)')
@@ -634,7 +921,8 @@ class MSM:
             pass
         else:
             raise("Source or sink states not defined (between =([A], [B])")
-            
+        
+        #TODO!!!!!!! make adap for hmsm
         if isinstance(macrostate, int): 
              msm.pcca(macrostate)
              sets = msm.metastable_sets
@@ -752,56 +1040,81 @@ class MSM:
         return flux_df, committor_df, pathway_df
 
 
-    def MFPT_calculation(self, msm, macrostates=None):
+    def MFPT_calculation(self, msm, macrostates=None, hmsm_lag=False):
         
         file_name=f'MFPT_{self.full_name}'
         mfpt = self.mfpt_states(msm, file_name)
         if macrostates != None:
             for macrostate in macrostates:
-                msm.pcca(macrostate)
-                self.mfpt_cg_states(mfpt, msm, file_name, macrostate)
+                return self.mfpt_cg_states(mfpt, msm, file_name, macrostate, hmsm_lag=hmsm_lag)
+            
+            
     
-    
-    def mfpt_cg_states(self, mfpt_all, msm, file_name, n_macrostate):
+    def mfpt_cg_states(self, 
+                       mfpt_all, 
+                       msm, 
+                       file_name, 
+                       n_macrostate, 
+                       hmsm_lag=False):
         
         macrostates= range(1, n_macrostate+1)
         file_name = f'{file_name}_{n_macrostate}macrostates'
-        
         mfpt = np.zeros((n_macrostate, n_macrostate))
-        for i in macrostates:
-            for j in macrostates:
-                print(f'Transition MS: {i} -> {j}', end='\r')
-                mfpt[i-1, j-1] = msm.mfpt(msm.metastable_sets[i-1], msm.metastable_sets[j-1])
+        if self.CG == 'HMSM':
+            hmsm = self.HMSM(msm, [n_macrostate], hmsm_lag, plot=False)
+            print('Coarse-graining with Hidden MSM')
+            print(hmsm)
+            for i in macrostates:
+                for j in macrostates:
+                    print(f'Transition MS: {i} -> {j}', end='\r')
+                    try:
+                        mfpt[i-1, j-1] = hmsm.mfpt([i-1], [j-1])
+                    except:
+                        pass
+        else:
+            msm.pcca(n_macrostate)
+            print('Coarse-graining with PCCA')
+            for i in macrostates:
+                for j in macrostates:
+                    print(f'Transition MS: {i} -> {j}', end='\r')
+                    mfpt[i-1, j-1] = msm.mfpt(msm.metastable_sets[i-1], msm.metastable_sets[j-1])
+                        
+                
         print('\n')
+        print(mfpt)
         cmap_plot=plt.cm.get_cmap("gist_rainbow")
         fig, axes = plt.subplots(1,1, figsize=(8,6), constrained_layout=True)
-        matrix = axes.pcolormesh(mfpt, 
-                                 cmap=cmap_plot, 
-                                 shading='auto',
-                                 norm=ml_colors.LogNorm(vmin = self.lag, vmax=mfpt.max().max()),
-                                 vmin=self.lag,
-                                 vmax=mfpt.max().max())
-                                 #vmin=mfpt_all[mfpt_all > 0].min().min(),
-                                 #vmax=mfpt_all.max().max(),
-                                 #norm=ml_colors.LogNorm(vmin = mfpt_all[mfpt_all > 0].min().min(), vmax = mfpt_all.max().max())) 
-        colorbar = plt.colorbar(matrix, orientation='vertical')
-        colorbar.set_label(label=f'MFPT ({self.unit})', size='large')
-        colorbar.ax.tick_params(labelsize=14)
-        axes.set_title(f'MFPT {self.full_name} -> {n_macrostate} macrostates')
-        axes.set_xticks(macrostates)
-        axes.set_yticks(macrostates)
-        cmap_plot.set_bad(color='white')
-        axes.set_xlabel('From macrostate')
-        axes.set_ylabel('To macrostate')
-        cmap_plot.set_under(color='black')
-        cmap_plot.set_bad(color='white')
-        cmap_plot.set_over(color='grey')
-        #plt.tight_layout()
-        plt.show()
-        fig.savefig(f'{self.results}/{file_name}.png', dpi=600, bbox_inches="tight")
+        try:
+            matrix = axes.pcolormesh(mfpt, 
+                                     cmap=cmap_plot, 
+                                     shading='auto',
+                                     norm=ml_colors.LogNorm(vmin = self.lag, vmax=mfpt.max().max()),
+                                     vmin=self.lag,
+                                     vmax=mfpt.max().max())
+                                     #vmin=mfpt_all[mfpt_all > 0].min().min(),
+                                     #vmax=mfpt_all.max().max(),
+                                     #norm=ml_colors.LogNorm(vmin = mfpt_all[mfpt_all > 0].min().min(), vmax = mfpt_all.max().max())) 
+            colorbar = plt.colorbar(matrix, orientation='vertical')
+            colorbar.set_label(label=f'MFPT ({self.unit})', size='large')
+            colorbar.ax.tick_params(labelsize=14)
+            axes.set_title(f'MFPT {self.full_name} -> {n_macrostate} macrostates')
+            axes.set_xticks(macrostates)
+            axes.set_yticks(macrostates)
+            cmap_plot.set_bad(color='white')
+            axes.set_xlabel('From macrostate')
+            axes.set_ylabel('To macrostate')
+            cmap_plot.set_under(color='black')
+            cmap_plot.set_bad(color='white')
+            cmap_plot.set_over(color='grey')
+            #plt.tight_layout()
+            plt.show()
+            fig.suptitle(f'{self.method}')
+            fig.savefig(f'{self.results}/{file_name}.png', dpi=600, bbox_inches="tight")
         
+        except ValueError as v:
+            print(v)
         #pyemma.plots.plot_network(inverse_mfpt, arrow_label_format=f'%f. {self.unit}', arrow_labels=mfpt, size=12) 
-        plt.show()
+        
         
         return mfpt
     
@@ -854,7 +1167,36 @@ class MSM:
         return mfpt
     
 
-    def extract_states(self, msm, macrostate, n_total_frames=20, visual=False):
+    def extract_metastates(self, msm, macrostate, hmsm_lag=False, n_total_frames=100, visual=False):
+
+        def extract(dist, highest_member):
+            n_frames = int(np.rint(dist*n_total_frames))
+            if n_frames == 0:
+                n_frames +=1
+            n_state_frames = int(np.rint(dist*MSM.ref_samples))
+            if n_state_frames == 0:
+                n_state_frames += 1
+
+            if visual:
+                file_name=f'{self.stored}/{msm_file_name}_{self.CG}{idx+1}of{macrostate}_v.pdb'
+                sample = msm.sample_by_state(n_frames, subset=[highest_member], replace = False)
+                if not os.path.exists(file_name) or self.overwrite:
+                    print(f'\tGenerating {n_frames} samples for macrostate {idx+1} using frames assigned to state {highest_member+1}')
+                    try:
+                        pyemma.coordinates.save_traj(trajectories, sample, outfile=file_name, top=md_top)
+                    except ValueError as v:
+                        print(v)
+                state_samples = (file_name, file_name)
+            else:
+                file_name=f'{self.stored}/{msm_file_name}_{self.CG}{idx+1}of{macrostate}_{n_state_frames}frames'
+                sample = msm.sample_by_state(n_state_frames, subset=[highest_member], replace = False)
+                if not os.path.exists(f'{file_name}.dcd') or self.overwrite:
+                    print(f'\tGenerating {n_state_frames} samples for macrostate {idx+1} using frames assigned to state {highest_member+1}')
+                    pyemma.coordinates.save_traj(trajectories, sample, outfile=f'{file_name}.dcd', top=md_top)
+                    md.load_frame(f'{file_name}.dcd', index=0, top=md_top).save_pdb(f'{file_name}.pdb')
+                state_samples = (f'{file_name}.dcd', f'{file_name}.pdb')
+            return state_samples        
+
 
         msm_file_name=f'bayesMSM_{self.full_name}'
         
@@ -872,44 +1214,33 @@ class MSM:
             md_top.atom_slice(subset_indices, inplace=True)
         state_samples= {} 
         #TODO: get total number of frames, to get proper n_samples
-        if macrostate != None:
-            
-            h_members = []
-            msm.pcca(macrostate)
-            for idx, idist in enumerate(msm.metastable_distributions, 1):
+
+        h_members = []
+        if self.CG == 'HMSM':
+            print(hmsm_lag)
+            hmsm=self.HMSM(msm, [macrostate], hmsm_lag, plot=False)
+            for idx, (s, idist) in enumerate(zip(hmsm.metastable_sets, hmsm.metastable_distributions)):
+                dist = msm.pi[s].sum()
                 
+                highest_member =idist.argmax()
+                h_members.append(highest_member)
+                state_samples[idx] = extract(dist, highest_member)
+
+        else:
+            msm.pcca(macrostate)
+
+            for idx, idist in enumerate(msm.metastable_distributions, 0):
+                dist = msm.pi[msm.metastable_sets[idx]].sum()
                 highest_member = idist.argmax()
                 #TODO: resolve conflict of low assign states take frames from same micro. only problematic for lowe assig cases anyways for now.
                 #if highest_member in h_members:
                     #idist = np.delete(idist, highest_member)
                     #highest_member = idist.argmax()
                 h_members.append(highest_member)
-                dist = msm.pi[msm.metastable_sets[idx-1]].sum()
-                n_frames = int(np.rint(dist*n_total_frames))
-                if n_frames == 0:
-                    n_frames +=1
-                n_state_frames = int(np.rint(dist*MSM.ref_samples))
-                if n_state_frames == 0:
-                    n_state_frames += 1
-
-                if visual:
-                    file_name=f'{self.stored}/{msm_file_name}_{idx}of{macrostate}macrostates_v.pdb'
-                    sample = msm.sample_by_state(n_frames, subset=[highest_member], replace = False)
-                    if not os.path.exists(file_name) or self.overwrite:
-                        print(f'\tGenerating {n_frames} samples for macrostate {idx} using frames assigned to state {highest_member+1}')
-                        try:
-                            pyemma.coordinates.save_traj(trajectories, sample, outfile=file_name, top=md_top)
-                        except ValueError as v:
-                            print(v)
-                    state_samples[idx] = (file_name, file_name)
-                else:
-                    file_name=f'{self.stored}/{msm_file_name}_{idx}of{macrostate}macrostates_{n_state_frames}'
-                    sample = msm.sample_by_state(n_state_frames, subset=[highest_member], replace = False)
-                    if not os.path.exists(f'{file_name}.dcd') or self.overwrite:
-                        print(f'\tGenerating {n_state_frames} samples for macrostate {idx} using frames assigned to state {highest_member+1}')
-                        pyemma.coordinates.save_traj(trajectories, sample, outfile=f'{file_name}.dcd', top=md_top)
-                        md.load_frame(f'{file_name}.dcd', index=0, top=md_top).save_pdb(f'{file_name}.pdb')
-                    state_samples[idx] = (f'{file_name}.dcd', f'{file_name}.pdb')
+                state_samples[idx] = extract(dist, highest_member)
+        
+        for idx, member in enumerate(h_members):
+            print(f'Extracted frames from state {member+1} for MS {idx+1}')
         #TODO: make single state extraction.
         
         return state_samples
@@ -1060,7 +1391,7 @@ class MSM:
                 fig.savefig(f'{self.results}/SpectralITS_{self.full_name}.png', dpi=600, bbox_inches="tight")
                 plt.show()
             
-            print(f'\t{len(imp_ts_factor)} processes with {MSM.msm_var_cutoff*100}% ITS resolved above lag time ({self.timestep*lag})')
+            print(f'\t{len(imp_ts_factor)} processes with {MSM.msm_var_cutoff*100}% ITS resolved above lag time ({self.timestep*lag})', end='\r')
             return len(imp_ts_factor)
 
         else:
@@ -1071,32 +1402,40 @@ class MSM:
         
         df = pd.DataFrame()
         #TODO: make init robust to initial residue of structure
-        selection = self.convert_resid_residue(self.selections, init=1449)
+        try:
+            selection = self.convert_resid_residue(self.selections, init=1449)
+        except IndexError as v:
+            print(v)
+            selection = self.selections
         source_traj = md.load(self.project.input_topology)
         colors= pl.cm.Set1(np.linspace(0,1,len(file_names)))
-        
+        if len(pdb_files) == 0:
+            print('No pdb structures provided. Reverting to input topology')
+            pdb_files = self.project.input_topology
         rows, columns=tools_plots.plot_layout(pdb_files)
         fig, axes = plt.subplots(rows, columns, sharey=True, sharex=True, constrained_layout=True, figsize=(12,8))
-        
-        flat = axes.flat
+        try:
+            flat = axes.flat
+        except:
+            flat=[axes]
         for pdb, ax in zip(pdb_files, flat):
             for idx, file_name in file_names.items():
                 (traj, top) = file_name
                 traj= md.load(traj, top=top)
                 frames=traj.n_frames
                 weight= frames / ref_sample
-                
-                indexes_source=[['RMSD'], [idx], ['source']]
+
                 indexes_sink=[['RMSD'], [idx], [pdb]]
                 names=['name', 'macrostates', 'reference']
                 sink_traj = md.load(f'{self.project.def_input_struct}/pdb/{pdb}.pdb')
                 
                 atom_indices=traj.topology.select(selection)
-                source_atom_indices=source_traj.topology.select(selection)
                 sink_atom_indices=sink_traj.topology.select(selection)
+                common_atom_indices=list(set(atom_indices).intersection(sink_atom_indices))
+
                 
                 ax.set_title(pdb)
-                
+
                 try:                    
                     rmsd_sink=in_units_of(md.rmsd(traj,
                                      sink_traj,
@@ -1105,20 +1444,33 @@ class MSM:
                                      frame=0,
                                      precentered=False,
                                      parallel=True), 'nanometers', MSM.report_units)
-                    ax.hist(rmsd_sink, 
-                            label=f'MS {idx}',
-                            density=True,
-                            weights=[weight]*len(rmsd_sink), 
-                            color=colors[idx-1], 
-                            alpha=0.6,
-                            histtype='barstacked',
-                            stacked=True)
-                    rows=pd.Index(np.arange(1, len(rmsd_sink)+1), name='sample')
-                    df_macro = pd.DataFrame(rmsd_sink, index=rows, columns=pd.MultiIndex.from_product(indexes_sink, names=names))
-                    df=pd.concat([df, df_macro], axis=1)
-                    
-                except ValueError:
-                    pass
+                except ValueError as v:
+                    print(v)
+                    print('Using common atom indices.\nWarning! Not reliable if structures have different n. of atoms. ')
+                    try:
+                        rmsd_sink=in_units_of(md.rmsd(traj,
+                        sink_traj,
+                        atom_indices = common_atom_indices,
+                        frame=0,
+                        precentered=False,
+                        parallel=True), 'nanometers', MSM.report_units)
+                    except Exception as v_:
+                        print(v_)
+                        pass
+                except:
+                    break
+
+                ax.hist(rmsd_sink, 
+                        label=f'MS {idx}',
+                        density=True,
+                        weights=[weight]*len(rmsd_sink), 
+                        color=colors[idx-1], 
+                        alpha=0.6,
+                        histtype='barstacked',
+                        stacked=True)
+                rows=pd.Index(np.arange(1, len(rmsd_sink)+1), name='sample')
+                df_macro = pd.DataFrame(rmsd_sink, index=rows, columns=pd.MultiIndex.from_product(indexes_sink, names=names))
+                df=pd.concat([df, df_macro], axis=1)
         #[-1].legend()
         #axes[1].legend()
         handles, labels = flat[0].get_legend_handles_labels()
@@ -1134,7 +1486,53 @@ class MSM:
         return df
 
 
-    def PCCA_calculation(self, msm, macrostates, auto=False, dims_plot=10):
+    def HMSM(self, msm, macrostates, lags, plot=True):
+        
+        
+        dt_scalar=int(str(self.timestep*self.stride).split(' ')[0])
+        for macrostate in macrostates:
+# =============================================================================
+#             if plot:
+#                 pyemma.plots.plot_implied_timescales(
+#                     pyemma.msm.timescales_hmsm(disc_trajs[0::self.stride], 
+#                                                macrostate, 
+#                                                lags=[1, 2, 3, 4, 5], 
+#                                                errors='bayes'), 
+#                     units=self.unit, 
+#                     dt=dt_scalar)
+# =============================================================================
+
+
+            for lag in lags:
+                file_name=f'{self.stored}/HMSM_{self.full_name}_{macrostate}_hlag{lag}.npy'
+                if not os.path.exists(file_name):
+                    print(f'\tGenerating Hidden MSM for {self.full_name}: {macrostate} macrostates with lag = {lag*self.timestep}')
+                    self.load_discretized_data(disc_lag = self.d_lag)
+                    data_concat, disc_trajs, clusters = self.load_discTrajs()
+                    hmsm = pyemma.msm.bayesian_hidden_markov_model(disc_trajs[0::self.stride], 
+                                                               macrostate, 
+                                                               lag, 
+                                                               dt_traj=str(self.timestep), 
+                                                               conf=0.95)
+                    hmsm.save(file_name, overwrite=True)
+                else:
+                    print(f'Loading HMSM for {self.full_name} with {macrostate} macrostates and lag {lag*self.timestep}')
+                    hmsm = pyemma.load(file_name)
+                if plot:
+                    self.load_discretized_data(disc_lag = self.d_lag)
+                    data_concat, disc_trajs, clusters = self.load_discTrajs()
+                    self.plot_CG(msm, macrostate, data_concat, disc_trajs, clusters, hmsm=hmsm)
+                    cktest=hmsm.cktest()
+                    pyemma.plots.plot_cktest(cktest,
+                                             dt=dt_scalar, 
+                                             layout='wide', 
+                                             marker='.',  
+                                             y01=True, 
+                                             units=self.unit)
+                return hmsm
+
+    @log
+    def PCCA_calculation(self, msm, macrostates, auto=False, hmsm=False, dims_plot=10):
         """
         
 
@@ -1150,6 +1548,147 @@ class MSM:
 
         """
         
+        def plot():
+            statdist = msm.stationary_distribution
+            eigvec = msm.eigenvectors_right()
+            eig_projection = eigvec[np.concatenate(disc_trajs), 1]
+            if hmsm:       
+                highest_membership = hmsm.metastable_distributions.argmax(1)
+                coarse_state_centers = coarse_state_centers = clusters.clustercenters[hmsm.observable_set[highest_membership]]
+                assignments=hmsm.metastable_assignments
+                metastable_traj = hmsm.metastable_assignments[np.concatenate(disc_trajs)]
+                file_name=f'HMSM_{self.full_name}_{macrostate}MS'
+            else:
+                highest_membership = msm.metastable_distributions.argmax(1)
+                coarse_state_centers = clusters.clustercenters[msm.active_set[highest_membership]]
+                metastable_traj = msm.metastable_assignments[np.concatenate(disc_trajs)]
+                assignments=msm.metastable_assignments
+                file_name = f'PCCA_{self.full_name}_{macrostate}MS'
+        
+            f = mtick.ScalarFormatter(useOffset=False, useMathText=True)
+            g = lambda x,pos : "${}$".format(f._formatSciNotation('%1e' % x))
+            
+            
+            fig=plt.figure(figsize=(12,12))
+            gs = gridspec.GridSpec(nrows=4, ncols=3)
+            colors= pl.cm.Set1(np.linspace(0,1,macrostate))
+            fig.suptitle(f'MSM {self.full_name}\n {self.method} : {self.n_state} states to {macrostate} MS', 
+                         ha='center',
+                         weight='bold')
+            
+            plot_statdist_states = fig.add_subplot(gs[0, :2]) 
+            plot_statdist_states.set_xlabel('State index')
+            plot_statdist_states.set_ylabel('Stationary distribution')
+            plot_statdist_states.set_ylim(0,1)
+            plot_statdist_states.yaxis.grid(color='grey', linestyle='dashed')
+            #plot_statdist_states.set_yscale('log')
+            for x, stat in zip(range(1, len(statdist)+1), statdist):
+                plot_statdist_states.bar(x, stat, color=colors[assignments[x-1]])
+            
+            plot_statdist_ms = fig.add_subplot(gs[:2,2], sharey=plot_statdist_states)
+            plot_statdist_ms.set_xlabel('Macrostate')
+            plot_statdist_ms.set_ylabel('MS stationary distribution')
+            plot_statdist_ms.yaxis.grid(color='grey', linestyle='dashed')
+            plot_statdist_ms.set_xticks(range(1,macrostate+1))
+            #plot_statdist_ms.legend() 
+            #plot_statdist_ms.set_yscale('log')
+            plot_assign_ms = fig.add_subplot(gs[1,:2], sharex=plot_statdist_states, sharey=plot_statdist_states) 
+            plot_assign_ms.set_xlabel('State index')
+            plot_assign_ms.set_ylabel('MS assignment')
+            plot_assign_ms.yaxis.grid(color='grey', linestyle='dashed')
+            
+            plot_ms_trajs = fig.add_subplot(gs[2,:])
+            if hmsm:
+                for idx, s in enumerate(hmsm.metastable_sets):
+                    statdist_m = msm.pi[s].sum()
+                    plot_statdist_ms.bar(idx+1, statdist_m, color=colors[idx]) #, label=f'MS {idx+1}')
+                for idx, met_assign in enumerate(hmsm.metastable_distributions):
+                    plot_assign_ms.bar(range(1, len(statdist)+1), met_assign, color=colors[idx], label=f'MS {idx+1}')
+        
+        
+        # =============================================================================
+        #             ms_state_trajs_concat = [[] for i in range(macrostate)]
+        #             for n, ms_state_trajs in enumerate(hmsm.hidden_state_probabilities):
+        #                 for idx, ms_state_traj in enumerate(ms_state_trajs.T):
+        #                     ms_state_trajs_concat[idx].append(ms_state_traj)
+        #                 
+        #             for idx, ms_traj in enumerate(ms_state_trajs_concat):
+        #                 flatten = [item for sublist in ms_traj for item in sublist]
+        #                 ax2 = plot_ms_trajs.twinx()
+        #                 ax2.plot(range(len(flatten)), flatten, color=colors[idx], label=f'P(MS {idx+1})')
+        # =============================================================================
+        
+            else:
+                for idx, (s, met_assign) in enumerate(zip(msm.metastable_sets, msm.metastable_distributions)):
+                    statdist_m = msm.pi[s].sum()
+                    plot_statdist_ms.bar(idx+1, statdist_m, color=colors[idx]) #, label=f'MS {idx+1}')
+                    plot_assign_ms.bar(range(1, len(statdist)+1), met_assign, color=colors[idx], label=f'MS {idx+1}')
+            
+            plot_assign_ms.legend()
+        
+            #plot_ms_trajs.plot(range(1,len(metastable_traj)+1), metastable_traj+1, lw=0.5, color='black')
+            plot_ms_trajs.step(range(1,len(metastable_traj)+1), metastable_traj+1, color='black')
+        
+            plot_ms_trajs.set_yticks(range(1, macrostate+1))
+            plot_ms_trajs.set_ylabel('Macrostate')
+            plot_ms_trajs.set_xlabel('Discretized frames')
+            plot_ms_trajs.xaxis.set_major_formatter(mtick.FuncFormatter(g))
+            plot_ms_trajs.set_xlim(0, len(metastable_traj+1))
+            
+        
+        # =============================================================================
+        #         plot_tica = fig.add_subplot(gs[3, 0])
+        #         pyemma.plots.plot_free_energy(*self.tica_concat[:, :2].T, ax=plot_tica) #, legacy=False)
+        #         plot_tica.set_xlabel('IC 1')
+        #         plot_tica.set_ylabel('IC 2')
+        #         plot_tica.set_title('TICA')
+        # =============================================================================
+            
+            plot_msm_tica = fig.add_subplot(gs[3, 0])
+            pyemma.plots.plot_free_energy(*data_concat[:, :2].T, weights=np.concatenate(msm.trajectory_weights()), ax=plot_msm_tica)
+            plot_msm_tica.set_xlabel('IC 1')
+            plot_msm_tica.set_ylabel('IC 2')
+            plot_msm_tica.set_title('MSM')
+            
+            plot_eigen = fig.add_subplot(gs[3, 1])
+        
+            pyemma.plots.plot_contour(*data_concat[:, :2].T, 
+                                      eig_projection, 
+                                      ax=plot_eigen, 
+                                      cbar_label='2nd right eigenvector', 
+                                      mask=True, 
+                                      cmap='PiYG') 
+            #another way to plot them all without colors
+            #plot_eigen.scatter(*coarse_state_centers[:, :2].T, s=15, c='C1')
+            plot_eigen.set_xlabel('IC 1')
+            plot_eigen.set_ylabel('IC 2')
+            plot_eigen.set_title('Slowest Process')
+        
+            for center, color in zip(coarse_state_centers, colors):
+                plot_eigen.scatter(*clusters.clustercenters[:, :2].T, edgecolors='black', c='orange')
+        
+            plot_ms_tica = fig.add_subplot(gs[3, 2])
+            _, _, misc = pyemma.plots.plot_state_map(*data_concat[:, :2].T, 
+                                                     metastable_traj, 
+                                                     ax=plot_ms_tica, 
+                                                     cmap='Set1',
+                                                     alpha=0.9)
+            plot_ms_tica.set_xlabel('IC 1')
+            plot_ms_tica.set_ylabel('IC 2')
+            plot_ms_tica.set_title('MS Projection')
+            for center, color in zip(coarse_state_centers, colors):
+                plot_ms_tica.scatter(x=center[0], y=center[1], edgecolors='black', color=color)
+            misc['cbar'].set_ticklabels([i for i in range(1,macrostate+1)])
+            misc['cbar'].set_label('Macrostate')
+            fig.tight_layout()
+            plt.show()
+            try:
+                fig.savefig(f'{self.results}/{file_name}.png', dpi=600, bbox_inches="tight")
+            except OverflowError:
+                print('Warning! Figure is getting too complex. Reducing dpi to 300.')
+                fig.savefig(f'{self.results}/{file_name}.png', dpi=300, bbox_inches="tight")
+        
+        
         pyemma.config.mute = True
         if macrostates == None or auto:
             print('Retrieving number of macrostates from spectral analysis')
@@ -1161,125 +1700,9 @@ class MSM:
             if macrostate != 0:
                 print(f'\tPCCA with {macrostate} MS')
                 msm.pcca(macrostate)
-                self.plot_PCCA(msm, macrostate, data_concat, disc_trajs, clusters)
+                plot()
             else:
                 print('\tPCCA skipped')
-
-    def plot_PCCA(self, msm, macrostate, data_concat, disc_trajs, clusters):
-        
-        #data_concat, disc_trajs, clusters = self.load_concatData_discTrajs(self.discretized_data)
-        #disc_trajs = np.concatenate(clusters.dtrajs)
-        metastable_traj = msm.metastable_assignments[np.concatenate(disc_trajs)]
-        highest_membership = msm.metastable_distributions.argmax(1)
-        
-        f = mtick.ScalarFormatter(useOffset=False, useMathText=True)
-        g = lambda x,pos : "${}$".format(f._formatSciNotation('%1e' % x))
-        
-        file_name=f'PCCA_{self.full_name}_{macrostate}MS'
-        fig=plt.figure(figsize=(12,12))
-        gs = gridspec.GridSpec(nrows=4, ncols=3)
-        colors= pl.cm.Set1(np.linspace(0,1,macrostate))
-        fig.suptitle(f'MSM {self.full_name}\n PCCA+ : {self.n_state} states to {macrostate} MS', 
-                     ha='center',
-                     weight='bold')
-        
-        statdist = msm.stationary_distribution
-        assignments=msm.metastable_assignments
-        
-        plot_statdist_states = fig.add_subplot(gs[0, :2]) 
-        plot_statdist_states.set_xlabel('State index')
-        plot_statdist_states.set_ylabel('Stationary distribution')
-        plot_statdist_states.set_ylim(0,1)
-        plot_statdist_states.yaxis.grid(color='grey', linestyle='dashed')
-        #plot_statdist_states.set_yscale('log')
-        for x, stat in zip(range(1, len(statdist)+1), statdist):
-            plot_statdist_states.bar(x, stat, color=colors[assignments[x-1]])
-        
-        plot_assign_ms = fig.add_subplot(gs[1,:2], sharex=plot_statdist_states, sharey=plot_statdist_states) 
-        plot_assign_ms.set_xlabel('State index')
-        plot_assign_ms.set_ylabel('MS assignment')
-        plot_assign_ms.yaxis.grid(color='grey', linestyle='dashed')
-        for idx, met_dist in enumerate(msm.metastable_distributions):
-                plot_assign_ms.bar(range(1, len(statdist)+1), met_dist, color=colors[idx], label=f'MS {idx+1}')
-        plot_assign_ms.legend()
-        
-        statdist_cg=[]
-        plot_statdist_ms = fig.add_subplot(gs[:2,2], sharey=plot_statdist_states)
-        plot_statdist_ms.set_xlabel('Macrostate')
-        plot_statdist_ms.set_ylabel('MS stationary distribution')
-        plot_statdist_ms.yaxis.grid(color='grey', linestyle='dashed')
-        plot_statdist_ms.set_xticks(range(1,macrostate+1))
-        #plot_statdist_ms.set_yscale('log')
-         
-        for idx, s in enumerate(msm.metastable_sets):
-            statdist_m = msm.pi[s].sum()
-            plot_statdist_ms.bar(idx+1, statdist_m, color=colors[idx]) #, label=f'MS {idx+1}')
-            statdist_cg.append(statdist_m)
-        #plot_statdist_ms.legend() 
-
-        plot_ms_trajs = fig.add_subplot(gs[2,:])
-        plot_ms_trajs.plot(range(1,len(metastable_traj)+1), metastable_traj+1, lw=0.5, color='black')
-        plot_ms_trajs.set_yticks(range(1, macrostate+1))
-        plot_ms_trajs.set_ylabel('Macrostate')
-        plot_ms_trajs.set_xlabel('Discretized frames')
-        plot_ms_trajs.xaxis.set_major_formatter(mtick.FuncFormatter(g))
-        plot_ms_trajs.set_xlim(0, len(metastable_traj+1))
-
-# =============================================================================
-#         plot_tica = fig.add_subplot(gs[3, 0])
-#         pyemma.plots.plot_free_energy(*self.tica_concat[:, :2].T, ax=plot_tica) #, legacy=False)
-#         plot_tica.set_xlabel('IC 1')
-#         plot_tica.set_ylabel('IC 2')
-#         plot_tica.set_title('TICA')
-# =============================================================================
-        
-        plot_msm_tica = fig.add_subplot(gs[3, 0])
-        pyemma.plots.plot_free_energy(*data_concat[:, :2].T, 
-                                      weights=np.concatenate(msm.trajectory_weights()), 
-                                      ax=plot_msm_tica) #, legacy=False)
-        plot_msm_tica.set_xlabel('IC 1')
-        plot_msm_tica.set_ylabel('IC 2')
-        plot_msm_tica.set_title('MSM')
-        
-        plot_eigen = fig.add_subplot(gs[3, 1])
-        eigvec = msm.eigenvectors_right()        
-        coarse_state_centers = clusters.clustercenters[msm.active_set[highest_membership]]
-
-        pyemma.plots.plot_contour(*data_concat[:, :2].T, 
-                                  eigvec[np.concatenate(disc_trajs), 1], 
-                                  ax=plot_eigen, 
-                                  cbar_label='2nd right eigenvector', 
-                                  mask=True, 
-                                  cmap='PiYG') 
-        #another way to plot them all without colors
-        #plot_eigen.scatter(*coarse_state_centers[:, :2].T, s=15, c='C1')
-        plot_eigen.set_xlabel('IC 1')
-        plot_eigen.set_ylabel('IC 2')
-        
-        
-        
-        
-        plot_ms_tica = fig.add_subplot(gs[3, 2])
-        _, _, misc = pyemma.plots.plot_state_map(*data_concat[:, :2].T, 
-                                                 metastable_traj, 
-                                                 ax=plot_ms_tica, 
-                                                 cmap='Set1',
-                                                 alpha=0.9)
-        plot_ms_tica.set_xlabel('IC 1')
-        plot_ms_tica.set_ylabel('IC 2')
-        plot_ms_tica.set_title('PCCA+')
-        for center, color in zip(coarse_state_centers, colors):
-            plot_ms_tica.scatter(x=center[0], y=center[1], edgecolors='black', color=color)
-        #misc['cbar'].set_ticklabels([r'$\mathcal{S}_%d$' % (i + 1)for i in range(macrostate)])
-        misc['cbar'].set_ticklabels([i for i in range(1,macrostate+1)])
-        misc['cbar'].set_label('MS')
-        fig.tight_layout()
-        plt.show()
-        try:
-            fig.savefig(f'{self.results}/{file_name}.png', dpi=600, bbox_inches="tight")
-        except OverflowError:
-            print('Warning! Figure is getting too complex. Reducing dpi to 300.')
-            fig.savefig(f'{self.results}/{file_name}.png', dpi=300, bbox_inches="tight")
 
 
     def CKTest_calculation(self, msm, macrostates):
@@ -1368,7 +1791,6 @@ class MSM:
         #data=np.array(np.load(self.values['discretized'][0]))
         #data_i=np.ascontiguousarray(data[0::msm_stride])
 
-        
         #TODO: make statdist into arguments for msm construction.
         file_name=f'{self.stored}/bayesMSM_{self.full_name}.npy'
         if not os.path.exists(file_name) or self.overwrite:
@@ -1379,10 +1801,11 @@ class MSM:
                 bayesMSM.save(file_name, overwrite=True)
             except Exception as v:
                 print(v)
+                bayesMSM=None
              
         else:
+            #print(f'\tBayesian MSM found for {self.full_name} ', end='\r')
             bayesMSM=pyemma.load(file_name)
-            print(f'\tBayesian MSM found for {self.full_name}')
 
         return bayesMSM
         
@@ -1415,9 +1838,10 @@ class MSM:
         plt.show()
     
     def TICA_calculation(self,
-                         lag,
+                         lags,
                          feature,
-                         dim=-1):
+                         dim=-1,
+                         opt_dim=5):
         """
         
 
@@ -1436,139 +1860,125 @@ class MSM:
             DESCRIPTION.
 
         """
-        file_name = f'{self.stored}/TICA_{self.ft_base_name}.npy'
-        if not os.path.exists(file_name) or self.overwrite:                  
-            data = self.load_features(self.tops_to_load, 
-                                      self.trajectories_to_load, 
-                                      [feature], 
-                                      inputs=self.selections)[0] #[0] because its yielding a list.
-            print(f'\tCalculating TICA of {self.ft_base_name}')
-            try:
-                tica = pyemma.coordinates.tica(data, 
-                                               lag=lag, 
-                                               dim=dim,
-                                               var_cutoff=MSM.var_cutoff,
-                                               skip=self.skip, 
-                                               stride=self.stride, 
-                                               chunksize=self.chunksize)
-                tica.save(file_name, save_streaming_chain=True)
-                self.plot_TICA(tica, lag, dim, feature)
-            except ValueError:
-                print(f'Warning! Failed for {self.ft_base_name}') 
-                print('Probably trajectories are too short for selected lag time and stride')
-                pass
-        else:
-            print(f'\tFound TICA of {self.ft_base_name}')
-            tica = pyemma.load(file_name)
-        
-        n_total_frames = tica.n_frames_total()
-        n_trajs = tica.number_of_trajectories()
-        min_traj, max_traj = tica.trajectory_lengths().min(), tica.trajectory_lengths().max()
-        print(f'\t\tTotal number of frames: {n_total_frames}\n\t\tNumber of trajectories: {n_trajs}\n\t\tFrames/trajectory: [{min_traj}, {max_traj}]')     
- 
-        return tica
 
-    def plot_TICA(self, 
-                  tica,
-                  lag,
-                  dim,  
-                  name, 
-                  opt_dim=10):
-        """
-        
-
-        Parameters
-        ----------
-        tica : TYPE
-            DESCRIPTION.
-        dim : TYPE
-            DESCRIPTION.
-        lag : TYPE
-            DESCRIPTION.
-        name : TYPE
-            DESCRIPTION.
-        opt_dim : TYPE, optional
-            DESCRIPTION. The default is 10.
-
-        Returns
-        -------
-        None.
-
-        Notes
-        -----
-        
-        tica_concat is the trajectories concatenated.
-        ticas is the individual trajectories
-        """
-         
-        f = mtick.ScalarFormatter(useOffset=False, useMathText=True)
-        g = lambda x,pos : "${}$".format(f._formatSciNotation('%1e' % x))
-        
-        if tica.dimension() > 10 and dim == -1:
-            print(f'\tWarning: TICA for {MSM.var_cutoff*100}% variance cutoff yields {tica.dimension()} dimensions.')
-            print(f'Reducing to {opt_dim} dimensions for visualization only.')
-            dims_plot=opt_dim
-        elif tica.dimension() > dim and dim > 0:
-            dims_plot=tica.dimension()
-        colors= pl.cm.Accent(np.linspace(0,1,dims_plot))
-        tica_concat = np.concatenate(tica.get_output())
-        
-        fig=plt.figure(figsize=(8,6))
-        gs = gridspec.GridSpec(nrows=1, ncols=2)
+        def plot():
+            f = mtick.ScalarFormatter(useOffset=False, useMathText=True)
+            g = lambda x,pos : "${}$".format(f._formatSciNotation('%1e' % x))
             
-        #plot histogram
-        ax0 = fig.add_subplot(gs[0, 0])
-        pyemma.plots.plot_feature_histograms(tica_concat[:, :dims_plot], ax=ax0)
-        ax0.set_ylabel('IC') #, ylog=True)
-        ax0.set_title('Histogram')
+            if tica.dimension() > 10 and dim == -1:
+                print(f'\tWarning: TICA for {MSM.var_cutoff*100}% variance cutoff yields {tica.dimension()} dimensions.')
+                print(f'Reducing to {opt_dim} dimensions for visualization only.')
+                dims_plot=opt_dim
+            elif tica.dimension() > dim and dim > 0:
+                dims_plot=tica.dimension()
+            else:
+                dims_plot=opt_dim
+            colors= pl.cm.Accent(np.linspace(0,1,dims_plot))
+            tica_concat = np.concatenate(tica.get_output())
             
-        #plot projection along main components
-        ax1 = fig.add_subplot(gs[0, 1])
-        pyemma.plots.plot_free_energy(*tica_concat[:, :2].T, ax=ax1, legacy=False) #, logscale=True)
-        ax1.set_xlabel('IC 1')
-        ax1.set_ylabel('IC 2')
-        ax1.set_title('IC density')
-
-        fig.suptitle(fr'TICA: {self.ft_name} {name} @ $\tau$ ={self.timestep*lag}, {tica.dimension()} dimensions', ha='center', weight='bold')
-        fig.tight_layout()   
-        fig.savefig(f'{self.results}/TICA_{self.ft_base_name}.png', dpi=600, bbox_inches="tight")
-        plt.show()
-
-        #plot discretized trajectories
-        ticas=tica.get_output()
-        
-        rows, columns=tools_plots.plot_layout(len(ticas)+1)
-        fig_trajs,axes_=plt.subplots(columns, rows, sharex=True, sharey=True, constrained_layout=True, figsize=(12,12))
-        #fig_trajs.subplots_adjust(hspace=0, wspace=0)
-
-        try:
-            flat=axes_.flat
-        except AttributeError:
-            flat=[axes_]     
-
-        #loop for the trajectories
-        for (idx_t, trj_tica), ax in zip(enumerate(ticas), flat): #len trajs?
-            
-            
-            x = self.timestep * np.arange(trj_tica.shape[0])
-    
-            for idx, tic in enumerate(trj_tica.T):
+            fig=plt.figure(figsize=(8,6))
+            gs = gridspec.GridSpec(nrows=1, ncols=2)
                 
-                if idx < dims_plot:
-                    ax.plot(x, tic, label=f'IC {idx}', color=colors[idx])
-                    ax.text(.5,.85, idx_t+1, horizontalalignment='center', transform=ax.transAxes)
-                    ax.xaxis.set_major_formatter(mtick.FuncFormatter(g))
-        fig_trajs.suptitle(fr'TICA: {self.ft_name} {name} @ $\tau$ ={self.timestep*lag}', weight='bold')
-        handles, labels = ax.get_legend_handles_labels()
-        def_locs=(1.1, 0.6)
-        fig_trajs.legend(handles, labels, bbox_to_anchor=def_locs)
-        fig_trajs.tight_layout()
-        fig_trajs.subplots_adjust(hspace=0, wspace=0)
-        fig_trajs.text(0.5, 0, f'Trajectory time ({self.unit})', ha='center', va='center', fontsize=12)
-        fig_trajs.text(-0.03, 0.6, 'IC value', ha='center', va='center', rotation='vertical', fontsize=12)
-        fig_trajs.savefig(f'{self.results}/TICA_{self.ft_base_name}_discretized.png', dpi=600, bbox_inches="tight")
-        plt.show()
+            #plot histogram
+            ax0 = fig.add_subplot(gs[0, 0])
+            pyemma.plots.plot_feature_histograms(tica_concat[:, :dims_plot], ax=ax0)
+            ax0.set_ylabel('IC') #, ylog=True)
+            ax0.set_title('Histogram')
+                
+            #plot projection along main components
+            ax1 = fig.add_subplot(gs[0, 1])
+            pyemma.plots.plot_free_energy(*tica_concat[:, :2].T, ax=ax1, legacy=False) #, logscale=True)
+            ax1.set_xlabel('IC 1')
+            ax1.set_ylabel('IC 2')
+            ax1.set_title('IC density')
+    
+            fig.suptitle(fr'TICA: {self.ft_name} {feature} @ $\tau$ ={self.timestep*lag}, {tica.dimension()} dimensions (w. {self.tica_weights})', ha='center', weight='bold')
+            fig.tight_layout()   
+            fig.savefig(f'{self.results}/TICA_{self.ft_base_name}.png', dpi=600, bbox_inches="tight")
+            plt.show()
+    
+            #plot discretized trajectories
+            ticas=tica.get_output()
+            
+            rows, columns=tools_plots.plot_layout(len(ticas)+1)
+            fig_trajs,axes_=plt.subplots(columns, rows, sharex=True, sharey=True, constrained_layout=True, figsize=(12,12))
+            #fig_trajs.subplots_adjust(hspace=0, wspace=0)
+    
+            try:
+                flat=axes_.flat
+            except AttributeError:
+                flat=[axes_]     
+    
+            #loop for the trajectories
+            for (idx_t, trj_tica), ax in zip(enumerate(ticas), flat): #len trajs?
+                
+                
+                x = self.timestep * np.arange(trj_tica.shape[0])
+        
+                for idx, tic in enumerate(trj_tica.T):
+                    
+                    if idx < dims_plot:
+                        ax.plot(x, tic, label=f'IC {idx}', color=colors[idx])
+                        ax.text(.5,.85, idx_t+1, horizontalalignment='center', transform=ax.transAxes)
+                        ax.xaxis.set_major_formatter(mtick.FuncFormatter(g))
+            fig_trajs.suptitle(fr'TICA: {self.ft_name} {feature} @ $\tau$ ={self.timestep*lag}', weight='bold')
+            handles, labels = ax.get_legend_handles_labels()
+            def_locs=(1.1, 0.6)
+            fig_trajs.legend(handles, labels, bbox_to_anchor=def_locs)
+            fig_trajs.tight_layout()
+            fig_trajs.subplots_adjust(hspace=0, wspace=0)
+            fig_trajs.text(0.5, 0, f'Trajectory time ({self.unit})', ha='center', va='center', fontsize=12)
+            fig_trajs.text(-0.03, 0.6, 'IC value', ha='center', va='center', rotation='vertical', fontsize=12)
+            fig_trajs.savefig(f'{self.results}/TICA_{self.ft_base_name}_discretized.png', dpi=600, bbox_inches="tight")
+            plt.show()
 
+
+        lags = self.check_inputs(lags)
+
+        for lag in lags:
+
+            file_name = f'{self.stored}/TICA_{self.ft_base_name}.npy'
+                
+            if not os.path.exists(file_name) or self.overwrite:
+                print('Generating TICA of ', self.ft_base_name)
+                try: 
+                    inputs_ = self.selections
+                except AttributeError:
+                    print('No selections found. Getting input information from MSM.regions')
+                    inputs_ = self.regions[self.ft_name]
+           
+                data= self.load_features(self.tops_to_load, 
+                                          self.trajectories_to_load, 
+                                          [feature], 
+                                          inputs=inputs_)[0] #because its yielding a list.
+
+                try:
+                    tica = pyemma.coordinates.tica(data, 
+                                                   lag=lag, 
+                                                   dim=dim,
+                                                   var_cutoff=MSM.var_cutoff,
+                                                   weights=self.tica_weights,
+                                                   skip=self.skip, 
+                                                   stride=self.stride) #chunksize=self.chunksize)
+                    tica.save(file_name, save_streaming_chain=True)
+                    plot()
+                except ValueError as v:
+                    print(v)
+                    tica = None
+                    
+            else:
+                print(f'\tFound TICA of {self.ft_base_name}')
+                tica = pyemma.load(file_name)
+            if tica != None:
+                #print(tica.get_params())
+                n_total_frames = tica.n_frames_total()
+                n_trajs = tica.number_of_trajectories()
+                min_traj, max_traj = tica.trajectory_lengths().min(), tica.trajectory_lengths().max()
+                print(f'\t\tTotal number of frames: {n_total_frames}\n\t\tNumber of trajectories: {n_trajs}\n\t\tFrames/trajectory: [{min_traj}, {max_traj}]')     
+        
+        if len(lags) == 1: # update only if a single TICA was requested
+            return tica
+    
     
     def VAMP2_dimensions(self, lags):
         """
@@ -1718,7 +2128,7 @@ class MSM:
         
         return vamps
         
-
+    @log
     def load_features(self, 
                       topology, 
                       trajectories, 
@@ -1764,68 +2174,74 @@ class MSM:
             trajectories=Trajectory.Trajectory.pre_process_MSM(trajectories, md_top, superpose_to=superpose_indices)
             md_top.atom_slice(subset_indices, inplace=True)
         for f in features:
-            
-            try:
-                feat=pyemma.coordinates.featurizer(md_top)
-                if type(inputs) is tuple:
-                    if f == 'distances':
-                        print(inputs[0], inputs[1])
-                        print(feat.select(inputs[1]))
-                        feat.add_distances(indices=feat.select(inputs[0]), indices2=feat.select(inputs[1]))
-                    elif f == 'contacts':
-                        feat.add_contacts(indices=feat.select(inputs[0]), indices2=feat.select(inputs[1]))
-                    elif f == 'min_dist':
-                        sel1 = feat.select(inputs[0])
-                        sel2 = feat.select(inputs[1])
-                        
-                        for s1 in sel1:
-                            for s2 in sel2:
-                                #pairs_sel=np.concatenate((sel1, sel2))
-                                res_pairs=feat.pairs([s1,s2], excluded_neighbors=2)
+            feat=pyemma.coordinates.featurizer(md_top)
+            if type(inputs) is tuple:
+                
+                input_1 = feat.select(inputs[0])
+                input_2 = feat.select(inputs[1])
+                print(inputs[0], inputs[1])
+
+                if f == 'contacts':
+                    feat.add_contacts(indices=input_1, indices2=input_2)
+                else:
+                    for s1 in input_1:
+                        for s2 in input_2:
+                            #pairs_sel=np.concatenate((sel1, sel2))
+                            res_pairs=feat.pairs([s1,s2], excluded_neighbors=0)
+
+                            if f == 'distances':
+                                feat.add_distances(indices=res_pairs)
+                            #feat.add_distances(indices=input_1, indices2=input_2)
+    
+                            elif f == 'min_dist':
                                 feat.add_residue_mindist(residue_pairs=res_pairs, 
                                                  scheme='closest-heavy', 
                                                  ignore_nonprotein=False, 
                                                  threshold=0.3)
-                else:
-                    
-                    if f == 'torsions':
+                            
+            else:
+                
+                if f == 'torsions':
+                    try:
                         feat.add_backbone_torsions(selstr=inputs, cossin=True)       
-                    elif f == 'positions':
-                        feat.add_selection(feat.select(inputs))
-                    elif f == 'chi':
-                        for idx in inputs:
-                            try:
-                                feat.add_chi1_torsions(selstr=f'resid {idx}', cossin=True)
-                            except ValueError:
-                                pass
+                    except Exception as v:
+                        print(v)
+                        pass
+                elif f == 'positions':
+                    feat.add_selection(feat.select(inputs))
+                elif f == 'chi':
+                    for idx in inputs:
+                        try:
+                            feat.add_chi1_torsions(selstr=f'resid {idx}', cossin=True)
+                        except Exception as v:
+                            print(v)
+                            pass
 # =============================================================================
 #                     elif f == 'RMSD':
 #                         feat.add_minrmsd_to_ref(inputs)
 # =============================================================================
-                if len(feat.describe()) > 0:
-                    #TODO: make this more fancy and robust
-                    print(f'\tFrom: {feat.describe()[0]}\n\tTo: {feat.describe()[-1]}')
-                    
-                    dimensions=feat.dimension()
-                    feature_file = f'{self.stored}/feature_{self.ft_name}_stride{self.stride}_dim{dimensions}.npy'
-                    if not os.path.exists(feature_file):
-                        data = pyemma.coordinates.load(trajectories, features=feat, stride=self.stride)
-                        print(f'Loading {f} data with stride {self.stride} ({feat.dimension()} dimensions)')
-                        ft_list=open(feature_file, 'wb')
-                        pickle.dump(data, ft_list)
-                    else:
-                        print(f"Loading featurized {f} file: {feature_file}")
-                        ft_list=open(feature_file, 'rb')
-                        data=pickle.load(ft_list)                                 
-                    if not get_dims:
-                        features_list.append(data)           
-                    else:
-                        features_list.append((data, feat.dimension()))
+
+            print(f'\tFrom: {feat.describe()[0]}\n\tTo: {feat.describe()[-1]}')
+            for f_ in feat.describe():
+                print(f_)
+            if len(feat.describe()) != 0:
+                dimensions=feat.dimension()
+                feature_file = f'{self.stored}/featurized-{f}_{self.ft_name}_stride{self.stride}_dim{dimensions}.npy'
+                if not os.path.exists(feature_file):
+                    data = pyemma.coordinates.load(trajectories, features=feat, stride=self.stride)
+                    print(f'Loading {f} data with stride {self.stride} ({feat.dimension()} dimensions)')
+                    ft_list=open(feature_file, 'wb')
+                    pickle.dump(data, ft_list)
                 else:
-                    print(f'Warning! Failed to featurize {f}. Check inputs and features.')
-        
-            except OSError:
-                print('PyEMMA could not load data. Check input topologies and trajectories.')
+                    print(f"Loading featurized {f} file: {feature_file}")
+                    ft_list=open(feature_file, 'rb')
+                    data=pickle.load(ft_list)                                 
+                if not get_dims:
+                    features_list.append(data)           
+                else:
+                    features_list.append([data, feat.dimension()])
+
+    
         
 
         return features_list
@@ -1888,20 +2304,35 @@ class MSM:
         return vamp, scores
 
 
-    def clusterKmeans_standalone(self, tica, n_clusters):
+    def clustering(self, n_clusters, metric='euclidean', cluster_method=None):
+        
+        if cluster_method == None:
+            cluster_method=self.cluster_method
 
         pyemma.config.show_progress_bars = False
-        cluster_name=f'{self.stored}/Cluster_{self.ft_base_name}_{n_clusters}clusters.npy'
+        if cluster_method == 'regspace':
+            cluster_name=f'{self.stored}/Cluster_{self.ft_base_name}_{n_clusters}clusters_{cluster_method}.npy'
+        else:
+            cluster_name=f'{self.stored}/Cluster_{self.ft_base_name}_{n_clusters}clusters.npy'
         if not os.path.exists(cluster_name) or self.overwrite:
-            print(f'\tClustering for {n_clusters} cluster centres')
-            clusters=pyemma.coordinates.cluster_kmeans(tica, 
+            print(f'\tClustering for {n_clusters} cluster centres using {cluster_method}.')
+            if cluster_method == 'k-means':
+                clusters=pyemma.coordinates.cluster_kmeans(self.discretized_data, 
                                                        max_iter=50, 
                                                        k=n_clusters, 
                                                        stride=MSM.c_stride, 
                                                        chunksize=self.chunksize)
+            elif cluster_method == 'regspace':
+                clusters=pyemma.coordinates.cluster_regspace(self.discretized_data, 
+                                                             dmin=2.0, 
+                                                             max_centers=n_clusters, 
+                                                             stride=self.stride, 
+                                                             metric=metric,
+                                                             chunksize=self.chunksize, 
+                                                             skip=self.skip)
             clusters.save(cluster_name, save_streaming_chain=True)
         else:
-            print(f'\tCluster found for {n_clusters} cluster centers')
+            print(f'\tCluster found for {n_clusters} cluster centers', end='\r')
             clusters=pyemma.load(cluster_name)
         
         return clusters
