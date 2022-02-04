@@ -9,6 +9,19 @@ import os
 import simtk.openmm as omm
 import simtk.unit as unit
 import pandas as pd
+from functools import wraps
+import subprocess
+import re
+
+def log(func):
+    """Decorator for system setup"""
+    
+    @wraps(func)
+    def logger(*args, **kwargs):
+        print(f'Executing {func.__name__} \n', end='\r')
+        return func(*args, **kwargs)
+    return logger
+
 
 class Functions:
     
@@ -48,18 +61,20 @@ class Functions:
             
         for idx, p in enumerate(parameters):
 
-            try:
+            unit_string = str(p)
+            print(unit_string)
+            if re.search('K', unit_string):
                 scalar=float(str(p).split('K')[0])*unit.kelvin
                 #self.parameter_scalar.append(scalar)
                 #parameter_label.append(str(scalar).replace(" ",""))
-                print(f'Converted parameter "temperature" (in K) into scalar: {scalar}')
-            except ValueError:
+                #print(f'Converted parameter "temperature" (in K) into scalar: {scalar}')
+            elif re.search('M', unit_string):
                 try:
                     scalar=float(str(p).split('M')[0])*unit.molar
-                except:
+                except ValueError:
                     scalar=float(str(p).split('mM')[0])/1000*unit.molar
                 #print(f'Converted parameter "concentration" (in Molar) into scalar: {scalar}')
-            except:
+            else:
                 scalar=idx
                 print(f'Converted unidentified parameter into scalar: {scalar}')
                 
@@ -582,7 +597,55 @@ class Tasks:
         self.n_gpu = n_gpu
         self.run_time = run_time
         
+    @staticmethod    
+    def run_bash(command, input_file, args='', mode=None):
         
+        file_path, file_name_ = os.path.split(input_file) 
+        file_name, extension = file_name_.split('.')
+        
+        job_string = f'{command} {args} {input_file}'
+        
+        job_file=f'{file_path}/job.sh'
+        
+        with open(job_file, 'w') as f:
+            f.write(
+                    f'''
+                    cd {file_path}
+                    {job_string}
+                    exit 0
+                    ''')
+        f.close()
+            
+        
+        encoding = 'UTF-8'
+
+        if mode == 'create':
+            chmod = f'chmod a+rwx {job_file}'
+            subprocess.call(chmod.split())
+            process = subprocess.call(job_file, shell=True)
+
+        else:
+            process = subprocess.Popen(job_string.split(), stdout=subprocess.PIPE) 
+            output, error = process.communicate()
+            
+            if mode == 'pipe':
+                return output
+            elif mode == 'out':
+                try:
+                    out_file_name = f'{file_path}/{file_name}_{command.split("_")[1]}.{extension}'
+                except IndexError:
+                    out_file_name = f'{file_path}/{file_name}_{command}.{extension}'
+                    
+                out_pdb = str(output, encoding)
+                f=open(out_file_name, "w")
+                f.write(out_pdb)
+                f.close()
+                
+                return out_file_name
+            else:
+                print(f'{error}\n{str(output, encoding)}')
+    
+    
         
     def setMachine(self, gpu_index_='0', force_platform=False):
         """

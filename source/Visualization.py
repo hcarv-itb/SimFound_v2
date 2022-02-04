@@ -13,9 +13,32 @@ from ipywidgets import interact, interactive, fixed, interact_manual
 import ipywidgets as widgets
 import numpy as np
 import matplotlib.pyplot as plt
+from functools import wraps
+import mdtraj as md
 #%matplotlib notebook
 
 from gridData import Grid
+
+def show(func):
+    """Decorator for system setup"""
+    
+    @wraps(func)
+    def show_(*args, **kwargs):
+        print(f'Executing {func.__name__} \n', end='\r')
+        
+        widget = nglview.NGLWidget()
+        out = func(*args, **kwargs)
+        ref = md.load_pdb(out)
+        widget.add_trajectory(ref, default=True)
+        widget.camera = 'perspective'
+        widget.stage.set_parameters(**{
+                                  "clipNear": 0, "clipFar": 100, "clipDist": 1,
+                                  "backgroundColor": "white",})   
+
+
+        return widget
+        
+    return show_
 
 class Visualization:
     """

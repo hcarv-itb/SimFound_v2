@@ -203,8 +203,6 @@ class Project:
             tools.Functions.fileHandler([system.name_folder]) #Update the path if fileHandler generates a new folder
             
         self.systems=systems
-
-        return systems
         
         
 class System(Project):
@@ -284,7 +282,7 @@ class System(Project):
         
         tools.Functions.fileHandler([self.results_folder])
 
-        print(f'System {self.name} with parameter {self.scalar} defined')
+        #print(f'System {self.name} with parameter {self.scalar} defined')
         
         if self.topology == None:
              

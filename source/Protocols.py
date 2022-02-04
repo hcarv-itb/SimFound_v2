@@ -7,9 +7,10 @@ Created on Sat May  1 19:24:37 2021
 #SFv2
 try:
     import tools
-    import Job
+    import Visualization
     
-except:
+except Exception as v:
+    print(f'Warning: {v.__class__} {v}')
     pass
 
 #legacy
@@ -34,6 +35,7 @@ import glob
 import pickle
 import numpy as np
 import datetime
+import nglview
 
 
 
@@ -45,7 +47,7 @@ class Protocols:
                  project,
                  name='undefined',
                  def_input_ff='/inputs/forcefields',
-                 def_input_struct='/inputs/structures',
+                 def_input_struct=None,
                  def_job_folder='/jobs',
                  overwrite_mode=False):
         """
@@ -66,12 +68,19 @@ class Protocols:
         self.ow_mode = overwrite_mode
 
         for name, system in project.systems.items():
-            print(f'Setting openMM simulation of {name} protocols in {system.name_folder}')
-            
+            #print(f'Setting openMM simulation of {name} protocols in {system.name_folder}', end='\r')
             self.protocols[name]=system #self.check_omm(system, self.ow_mode) #system
                                 
         self.workdir =project.workdir
-        self.def_input_struct=project.def_input_struct
+        
+        if def_input_struct != None:
+            self.def_input_struct=f'{project.def_input_struct}/{def_input_struct}'
+            print('Default input folder for structures: ', self.def_input_struct)
+        else:
+            self.def_input_struct=project.def_input_struct
+            
+        
+        
         self.def_input_ff=project.def_input_ff
         self.def_job_folder=os.path.abspath(f'{project.workdir}/{def_job_folder}')
         
@@ -80,6 +89,142 @@ class Protocols:
         #status of openMM objects.
         
         
+
+            
+        
+
+
+
+    @tools.log
+    @Visualization.show
+    def handle_pdb(self, input_pdb):
+
+        file_path, file_name_ = os.path.split(input_pdb) 
+        file_name, extension = file_name_.split('.')
+
+        tools.Tasks.run_bash('pdb_wc', input_pdb)
+
+        #no_counterions = tools.Tasks.run_bash('pdb_delchain', input_pdb, '-D', mode='out') #remove CL ions chainD
+        
+        protein_pdb = input_pdb
+        protein_name ='SETD2'
+        ligand_name = 'ssK36'
+        ligand_pdb = [f'{file_path}/ssK36_1.pdb']*4
+        
+        complex_pdb = self.get_packmol(file_path, protein_name, protein_pdb, ligand_name, ligand_pdb)
+        
+        print(complex_pdb)
+    
+        file_name_complex = os.path.split(complex_pdb)[1].split('.')[0]
+        print(file_name_complex)
+
+        
+                
+# =============================================================================
+# #Split chains for openMM 
+#         tools.Tasks.run_bash('pdb_splitchain', complex_pdb, mode='create') 
+#         chain_files = glob.glob(f'{file_path}/{file_name_complex}_*.{extension}')
+#         for pdb_file in chain_files:
+#             print(pdb_file)
+#             
+#             pdb_file=tools.Tasks.run_bash('pdb_reatom', pdb_file, mode='out')
+#             #tools.Tasks.run_bash('pdb_reres' pdb_file, mode='out')
+#             
+#             #run(reset_atom_index, verbose=False)
+#             #run(reset_res_index)
+#             ref = md.load_pdb(pdb_file)
+#             print(ref)
+# =============================================================================
+
+        return complex_pdb
+
+    #TODO!!!!!!! fix chain C peptide together with chain C of SAM
+    #TODO!!!!!!! full bayesMSM is causing troubles with packmol/fortran.
+
+    def get_packmol(self, 
+                    workdir, 
+                    protein_name, 
+                    protein_pdb, 
+                    ligand_name, 
+                    ligand_pdb, 
+                    box_size=100.0, 
+                    n_protein=1, 
+                    n_ligand=4): 
+            
+
+        ref = md.load_pdb(protein_pdb)
+        print(ref.topology)
+        n_chains = ref.n_chains
+        for chain in ref.topology.chains: #['index', 'topology', '_residues']
+            
+            chain_ID = chr(ord('@')+chain.index+1)
+            print(f'Chain {chain.index} ID:{chain_ID}')
+            if len(chain._residues) < 30:
+                for res in chain._residues:
+                    print('\t', res)
+            else:
+                print(f'\tFrom {chain._residues[0]} to {chain._residues[-1]}')
+                    
+        base_name = f'{workdir}/{protein_name}-{ligand_name}_{n_protein}-{n_ligand}'
+        out_file = f'{base_name}.pdb'
+        job_file = f'{base_name}.inp'
+        protein_pack = f'{base_name}.pack'         
+
+        center_box = box_size/2
+        #Warning! due to PBC, box should have 1 angstrom padding
+        with open(job_file, 'w') as f:
+            f.write(f'''
+# {base_name}
+
+tolerance 5.0
+output {out_file}
+filetype pdb
+seed -1
+add_box_sides 1.0
+add_amber_ter
+
+
+structure {protein_pdb}
+  number {n_protein}
+  inside cube 0 0 0 {box_size} 
+  center 
+  fixed {center_box} {center_box} {center_box} 0 0 0
+end structure
+''')
+
+        #TODO: This is for extra inputs which  are protein, has to handle chains
+        #TODO: For other molecules, this can be done in one step by specifying molecule number in single call
+            for i, lig in enumerate(ligand_pdb, n_chains+1):
+                ref_ = md.load_pdb(lig)
+                print(ref_.topology)
+                n_chain_ = ref_.n_chains
+
+                for i_ in range(i, i+n_chain_):
+                    chain_ID = chr(ord('@')+i_+1)
+                    print(f'Chain {i_} ID: {chain_ID}') 
+                    f.write(f'''
+add_amber_ter
+structure {lig}
+  number 1
+  resnumbers 1
+  chain {chain_ID}
+  inside cube 0 0 0 {box_size}
+end structure
+''')
+
+
+    structure {lig}
+      number 1
+      resnumbers 1
+      chain {chain_ID}
+      inside cube 0 0 0 {box_size}
+    end structur
+       f.close()
+       tools.Tasks.run_bash('packmol', job_file, '<', mode='create') 
+
+        return out_file
+
+
     @staticmethod    
     def check_omm(system, ow_mode):
         
@@ -122,8 +267,7 @@ class Protocols:
             system.positions=pdb.positions
         
         return system
-            
-        
+
 
     def pdb2omm(self, 
               input_pdb=None,
@@ -189,13 +333,16 @@ class Protocols:
         for name, system_protocol in self.protocols.items():
         
             system=self.check_omm(system_protocol, self.ow_mode) 
-            
                 
             if system.status == 'new' or self.ow_mode:
                 print('\tGenerating new openMM system for: ', name, system)
                 
                 system.structures = {}
-                system.structures['input_pdb']=system.input_topology
+                
+                if input_pdb != None: 
+                    system.structures['input_pdb'] = input_pdb
+                else:
+                    system.structures['input_pdb']=system.input_topology
             
                 #Fix the input_pdb with PDBFixer
                 if fix_pdb:
@@ -231,13 +378,12 @@ class Protocols:
                 if protonate:
                 
                     if residue_variants:
-                
-                        pre_system.addHydrogens(forcefield, pH = pH_protein, 
-                                            variants = self.setProtonationState(pre_system.topology.chains(), 
-                                                                     protonation_dict=residue_variants))
+                        variants_ = self.setProtonationState(pre_system.topology.chains(), protonation_dict=residue_variants)
+                        
+                        pre_system.addHydrogens(forcefield, pH=pH_protein, variants=variants_ )
     
                     else:
-                        pre_system.addHydrogens(forcefield, pH = pH_protein)
+                        pre_system.addHydrogens(forcefield, pH=pH_protein)
             
     
                 #Call to solvate()
@@ -396,9 +542,7 @@ class Protocols:
         
             print('System: ', name)
             if system.status != 'complete':
-                
-                
-            
+
                 job=tools.Tasks(machine=where,
                                      n_gpu=len(gpu_index),
                                      run_time='12:00:00')
@@ -936,11 +1080,13 @@ class Protocols:
             
             except:
                 
-                print(f'\tMolecule {idx} ({extra_pdb}) could not be added by openMM')
+                print(f'\tMolecule {idx} ({pdb_e}) could not be added by openMM')
 
-        for mol in total_mols:
-            
-            print(f'\tAdded {mol[0]}: {mol[1]}')  
+# =============================================================================
+#         for mol in total_mols:
+#             
+#             print(f'\tAdded {mol[0]}: {mol[1]}')  
+# =============================================================================
   
         return system, total_mols
 
@@ -1186,7 +1332,6 @@ class Protocols:
 
         protonation_list = []
         key_list=[]
-
 
         for chain in system:
         

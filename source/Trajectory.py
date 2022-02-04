@@ -162,7 +162,7 @@ class Trajectory:
             return files[0]
         
         else:
-            print(f'Reference structure {workdir}/{ref_name} not found')
+            #print(f'Reference structure {workdir}/{ref_name} not found')
             for top_type in Trajectory.top_types:
                 files=glob.glob(f'{workdir}/*.{top_type}')
                 for f in files:
@@ -170,7 +170,7 @@ class Trajectory:
             if len(topologies) == 0:
                 topologies = input_topology
 
-            print('Defined topology: ', topologies)
+            #print('Defined topology: ', topologies)
             return topologies
 
     
