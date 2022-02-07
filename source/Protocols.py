@@ -36,6 +36,9 @@ import pickle
 import numpy as np
 import datetime
 import nglview
+import random
+import shutil
+import re
 
 
 
@@ -63,22 +66,25 @@ class Protocols:
         None.
 
         """
-
-        self.protocols = {}
+        self.project = project
+        self.protocols = project.systems
+        self.systems = project.systems
         self.ow_mode = overwrite_mode
 
-        for name, system in project.systems.items():
-            #print(f'Setting openMM simulation of {name} protocols in {system.name_folder}', end='\r')
-            self.protocols[name]=system #self.check_omm(system, self.ow_mode) #system
+# =============================================================================
+#         for name, system in project.systems.items():
+#             #print(f'Setting openMM simulation of {name} protocols in {system.name_folder}', end='\r')
+#             self.protocols[name]=system #self.check_omm(system, self.ow_mode) #system
+# =============================================================================
                                 
         self.workdir =project.workdir
         
         if def_input_struct != None:
-            self.def_input_struct=f'{project.def_input_struct}/{def_input_struct}'
-            print('Default input folder for structures: ', self.def_input_struct)
+            print('Warning! ')
+            self.def_input_struct=def_input_struct
         else:
             self.def_input_struct=project.def_input_struct
-            
+        print('Default input folder for structures: ', self.def_input_struct)    
         
         
         self.def_input_ff=project.def_input_ff
@@ -93,66 +99,108 @@ class Protocols:
             
         
 
-
+    def sample_mixer(self, msm_model):
+        
+        model_samples = glob.glob(f'{self.project.def_input_struct}/{msm_model}/sample_*.pdb')
+# =============================================================================
+#         random_sample1 = random.sample(model1_samples, self.project.replicas)
+#         print(len(random_sample))
+#         
+#         if set(random_sample1) != len(random_sample1):
+#             print('Warning! Selected samples contain one or more duplicates')
+# =============================================================================
+        return model_samples 
+        
 
     @tools.log
-    @Visualization.show
-    def handle_pdb(self, input_pdb):
+    #@Visualization.show
+    def handle_pdb(self, input_pdb, ligand_pdb=[], out_folder=None, box_size=100, edit_chains=[1, 2]):
+        
+
 
         file_path, file_name_ = os.path.split(input_pdb) 
         file_name, extension = file_name_.split('.')
+        if out_folder != None:
+            file_path = out_folder
+            
+        #tools.Tasks.run_bash('pdb_wc', input_pdb)
 
-        tools.Tasks.run_bash('pdb_wc', input_pdb)
+        no_counterions = tools.Tasks.run_bash('pdb_delchain', input_pdb, '-D', mode='out') #remove CL ions chainD
+        
+        
+        #TODO: this is set for single protein, single ligand. Make flexible for multiples
+        protein_pdb = [no_counterions]
+        protein_name =self.project.protein[0]
+        ligand_name = self.project.ligand[0]
+        #ligand_pdb = [f'{file_path}/ssK36_1.pdb']*4
+        n_protein = len([protein_pdb])
+        n_ligand = len(ligand_pdb)
+        
+        check_paths = protein_pdb + ligand_pdb
+        copy_files =[]
+        for file in check_paths:
+            if re.search('@', file):
+                file_path_original, file_name_mod = os.path.split(file)
+                shutil.copy(file, f'{out_folder}/{file_name_mod}')
+                copy_files.append(f'{out_folder}/{file_name_mod}')
+            else:
+                copy_files.append(file)
+        protein_pdb=copy_files[:len(protein_pdb)]
+        ligand_pdb=copy_files[len(protein_pdb):]
+        
+        base_name = f'{file_path}/{protein_name}-{ligand_name}_{n_protein}-{n_ligand}'
+        
+        #this is loading two times instead of passing ref to packmol since not always protein is ref
+        ref = md.load_pdb(protein_pdb[0])
+        print(ref.topology)
+        n_chains = ref.n_chains
+        
+        
+        #Warning! for packmol, weird names cannot be used otherwise fortran errors occur.
+        complex_pdb = self.build_w_packmol(base_name,  
+                                           protein_pdb,  
+                                           ligand_pdb, 
+                                           box_size=box_size)
 
-        #no_counterions = tools.Tasks.run_bash('pdb_delchain', input_pdb, '-D', mode='out') #remove CL ions chainD
-        
-        protein_pdb = input_pdb
-        protein_name ='SETD2'
-        ligand_name = 'ssK36'
-        ligand_pdb = [f'{file_path}/ssK36_1.pdb']*4
-        
-        complex_pdb = self.get_packmol(file_path, protein_name, protein_pdb, ligand_name, ligand_pdb)
-        
-        print(complex_pdb)
     
         file_name_complex = os.path.split(complex_pdb)[1].split('.')[0]
-        print(file_name_complex)
-
+             
+        #Split chains for openMM 
+        tools.Tasks.run_bash('pdb_splitchain', complex_pdb, mode='create') 
+        chain_files = glob.glob(f'{file_path}/{file_name_complex}_?.{extension}')
         
+
+        for idx, pdb_file in enumerate(chain_files): #chain_files[n_chains:]):
+            chain_ID = chr(ord('@')+idx+1)
+            print(f'Chain {idx} ID:{chain_ID} {ref.topology}')
+            ref = md.load_pdb(pdb_file)
+            if idx in edit_chains:
+                print('chain to edit')
+                chain_file_name, ext = os.path.split(pdb_file)[1].split('.')
                 
-# =============================================================================
-# #Split chains for openMM 
-#         tools.Tasks.run_bash('pdb_splitchain', complex_pdb, mode='create') 
-#         chain_files = glob.glob(f'{file_path}/{file_name_complex}_*.{extension}')
-#         for pdb_file in chain_files:
-#             print(pdb_file)
-#             
-#             pdb_file=tools.Tasks.run_bash('pdb_reatom', pdb_file, mode='out')
-#             #tools.Tasks.run_bash('pdb_reres' pdb_file, mode='out')
-#             
-#             #run(reset_atom_index, verbose=False)
-#             #run(reset_res_index)
-#             ref = md.load_pdb(pdb_file)
-#             print(ref)
-# =============================================================================
+                #TODO: extract CONNECT records from input file, or reset indexes and build anew.
+                chain_edit_file=f'{self.def_input_struct}/{idx}_CONNECT'
+                files = [pdb_file, chain_edit_file]
+                edit_file = f'{file_path}/{chain_file_name}_edit.{ext}'
+                with open(edit_file, 'w') as outfile:
+                    for file in files:
+                        with open(file) as infile:
+                            outfile.write(infile.read())
+
 
         return complex_pdb
 
-    #TODO!!!!!!! fix chain C peptide together with chain C of SAM
-    #TODO!!!!!!! full bayesMSM is causing troubles with packmol/fortran.
 
-    def get_packmol(self, 
-                    workdir, 
-                    protein_name, 
-                    protein_pdb, 
-                    ligand_name, 
-                    ligand_pdb, 
-                    box_size=100.0, 
-                    n_protein=1, 
-                    n_ligand=4): 
+
+    def build_w_packmol(self,
+                        base_name,
+                        protein_pdb,
+                        ligand_pdb,
+                        box_size=100.0, 
+                        n_protein=1): #n_ligand): 
             
 
-        ref = md.load_pdb(protein_pdb)
+        ref = md.load_pdb(protein_pdb[0])
         print(ref.topology)
         n_chains = ref.n_chains
         for chain in ref.topology.chains: #['index', 'topology', '_residues']
@@ -165,10 +213,8 @@ class Protocols:
             else:
                 print(f'\tFrom {chain._residues[0]} to {chain._residues[-1]}')
                     
-        base_name = f'{workdir}/{protein_name}-{ligand_name}_{n_protein}-{n_ligand}'
         out_file = f'{base_name}.pdb'
-        job_file = f'{base_name}.inp'
-        protein_pack = f'{base_name}.pack'         
+        job_file = f'{base_name}.inp'         
 
         center_box = box_size/2
         #Warning! due to PBC, box should have 1 angstrom padding
@@ -181,10 +227,11 @@ output {out_file}
 filetype pdb
 seed -1
 add_box_sides 1.0
-add_amber_ter
 
 
-structure {protein_pdb}
+
+
+structure {protein_pdb[0]}
   number {n_protein}
   inside cube 0 0 0 {box_size} 
   center 
@@ -194,16 +241,16 @@ end structure
 
         #TODO: This is for extra inputs which  are protein, has to handle chains
         #TODO: For other molecules, this can be done in one step by specifying molecule number in single call
-            for i, lig in enumerate(ligand_pdb, n_chains+1):
+            print('Ligand molecules:')
+            for i, lig in enumerate(ligand_pdb, n_chains):
+                lig = tools.Tasks.run_bash('pdb_delchain', lig, '-B', mode='out') #remove CL ions chainB
                 ref_ = md.load_pdb(lig)
-                print(ref_.topology)
                 n_chain_ = ref_.n_chains
 
                 for i_ in range(i, i+n_chain_):
                     chain_ID = chr(ord('@')+i_+1)
-                    print(f'Chain {i_} ID: {chain_ID}') 
+                    print(f'\tChain {i_} ID: {chain_ID} {ref_.topology}') 
                     f.write(f'''
-add_amber_ter
 structure {lig}
   number 1
   resnumbers 1
@@ -212,16 +259,8 @@ structure {lig}
 end structure
 ''')
 
-
-    structure {lig}
-      number 1
-      resnumbers 1
-      chain {chain_ID}
-      inside cube 0 0 0 {box_size}
-    end structur
-       f.close()
-       tools.Tasks.run_bash('packmol', job_file, '<', mode='create') 
-
+        tools.Tasks.run_bash('packmol', job_file, '<', mode='create') 
+        
         return out_file
 
 
@@ -230,6 +269,7 @@ end structure
         
         stored_omm=glob.glob(f'{system.name_folder}/omm_*.pkl')
         system.stored_sim=(1, f'{system.name_folder}/sim.pkl')
+        
         
         if len(stored_omm) > 0:
             
@@ -281,11 +321,13 @@ end structure
               extra_names=[],
               other_ff_instance=False,
               pH_protein = 7.0,
+              ionicStrength=0*unit.molar,
               residue_variants={},
               other_omm=False,
               input_sdf_file=None,
-              box_size=9.0,
-              insert_smiles=None):
+              box_size=9.0*unit.nanometers,
+              insert_smiles=None,
+              padding_=None):
         """
         Method to prepare an openMM system from PDB and XML/other force field definitions.
         Returns self, so that other methods can act on it.
@@ -330,19 +372,30 @@ end structure
 
         self.protocols_omm={}
 
-        for name, system_protocol in self.protocols.items():
+        for name, system_protocol in self.systems.items():
         
             system=self.check_omm(system_protocol, self.ow_mode) 
                 
             if system.status == 'new' or self.ow_mode:
-                print('\tGenerating new openMM system for: ', name, system)
-                
+                print('\tGenerating new openMM system for: ', name)
                 system.structures = {}
                 
-                if input_pdb != None: 
-                    system.structures['input_pdb'] = input_pdb
-                else:
+                
+                if input_pdb is None:
+                    print('Will read input PDB from input topology of system: ', system.input_topology)
                     system.structures['input_pdb']=system.input_topology
+                else:
+                    system.structures['input_pdb'] = f'{system.name_folder}/{input_pdb}'
+                    print(f'Will read default input PDB from system folder. Extra PDB files (if used) must be there: {system.name_folder}/{system.supra_folder}.pdb')
+                    input_path_extras = system.name_folder
+# =============================================================================
+#                 else: 
+#                     system.structures['input_pdb'] = f'{self.def_input_struct}/{input_pdb}'
+#                     print(f'Will read default input PDB from default input structures folder: {self.def_input_struct}/{input_pdb}')
+#                     input_path_extras = None
+# =============================================================================
+
+
             
                 #Fix the input_pdb with PDBFixer
                 if fix_pdb:
@@ -362,7 +415,7 @@ end structure
                 #Add ligand structures to the model with addExtraMolecules_PDB
                 if len(extra_input_pdb) > 0:
     
-                    pre_system, self.extra_molecules=self.addExtraMolecules_PDB(pre_system, extra_input_pdb)
+                    pre_system, self.extra_molecules=self.addExtraMolecules_PDB(pre_system, extra_input_pdb, input_path=input_path_extras)
     
                 #Create a ForceField instance with provided XMLs with setForceFields()
                 forcefield, ff_paths=self.setForceFields(ff_files=ff_files)
@@ -388,9 +441,10 @@ end structure
     
                 #Call to solvate()
                 #TODO: For empty box, add waters, remove then
+                #Will neutralize and fix Ionic Strength
                 print('\tSolvating.')
                 if solvate:
-                    pre_system=self.solvate(pre_system, forcefield, box_size=box_size)
+                    pre_system=self.solvate(pre_system, forcefield, box_size=box_size, padding=padding_, ionicStrength=ionicStrength)
         
                 system.topology_omm=pre_system.topology
                 system.positions=pre_system.positions
@@ -1055,7 +1109,6 @@ end structure
     def addExtraMolecules_PDB(self, system, extra_input_pdb, input_path=None):
         
         if input_path == None:
-            
             input_path=self.def_input_struct
             
         total_mols=[]
@@ -1063,7 +1116,7 @@ end structure
         for idx, pdb_e in enumerate(extra_input_pdb, 1):
             
             
-            path_pdb=f'{self.def_input_struct}/{pdb_e}'
+            path_pdb=f'{input_path}/{pdb_e}'
 
             if not os.path.exists(path_pdb):
                 
@@ -1274,12 +1327,20 @@ end structure
 
         # add box vectors and solvate
         #TODO: Allow other box definitions. Use method padding to get prot sized+padding distance
-        system.addSolvent(forcefield, 
-                                     model='tip4pew', 
-                                     neutralize=True, 
-                                     ionicStrength=ionicStrength, #0.1 M for SETD2
-                                     padding=None, 
-                                     boxSize=omm.Vec3(box_size, box_size, box_size))
+        if padding is None:
+            print('')
+            system.addSolvent(forcefield, 
+                              model='tip4pew', 
+                              neutralize=True, 
+                              ionicStrength=ionicStrength, #0.1 M for SETD2
+                              boxSize=omm.Vec3(box_size, box_size, box_size)*unit.nanometers)
+            
+        else:
+            system.addSolvent(forcefield, 
+                              model='tip4pew', 
+                              neutralize=True, 
+                              ionicStrength=ionicStrength,
+                              padding = padding) #0.1 M for SETD2
             
         return system
 

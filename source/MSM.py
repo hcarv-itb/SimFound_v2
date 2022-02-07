@@ -52,7 +52,7 @@ class MSM:
     ref_samples=2000
     visual_samples=100
     movie_samples=200
-    generate_samples=100
+    generate_samples=40
     
 
 
@@ -65,8 +65,6 @@ class MSM:
                  chunksize=0, 
                  stride=1,
                  skip=0,
-                 confirmation=False,
-                 _new=False,
                  warnings=False,
                  pre_process=True,
                  equilibration=False,
@@ -123,7 +121,7 @@ class MSM:
         print('PyEMMA calculations will be stored under: ', self.stored)
         if def_traj != None or def_top != None:
             print(f'Using pre-defined trajectory {self.def_traj} and/or topology {self.def_top}')
-        tools.Functions.fileHandler([self.results, self.stored], confirmation=confirmation, _new=_new)
+        tools.Functions.fileHandler([self.results, self.stored])
  
     @staticmethod
     def plot_correlations(df,
@@ -1295,10 +1293,13 @@ class MSM:
                     h_members.append(highest_member)
                     state_samples[idx] = extract(dist, highest_member)
             elif set_mode == 'generate':
+                base_name = f'{msm_file_name}_{self.CG}{macrostate}'
+                file_name = f'{self.project.def_input_struct}/{base_name}/sample'
+                tools.Functions.fileHandler([f'{self.project.def_input_struct}/{base_name}'])
+                
                 frames= np.int(MSM.generate_samples/macrostate)
                 samples = msm.sample_by_distributions(msm.metastable_distributions, frames)
-                file_name = f'{self.stored}/{msm_file_name}_{self.CG}{macrostate}_dist'
-                print(f'\tGenerating {frames} (={MSM.generate_samples}frames/{macrostate}macrostates) samples from metastable distributions')
+                print(f'\tGenerating {frames}*{macrostate}macrostates = {MSM.generate_samples} samples from metastable distributions')
                 self.save_samples(file_name, samples, save_as='pdb')
         
                 

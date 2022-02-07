@@ -59,7 +59,7 @@ class Project:
 
     
     def __init__(self, 
-                 workdir,  
+                 workdir=None,  
                  title="Untitled",
                  hierarchy=("protein", "ligand", "parameter"), 
                  parameter=None, 
@@ -68,8 +68,7 @@ class Project:
                  ligand=None, 
                  timestep=1*unit.picoseconds, 
                  topology='system.pdb',
-                 initial_replica=1,
-                 results='results'):
+                 initial_replica=1):
         
         """
     
@@ -105,8 +104,12 @@ class Project:
             The project instance. 
     
         """
-        
-        self.workdir=workdir
+        if workdir == None:
+            self.workidr = os.getcwd()
+            print('Warning! No working directory defined. Using: ', self.workdir)
+        else:
+            self.workdir=workdir
+        print(f'Working on {self.workdir}')
         self.title=title
         self.hierarchy=hierarchy
         self.parameter=parameter
@@ -119,12 +122,16 @@ class Project:
         self.ligand=ligand
         self.timestep=timestep
         
-        self.results=f'{self.workdir}/{results}'
+        self.results=f'{self.workdir}/results'
         self.def_input_struct=f'{self.workdir}/inputs/structures'
         self.def_input_ff=f'{self.workdir}/inputs/forcefields'
         self.input_topology=f'{self.def_input_struct}/{topology}'
         
         tools.Functions.fileHandler([self.results, self.def_input_struct, self.def_input_ff])
+        
+        
+        print(f'Inputs:\n{self.def_input_struct}\n{self.def_input_ff}')
+        
         
     
     def getProperties(self, *args) -> str:
@@ -183,7 +190,6 @@ class Project:
             else:
                 ligand_= self.ligand
             parameter_=system[self.hierarchy.index('parameter')] #system[2],
-
             systems_obj.append(System(system, 
                                       self.workdir, 
                                       self.input_topology,
@@ -268,7 +274,8 @@ class System(Project):
         self.results=results
         self.replica_name=replica_name
         self.name=System.linker.join(system_ID)
-        self.name_folder=os.path.abspath(f'{self.workdir}/{System.linker.join(self.system_ID[:-1])}/{self.replica_name}{self.system_ID[-1]}')
+        self.supra_folder=System.linker.join(self.system_ID[:-1])
+        self.name_folder=os.path.abspath(f'{self.workdir}/{self.supra_folder}/{self.replica_name}{self.system_ID[-1]}')
         self.project_results = os.path.abspath(f'{self.results}/{System.linker.join(self.system_ID[:-1])}')
         self.results_folder=os.path.abspath(f'{self.name_folder}/results')
         
