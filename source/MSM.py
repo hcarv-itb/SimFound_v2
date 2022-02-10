@@ -644,7 +644,7 @@ class MSM:
         md_top=md.load(topology) #, atom_indices=ref_atom_indices )
         
         if self.pre_process:
-            self.trajectories=Trajectory.Trajectory.pre_process_MSM(self.trajectories, md_top, superpose_to=superpose_indices)
+            self.trajectories=Trajectory.Trajectory.pre_process_trajectory(self.trajectories, md_top, superpose_to=superpose_indices)
             md_top.atom_slice(subset_indices, inplace=True)
             self.topology = md_top
 
@@ -735,82 +735,84 @@ class MSM:
 
         self.set_systems()
         models = self.load_models() #(model, ft_name, feature, n_state, lag, d_lag)
+        if len(models):
         
-        
-        if method == 'generate':
-            pass
-        else:
-            out_data_models = []
-            for name, model in models.items():
-                out_data = []
-                (msm, ft_name, feature, n_state, lag, d_lag) = model
-                self.set_specs(ft_name, feature, lag, n_state, set_mode='MSM')
-                if method == 'PCCA' or method == 'CKtest':
-                    self.load_discretized_data(feature=feature)
+            if method == 'generate':
+                pass
+            else:
+                out_data_models = []
                 
-                name_ = f'{ft_name}-{feature}'
-                for input_params in self.inputs:
-                    if f'{input_params[0]}-{input_params[1]}' == name_:
-                        try:
-                            macrostates = self.check_inputs(input_params[4])
-                        except IndexError:
-                            macrostates = None
-                            self.CG = None
-                if method == 'PCCA':
-                    self.PCCA_calculation(msm, macrostates, auto=False, dims_plot=10)
+                
+                for name, model in models.items():
+                    out_data = []
+                    (msm, ft_name, feature, n_state, lag, d_lag) = model
+                    self.set_specs(ft_name, feature, lag, n_state, set_mode='MSM')
+                    if method == 'PCCA' or method == 'CKtest':
+                        self.load_discretized_data(feature=feature)
                     
-                elif method == 'CKtest':
-                    self.CKTest_calculation(msm, macrostates)
+                    name_ = f'{ft_name}-{feature}'
+                    for input_params in self.inputs:
+                        if f'{input_params[0]}-{input_params[1]}' == name_:
+                            try:
+                                macrostates = self.check_inputs(input_params[4])
+                            except IndexError:
+                                macrostates = None
+                                self.CG = None
+                    if method == 'PCCA':
+                        self.PCCA_calculation(msm, macrostates, auto=False, dims_plot=10)
+                        
+                    elif method == 'CKtest':
+                        self.CKTest_calculation(msm, macrostates)
+        
+                    elif method == 'Spectral':
+                        self.spectral_analysis(msm, lag, plot=True)
+                    elif method == 'MFPT':
+                        self.MFPT_calculation(msm, macrostates, hmsm_lag)
+                    elif method == 'Visual':
+                        for macrostate in macrostates:
+                            state_samples = self.extract_metastates(msm, macrostate, hmsm_lag=hmsm_lag, set_mode='visual') 
+                            self.viewer[f'{self.full_name}-{macrostate}'] = self.visualize_metastable(state_samples)
+                    elif method == 'RMSD':
+                        for macrostate in macrostates:
+                            state_samples = self.extract_metastates(msm, macrostate, hmsm_lag=hmsm_lag)
+                            self.state_rmsd_comparison(state_samples, pdb_files = compare_pdbs)
+                    elif method == 'distances':
+                        for macrostate in macrostates:
+                            state_samples = self.extract_metastates(msm, macrostate, hmsm_lag=hmsm_lag)
+                            out_data=self.state_distance_comparison(state_samples, distances=compare_dists)
+                    elif method == 'get_samples':
+                        for macrostate in macrostates:
+                            self.extract_metastates(msm, macrostate, hmsm_lag=hmsm_lag, set_mode='generate')
+                    elif method == 'flux':
+                        try:
+                            flux_inputs = input_params[5]
+                        except IndexError as v:
+                            print(v)
+                        for macrostate in macrostates:
+                            flux_df, committor_df, pathway_df = self.flux_calculation(msm, macrostate=macrostate, between=flux_inputs)
+                            flux = pd.concat([flux, flux_df], axis=0)
+                            committor = pd.concat([committor, committor_df], axis=0)
+                            pathway = pd.concat([pathway, pathway_df], axis=0)
     
-                elif method == 'Spectral':
-                    self.spectral_analysis(msm, lag, plot=True)
-                elif method == 'MFPT':
-                    self.MFPT_calculation(msm, macrostates, hmsm_lag)
-                elif method == 'Visual':
-                    for macrostate in macrostates:
-                        state_samples = self.extract_metastates(msm, macrostate, hmsm_lag=hmsm_lag, set_mode='visual') 
-                        self.viewer[f'{self.full_name}-{macrostate}'] = self.visualize_metastable(state_samples)
-                elif method == 'RMSD':
-                    for macrostate in macrostates:
-                        state_samples = self.extract_metastates(msm, macrostate, hmsm_lag=hmsm_lag)
-                        self.state_rmsd_comparison(state_samples, pdb_files = compare_pdbs)
-                elif method == 'distances':
-                    for macrostate in macrostates:
-                        state_samples = self.extract_metastates(msm, macrostate, hmsm_lag=hmsm_lag)
-                        out_data=self.state_distance_comparison(state_samples, distances=compare_dists)
-                elif method == 'get_samples':
-                    for macrostate in macrostates:
-                        self.extract_metastates(msm, macrostate, hmsm_lag=hmsm_lag, set_mode='generate')
-                elif method == 'flux':
-                    try:
-                        flux_inputs = input_params[5]
-                    except IndexError as v:
-                        print(v)
-                    for macrostate in macrostates:
-                        flux_df, committor_df, pathway_df = self.flux_calculation(msm, macrostate=macrostate, between=flux_inputs)
-                        flux = pd.concat([flux, flux_df], axis=0)
-                        committor = pd.concat([committor, committor_df], axis=0)
-                        pathway = pd.concat([pathway, pathway_df], axis=0)
-
-                elif method == 'HMSM':
-                    self.HMSM(msm, macrostates, hmsm_lag)
-                elif method == 'ITS':
-                    self.ITS_calculation(c_stride=1)
-                else:
-                    raise SyntaxError('Analysis method not defined')
-            
-                out_data_models.append(out_data)
-            
-            
-            if method == 'flux':
-                print(flux)
-                flux.to_csv(f'{self.results}/flux_all.csv')
-                committor.to_csv(f'{self.results}/committor_all.csv')
-                pathway.to_csv(f'{self.results}/pathway_all.csv')
-                print(committor)
-                print(pathway)
-            if method == 'Visual':
-                return self.viewer
+                    elif method == 'HMSM':
+                        self.HMSM(msm, macrostates, hmsm_lag)
+                    elif method == 'ITS':
+                        self.ITS_calculation(c_stride=1)
+                    else:
+                        raise SyntaxError('Analysis method not defined')
+                
+                    out_data_models.append(out_data)
+                
+                
+                if method == 'flux':
+                    print(flux)
+                    flux.to_csv(f'{self.results}/flux_all.csv')
+                    committor.to_csv(f'{self.results}/committor_all.csv')
+                    pathway.to_csv(f'{self.results}/pathway_all.csv')
+                    print(committor)
+                    print(pathway)
+                if method == 'Visual':
+                    return self.viewer
 
 
     def calculate(self,
@@ -1213,9 +1215,8 @@ class MSM:
 
     def save_samples(self, file_name, samples, save_as='dcd'):
         
-
+        pyemma.coordinates.save_traj(self.trajectories, samples, outfile=f'{file_name}.dcd', top=self.topology)
         try:
-            pyemma.coordinates.save_traj(self.trajectories, samples, outfile=f'{file_name}.dcd', top=self.topology)
             
             if save_as == 'dcd':
                 md.load_frame(f'{file_name}.dcd', index=0, top=self.topology).save_pdb(f'{file_name}.pdb')
@@ -1224,11 +1225,11 @@ class MSM:
                 for idx, i in enumerate(traj, 1):
                     print(f'\tSaving {file_name}_{idx}.{save_as}', end='\r')
                     i.save_pdb(f'{file_name}_{idx}.{save_as}')
-# =============================================================================
-#                 for i in range(MSM.generate_samples+1):
-#                     print(f'{file_name}_{i}.{save_as}')
-#                     md.load_frame(name, index=i, top=self.topology).save_pdb(f'{file_name}_{i}.{save_as}')    
-# =============================================================================
+    # =============================================================================
+    #                 for i in range(MSM.generate_samples+1):
+    #                     print(f'{file_name}_{i}.{save_as}')
+    #                     md.load_frame(name, index=i, top=self.topology).save_pdb(f'{file_name}_{i}.{save_as}')    
+    # =============================================================================
                 
         except Exception as v:
             print(f'Warning! Could not save trajectory of {file_name}\n{v.__class__}: {v}')
@@ -1245,20 +1246,20 @@ class MSM:
                 n_state_frames += 1
 
             if set_mode == 'visual':
+
                 file_name=f'{self.stored}/{msm_file_name}_{self.CG}{idx+1}of{macrostate}_v'
                 sample = msm.sample_by_state(n_frames, subset=[highest_member], replace = False)
-                if not os.path.exists(file_name) or self.overwrite:
+                if not os.path.exists(f'{file_name}.pdb') or self.overwrite:
                     print(f'\tGenerating {n_frames} samples for macrostate {idx+1} using frames assigned to state {highest_member+1}')
-                    self.save_samples(file_name, sample, save_as='pdb')
-                state_samples = (file_name, file_name)
+                    self.save_samples(file_name, sample, save_as='dcd')
             elif set_mode == 'highest':
              
                 file_name=f'{self.stored}/{msm_file_name}_{self.CG}{idx+1}of{macrostate}_{n_state_frames}frames'
                 sample = msm.sample_by_state(n_state_frames, subset=[highest_member], replace = False)
                 if not os.path.exists(f'{file_name}.dcd') or self.overwrite:
                     print(f'\tGenerating {n_state_frames} samples for macrostate {idx+1} using frames assigned to state {highest_member+1}')
-                    self.save_samples(file_name, sample)
-                state_samples = (f'{file_name}.dcd', f'{file_name}.pdb')
+                    self.save_samples(file_name, sample, save_as='dcd')
+            state_samples = (f'{file_name}.dcd', f'{file_name}.pdb')
             
             return state_samples        
 
@@ -1287,9 +1288,9 @@ class MSM:
                     dist = msm.pi[msm.metastable_sets[idx]].sum()
                     highest_member = idist.argmax()
                     #TODO: resolve conflict of low assign states take frames from same micro. only problematic for lowe assig cases anyways for now.
-                    #if highest_member in h_members:
-                        #idist = np.delete(idist, highest_member)
-                        #highest_member = idist.argmax()
+                    if highest_member in h_members:
+                        idist = np.delete(idist, highest_member)
+                        highest_member = idist.argmax()
                     h_members.append(highest_member)
                     state_samples[idx] = extract(dist, highest_member)
             elif set_mode == 'generate':
@@ -1781,8 +1782,9 @@ class MSM:
             plot_ms_tica.set_xlabel('IC 1')
             plot_ms_tica.set_ylabel('IC 2')
             plot_ms_tica.set_title('MS Projection')
-            for center, color in zip(coarse_state_centers, colors):
-                plot_ms_tica.scatter(x=center[0], y=center[1], edgecolors='black', color=color)
+            
+            for idx, (center, color) in enumerate(zip(coarse_state_centers, colors)):
+                plot_ms_tica.scatter(x=center[0], y=center[1], edgecolors='black', color=color, alpha=0.6)
             misc['cbar'].set_ticklabels([i for i in range(1,macrostate+1)])
             misc['cbar'].set_label('Macrostate')
             fig.tight_layout()

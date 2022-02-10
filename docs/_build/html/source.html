@@ -256,7 +256,7 @@ Discretization can also be made for different subsets of the original <em>featur
 each containing a dictionary for each parameter and raw_data</p>
 <dl class="py method">
 <dt id="source.Discretize.Discretize.combinatorial">
-<code class="sig-name descname">combinatorial</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">shells</span></em>, <em class="sig-param"><span class="n">level</span><span class="o">=</span><span class="default_value">3</span></em>, <em class="sig-param"><span class="n">start</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">stop</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">stride</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">labels</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Discretize.Discretize.combinatorial" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">combinatorial</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">shells</span></em>, <em class="sig-param"><span class="n">level</span><span class="o">=</span><span class="default_value">'ligand'</span></em>, <em class="sig-param"><span class="n">start</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">stop</span><span class="o">=</span><span class="default_value">- 1</span></em>, <em class="sig-param"><span class="n">stride</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">labels</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#source.Discretize.Discretize.combinatorial" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to generate combinatorial encoding of shells into states. Discretization is made based on combination of shells. 
 Not sensitive to which shell a given molecule is at each frame. Produces equal-sized strings for all parameters.
 Static methods defined in <em>tools.Functions</em>  are employed here.</p>
@@ -317,6 +317,11 @@ N_ref= lambda ranges, bulk_value: np.log(((4.0/3.0)*np.pi)*np.diff(np.power(np.a
 </dl>
 <p>None.</p>
 </dd></dl>
+
+<dl class="py attribute">
+<dt id="source.Discretize.Discretize.def_locs">
+<code class="sig-name descname">def_locs</code><em class="property"> = (1.35, 0.6)</em><a class="headerlink" href="#source.Discretize.Discretize.def_locs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt id="source.Discretize.Discretize.get_fittings">

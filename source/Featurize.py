@@ -24,6 +24,10 @@ import pandas as pd
 import os
 import re
 import pickle
+import holoviews as hv
+#hv.extension('bokeh')
+pd.options.plotting.backend = 'holoviews'
+import hvplot.pandas as hvplot
 
 import MDAnalysis as mda
 import MDAnalysis.analysis.distances as D
@@ -76,12 +80,14 @@ class Featurize:
     
     """
     
-    def __init__(self, 
-                 systems, 
+    def __init__(self,
+                 project,
                  timestep, 
                  results,
+                 systems=None,
                  warnings=False,
-                 heavy_and_fast=True):
+                 heavy_and_fast=True,
+                 overwrite=False):
         """
         
 
@@ -99,8 +105,11 @@ class Featurize:
         None.
 
         """
-        
-        self.systems=systems
+        self.project = project
+        if systems is not None:
+           self.systems =systems 
+        else:
+            self.systems=project.systems
         self.scalars={}
         self.results=results
         self.features={}
@@ -110,12 +119,20 @@ class Featurize:
         self.warnings=warnings 
         self.heavy_and_fast=heavy_and_fast
         self.subset='not water'
+        self.overwrite = overwrite
         
+        
+        result_paths = []
+        for name, system in self.systems.items(): 
+            result_paths.append(system.project_results)
+        if len(list(set(result_paths))) == 1:
+            result_path = list(set(result_paths))[0]
+            self.results = os.path.abspath(f'{result_path}') 
+        else:
+            self.results=os.path.abspath(f'{self.project.results}')
+            print('Warning! More than one project result paths defined. reverting to default.')
+        self.stored=os.path.abspath(f'{self.results}/storage')
         print('Results will be stored under: ', self.results)
- 
-        
-
-        
  
 
     def calculate(self, 
@@ -177,58 +194,68 @@ class Featurize:
             A dataframe containing all featurized values across the list of iterables*replicas*pairs.
 
         """
-        #Get function, kind (optional), xy units, task
-        method_function, _, unit_x, unit_y, task=self.getMethod(method) 
- 
-        #Pack fixed measurement hyperparameters
-        measurements=(inputs, start, stop, self.timestep, stride, unit_x, unit_y, task, self.heavy_and_fast, self.subset)
         
-        # Define system definitions and measurement hyperparameters
-        #Note: system cannot be sent as pickle for multiproc, has to be list
-        systems_specs=[]
-
-        for name, system in self.systems.items():
+        df_name = f'{self.results}/{method}_{feature_name}.csv'
+        if not os.path.exists(df_name) or self.overwrite:
+        
+            #Get function, kind (optional), xy units, task
+            method_function, _, unit_x, unit_y, task=self.getMethod(method) 
+     
+            #Pack fixed measurement hyperparameters
+            measurements=(inputs, start, stop, self.timestep, stride, unit_x, unit_y, task, self.heavy_and_fast, self.subset)
             
-             #input_topology
-            self.scalars[name] = system.scalar
-            results_folder=system.results_folder
-            topology=Trajectory.Trajectory.fileFilter(name, 
-                                                        system.topology, 
-                                                        equilibration, 
-                                                        production, 
-                                                        def_file=def_top,
-                                                        warnings=self.warnings, 
-                                                        filterW=self.heavy_and_fast)
-
-            trajectory=Trajectory.Trajectory.fileFilter(name, 
-                                                        system.trajectory, 
-                                                        equilibration, 
-                                                        production,
-                                                        def_file=def_traj,
-                                                        warnings=self.warnings, 
-                                                        filterW=self.heavy_and_fast)
-               
-            systems_specs.append((trajectory, topology, results_folder, name))
-        
-        
-
-        
-        #Spawn multiprocessing tasks    
-        data_t=tools.Tasks.parallel_task(method_function, systems_specs, measurements, n_cores=n_cores)
-        
-        
-        
-        # concat dataframes from multiprocessing into one dataframe
-        #Update state of system and features with the feature df.
-        out_df=pd.DataFrame()
-            
-        for data_df, system in zip(data_t, self.systems.values()):
-            system.data[f'{method}-{feature_name}']=data_df
-            system.features[f'{method}-{feature_name}']=inputs
-            out_df=pd.concat([out_df,  data_df], axis=1)
-        out_df.index.rename=data_df.index.name
-        out_df.to_csv(os.path.abspath(f'{self.results}/{method}_{feature_name}.csv'))
+            # Define system definitions and measurement hyperparameters
+            #Note: system cannot be sent as pickle for multiproc, has to be list
+            systems_specs=[]
     
+            for name, system in self.systems.items():
+                
+                 #input_topology
+                self.scalars[name] = system.scalar
+                results_folder=system.results_folder
+                topology=Trajectory.Trajectory.fileFilter(name, 
+                                                            system.topology, 
+                                                            equilibration, 
+                                                            production, 
+                                                            def_file=def_top,
+                                                            warnings=self.warnings, 
+                                                            filterW=self.heavy_and_fast)
+    
+                trajectory=Trajectory.Trajectory.fileFilter(name, 
+                                                            system.trajectory, 
+                                                            equilibration, 
+                                                            production,
+                                                            def_file=def_traj,
+                                                            warnings=self.warnings, 
+                                                            filterW=self.heavy_and_fast)
+                
+                
+                   
+                systems_specs.append((trajectory, topology, results_folder, name))
+    
+            
+            #Spawn multiprocessing tasks    
+            data_t=tools.Tasks.parallel_task(method_function, systems_specs, measurements, n_cores=n_cores)
+            
+            
+            
+            # concat dataframes from multiprocessing into one dataframe
+            #Update state of system and features with the feature df.
+            out_df=pd.DataFrame()
+                
+            for data_df, system in zip(data_t, self.systems.values()):
+                system.data[f'{method}-{feature_name}']=data_df
+                system.features[f'{method}-{feature_name}']=inputs
+                out_df=pd.concat([out_df,  data_df], axis=1)
+            out_df.index.rename=data_df.index.name
+            out_df.to_csv(df_name)
+    
+        else:
+            print(f'Loading pre-calculated {method} dataframe')
+            
+            out_df = pd.read_csv(df_name, index_col=0, header=[0,1,2,3])
+        
+        print(out_df)
         if feature_name != None:
             self.features[f'{feature_name}']=out_df
         else:
@@ -247,7 +274,7 @@ class Featurize:
         # {method name : function, kind, xy_units(tuple), package}
         methods_hyp= {'RMSD' : (Featurize.rmsd_calculation, 'global', ('ps', 'nm'), 'MDTraj'),
                      'RMSF' : (Featurize.rmsf_calculation, 'by_element', ('Index', 'nm'), 'MDTraj'),
-                     'RDF' : (Featurize.rdf_calculation, 'by_element', (r'$G_r$', r'$\AA$'), 'MDTraj'), 
+                     'RDF' : (Featurize.rdf_calculation, 'by_element', (r'$G_r$', r'$\AA$'), 'MDAnalysis'), 
                      'distance' : (Featurize.distance_calculation, 'global', ('ps', r'$\AA$'), 'MDAnalysis'),
                      'dNAC' : (Featurize.nac_calculation, 'global', ('ps', r'$\AA$'), 'MDAnalysis')} 
         
@@ -379,19 +406,19 @@ class Featurize:
         import MDAnalysis.analysis.rdf as RDF
         
         
-        
         (trajectory, topology, results_folder, name)=system_specs
-        (selection,  start, stop, timestep, stride, units_x, units_y)=specs   
-        
-        names, indexes, column_index=Featurize.df_template(system_specs, unit=[units_y])
-        
-        task='MDAnalysis'
+        (selection,  start, stop, timestep, stride, units_x, units_y, task, store_traj, subset)=specs   
+        indexes=[[n] for n in name.split('-')]
+        names=[f'l{i}' for i in range(1, len(indexes)+1)]
+        print(indexes, names)
+        column_index=pd.MultiIndex.from_product(indexes, names=names)
                 
-        traj=Trajectory.Trajectory.loadTrajectory(topology, trajectory, task)
+        traj=Trajectory.Trajectory.loadTrajectory(system_specs, specs)
     
         if traj != None:
             
             ref, sel = traj.select_atoms(selection[0]), traj.select_atoms(selection[1])
+            #print(ref, sel)
         
             rdf_=RDF.InterRDF(ref, sel)
             rdf_.run(start, stop, stride)
@@ -771,14 +798,6 @@ class Featurize:
         
         return names, indexes, column_index, rows
 
-    @staticmethod
-    def plot_hv(input_df):
-        
-        
-        import hvplot.pandas 
-        input_df.hvplot()
-        
-        return input_df.hvplot() 
 
 
     

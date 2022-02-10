@@ -101,7 +101,10 @@ class Protocols:
 
     def sample_mixer(self, msm_model):
         
-        model_samples = glob.glob(f'{self.project.def_input_struct}/{msm_model}/sample_*.pdb')
+        print(self.project.def_input_struct)
+        model_samples = list(set(glob.glob(f'{self.project.def_input_struct}/{msm_model}/sample_*.pdb')) 
+                             - set(glob.glob(f'{self.project.def_input_struct}/{msm_model}/*delchain*.pdb')))
+
 # =============================================================================
 #         random_sample1 = random.sample(model1_samples, self.project.replicas)
 #         print(len(random_sample))
@@ -114,15 +117,62 @@ class Protocols:
 
     @tools.log
     #@Visualization.show
-    def handle_pdb(self, input_pdb, ligand_pdb=[], out_folder=None, box_size=100, edit_chains=[1, 2]):
+    def handle_pdb(self, 
+                   input_pdb, 
+                   ligand_pdb=[], 
+                   out_folder=None, 
+                   box_size=150, 
+                   tolerance=5.0, 
+                   edit_chains=[1, 2]):
+        """
         
 
+        Parameters
+        ----------
+        input_pdb : TYPE
+            DESCRIPTION.
+        ligand_pdb : TYPE, optional
+            DESCRIPTION. The default is [].
+        out_folder : TYPE, optional
+            DESCRIPTION. The default is None.
+        box_size : TYPE, optional
+            DESCRIPTION. The default is 150.
+        tolerance : TYPE, optional
+            DESCRIPTION. The default is 5.0.
+        edit_chains : TYPE, optional
+            DESCRIPTION. The default is [1, 2].
 
+        Returns
+        -------
+        complex_pdb : TYPE
+            DESCRIPTION.
+
+        """
+        
+        
+        def clean_previous(input_pdbs):
+            for input_pdb in input_pdbs:
+                file_path, file_name_ = os.path.split(input_pdb)
+        
+                no_chain_files = glob.glob(f'{file_path}/*delchain*.{extension}')
+                if len(no_chain_files):
+                    print('has delchain')
+                    for file in no_chain_files:
+                        os.remove(file)
+
+        
+        #TODO: make this list for inputs, this is planned along the function.
+        
         file_path, file_name_ = os.path.split(input_pdb) 
         file_name, extension = file_name_.split('.')
         if out_folder != None:
             file_path = out_folder
-            
+        
+        #clean_previous([input_pdb])
+        #clean_previous(ligand_pdb)
+        
+
+        
         #tools.Tasks.run_bash('pdb_wc', input_pdb)
 
         no_counterions = tools.Tasks.run_bash('pdb_delchain', input_pdb, '-D', mode='out') #remove CL ions chainD
@@ -132,13 +182,14 @@ class Protocols:
         protein_pdb = [no_counterions]
         protein_name =self.project.protein[0]
         ligand_name = self.project.ligand[0]
-        #ligand_pdb = [f'{file_path}/ssK36_1.pdb']*4
         n_protein = len([protein_pdb])
         n_ligand = len(ligand_pdb)
         
         check_paths = protein_pdb + ligand_pdb
+        #clean_previous(check_paths)
         copy_files =[]
         for file in check_paths:
+            print(file)
             if re.search('@', file):
                 file_path_original, file_name_mod = os.path.split(file)
                 shutil.copy(file, f'{out_folder}/{file_name_mod}')
@@ -152,30 +203,42 @@ class Protocols:
         
         #this is loading two times instead of passing ref to packmol since not always protein is ref
         ref = md.load_pdb(protein_pdb[0])
-        print(ref.topology)
-        n_chains = ref.n_chains
+        #print(ref.topology)
         
         
         #Warning! for packmol, weird names cannot be used otherwise fortran errors occur.
         complex_pdb = self.build_w_packmol(base_name,  
                                            protein_pdb,  
                                            ligand_pdb, 
-                                           box_size=box_size)
+                                           box_size=box_size,
+                                           tolerance=tolerance)
 
-    
+        print(f'Complex: {md.load_pdb(complex_pdb).topology}')
         file_name_complex = os.path.split(complex_pdb)[1].split('.')[0]
-             
-        #Split chains for openMM 
-        tools.Tasks.run_bash('pdb_splitchain', complex_pdb, mode='create') 
+        chain_files_stored = glob.glob(f'{file_path}/{file_name_complex}_?.{extension}')  
+        if len(chain_files_stored):
+            for file in chain_files_stored:
+                os.remove(file)
+        #Split chains for openMM
+
+
+        clean_previous([input_pdb])
+
+
+        print(f'Pre-processing for openMM')
+        split=tools.Tasks.run_bash('pdb_splitchain', complex_pdb, mode='create') 
         chain_files = glob.glob(f'{file_path}/{file_name_complex}_?.{extension}')
         
+        
 
+        
         for idx, pdb_file in enumerate(chain_files): #chain_files[n_chains:]):
             chain_ID = chr(ord('@')+idx+1)
-            print(f'Chain {idx} ID:{chain_ID} {ref.topology}')
-            ref = md.load_pdb(pdb_file)
+            
+            
+            print(f'\tChain {idx} ID:{chain_ID}')
             if idx in edit_chains:
-                print('chain to edit')
+                print(f'\tchain edit: {idx}_CONNECT')
                 chain_file_name, ext = os.path.split(pdb_file)[1].split('.')
                 
                 #TODO: extract CONNECT records from input file, or reset indexes and build anew.
@@ -186,6 +249,10 @@ class Protocols:
                     for file in files:
                         with open(file) as infile:
                             outfile.write(infile.read())
+                ref=md.load_pdb(edit_file)
+            else:
+                ref=md.load_pdb(pdb_file)
+            print('\t', ref.topology)
 
 
         return complex_pdb
@@ -196,12 +263,37 @@ class Protocols:
                         base_name,
                         protein_pdb,
                         ligand_pdb,
-                        box_size=100.0, 
-                        n_protein=1): #n_ligand): 
+                        box_size=150.0, 
+                        n_protein=1,
+                        tolerance=7.0):
+        """
+        
+
+        Parameters
+        ----------
+        base_name : TYPE
+            DESCRIPTION.
+        protein_pdb : TYPE
+            DESCRIPTION.
+        ligand_pdb : TYPE
+            DESCRIPTION.
+        box_size : TYPE, optional
+            DESCRIPTION. The default is 150.0.
+        n_protein : TYPE, optional
+            DESCRIPTION. The default is 1.
+        tolerance : TYPE, optional
+            DESCRIPTION. The default is 7.0.
+
+        Returns
+        -------
+        None.
+
+        """
             
 
         ref = md.load_pdb(protein_pdb[0])
         print(ref.topology)
+        print('Building box of size ', box_size)
         n_chains = ref.n_chains
         for chain in ref.topology.chains: #['index', 'topology', '_residues']
             
@@ -222,10 +314,11 @@ class Protocols:
             f.write(f'''
 # {base_name}
 
-tolerance 5.0
+tolerance {tolerance}
 output {out_file}
 filetype pdb
 seed -1
+
 add_box_sides 1.0
 
 
@@ -241,8 +334,9 @@ end structure
 
         #TODO: This is for extra inputs which  are protein, has to handle chains
         #TODO: For other molecules, this can be done in one step by specifying molecule number in single call
-            print('Ligand molecules:')
+            print('\tAdding ligand molecules:')
             for i, lig in enumerate(ligand_pdb, n_chains):
+                print(f'\t{i}: {lig}')
                 lig = tools.Tasks.run_bash('pdb_delchain', lig, '-B', mode='out') #remove CL ions chainB
                 ref_ = md.load_pdb(lig)
                 n_chain_ = ref_.n_chains
@@ -259,8 +353,8 @@ structure {lig}
 end structure
 ''')
 
-        tools.Tasks.run_bash('packmol', job_file, '<', mode='create') 
-        
+        create=tools.Tasks.run_bash('packmol', job_file, '<', mode='create') 
+        print('Box generation: ', create)
         return out_file
 
 
@@ -554,10 +648,11 @@ end structure
                        resume_=True,
                        minimum_effort=False,
                        compute_time=0.05,
+                       run_time_HPC = '47:30:00',
+                       partition_HPC='gpu_4',
                        reportFactor=0.1,
                        gpu_index='0',
-                       prepare_remote=False,
-                       *args):
+                       **kwargs):
         """
         
 
@@ -586,30 +681,35 @@ end structure
             DESCRIPTION.
 
         """
-        
+        print(type(compute_time), type(reportFactor), compute_time, reportFactor)
+        reportTime=float(compute_time) * reportFactor
         #Call to setMachine
         #TODO: Fetch time and specify which of the replicates to run here.
         #TODO: Make call here for generation of corresponding .sh file generattion and .sh spawner.
         
-
         for name, system in self.protocols_omm.items():
         
             print('System: ', name)
+            
+            replicate = self.systems[name].replicate
+            
             if system.status != 'complete':
 
-                job=tools.Tasks(machine=where,
-                                     n_gpu=len(gpu_index),
-                                     run_time='12:00:00')
-
                 if where != 'Local':
+                    job=tools.Tasks(machine=where,
+                                     n_gpu=len(gpu_index),
+                                     run_time=run_time_HPC)
                     job.setMachine(gpu_index_= gpu_index)
-                    job.generateSripts(name, self.def_job_folder, *args)
+                    job.generateSripts(name, self.def_job_folder, replicate, compute_time, **kwargs)
                 
                     print('Script(s) generated for: ', name)
                                 
                 else:
+                    job=tools.Tasks(machine=where,
+                                     n_gpu=len(gpu_index),
+                                     run_time=compute_time)
                     system.simulations = {}
-                    self.platform, self.platformProperties=job.setMachine(gpu_index_= gpu_index, force_platform=True)
+                    self.platform, self.platformProperties =job.setMachine(gpu_index_= gpu_index, force_platform=True)
             
                     if run_Emin:
                         print("\nEnergy minimization")
@@ -704,7 +804,7 @@ end structure
         
         print(name)
         
-        reportTime=compute_time_ * reportFactor_
+        reportTime=float(compute_time_) * reportFactor_
         
         #Initiate simulation from stored state.
         simulation_init = app.Simulation(system.topology_omm, 

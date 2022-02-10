@@ -57,6 +57,7 @@ class Project:
     
     """
 
+
     
     def __init__(self, 
                  workdir=None,  
@@ -127,6 +128,7 @@ class Project:
         self.def_input_ff=f'{self.workdir}/inputs/forcefields'
         self.input_topology=f'{self.def_input_struct}/{topology}'
         
+        
         tools.Functions.fileHandler([self.results, self.def_input_struct, self.def_input_ff])
         
         
@@ -183,7 +185,6 @@ class Project:
         #Retrieve the systems from class System.
         for system in systems:
             
-            #TODO: Flexible parameter and ligand on/off.
             protein_=system[self.hierarchy.index('protein')] # system[0],
             if self.ligand != None:
                 ligand_=system[self.hierarchy.index('ligand')] #system[1],
@@ -242,8 +243,9 @@ class System(Project):
         
     """
     
-
     linker='-'
+
+    
     
     
     def __init__(self, 

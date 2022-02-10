@@ -183,6 +183,7 @@ class Trajectory:
         (trajectories, topologies, results_folder, name)=system_specs
         (selection,  start, stop, timestep, stride, units_x, units_y, task, store_traj, subset)=specs 
         #TODO: not water is hardcoded. pass it up.
+
         store_traj = False
         pkl_path = os.path.abspath(f'{results_folder}/{name}_{start}_{stop}_{stride}.pkl')
         
@@ -205,21 +206,21 @@ class Trajectory:
                             else:  
                                 ref_top_indices=md.load(topology).topology.select(subset)
                                 traj=md.load(trajectories, top=topology, atom_indices=ref_top_indices)
-                                
-                            print(f'Load time for {name} ({len(traj)} frames): {np.round((process_time_ns() - clock_start)*1e-9, decimals=3)} s.')
+                            
+                            frames = traj.n_frames
                         elif task == 'MDAnalysis':
                             if trj_format == 'xtc':
                                 traj=mda.Universe(topology, trajectories, continuous=True)
                             elif trj_format != 'h5':
                                 traj=mda.Universe(topology, trajectories)
-                            
-                            print(f'Load time for {name} ({traj.n_frames} frames): {np.round((process_time_ns() - clock_start)*1e-9, decimals=3)} s.')
+                            frames = len(traj.trajectory)
+                        print(f'Load time for {name} ({frames} frames): {np.round((process_time_ns() - clock_start)*1e-9, decimals=3)} s.', end='\r')
                         
-                        #print(name, task, topology, trajectories, end='\r')
-                        break
-                    except:
+                    except Exception as v:
+                        print('\tWarning! Trajectory not loaded for',  name)
+                        print(v.__class__, v)
                         pass
-                        #print('\tWarning! Trajectory not loaded for',  name)
+                        
 
                     
             if store_traj and traj != None:
@@ -271,8 +272,13 @@ class Trajectory:
     
     
     
+    
+        
+    
+    
+    
     @staticmethod
-    def pre_process_MSM(trajectory_set, 
+    def pre_process_trajectory(trajectory_set, 
                     topology, 
                     superpose_to='Protein and backbone',
                     slice_traj='not water',

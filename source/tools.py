@@ -591,21 +591,25 @@ class Tasks:
     def __init__(self,
                  machine ='Local',
                  n_gpu=1,
-                 run_time='12:00:00'):
+                 run_time='47:30:00'):
         
         self.machine = machine
         self.n_gpu = n_gpu
         self.run_time = run_time
+
         
     @staticmethod    
-    def run_bash(command, input_file, args='', mode=None):
+    def run_bash(command, input_, args='', mode=None):
         
-        file_path, file_name_ = os.path.split(input_file) 
+
+        file_path, file_name_ = os.path.split(input_) 
         file_name, extension = file_name_.split('.')
-        
-        job_string = f'{command} {args} {input_file}'
-        
         job_file=f'{file_path}/job.sh'
+
+        
+        job_string = f'{command} {args} {input_}'
+        
+
         
         with open(job_file, 'w') as f:
             f.write(
@@ -615,7 +619,6 @@ class Tasks:
                     exit 0
                     ''')
         f.close()
-            
         
         encoding = 'UTF-8'
 
@@ -623,6 +626,7 @@ class Tasks:
             chmod = f'chmod a+rwx {job_file}'
             subprocess.call(chmod.split())
             process = subprocess.call(job_file, shell=True)
+            return process
 
         else:
             process = subprocess.Popen(job_string.split(), stdout=subprocess.PIPE) 
@@ -635,7 +639,7 @@ class Tasks:
                     out_file_name = f'{file_path}/{file_name}_{command.split("_")[1]}.{extension}'
                 except IndexError:
                     out_file_name = f'{file_path}/{file_name}_{command}.{extension}'
-                    
+   
                 out_pdb = str(output, encoding)
                 f=open(out_file_name, "w")
                 f.write(out_pdb)
@@ -646,6 +650,7 @@ class Tasks:
                 print(f'{error}\n{str(output, encoding)}')
     
     
+        
         
     def setMachine(self, gpu_index_='0', force_platform=False):
         """
@@ -674,11 +679,9 @@ class Tasks:
         avail=openmmtools.utils.get_available_platforms()
         
         for idx, plat in enumerate(avail, 1):
-            
             print(f'\tAvaliable platform {idx}: {plat.getName()}')
             
         fastest=openmmtools.utils.get_fastest_platform()
-        
         if force_platform:
             self.platform = omm.Platform.getPlatformByName('CUDA')
             self.platformProperties = {'Precision': 'mixed', 'DeviceIndex': gpu_index_}
@@ -705,12 +708,10 @@ class Tasks:
                     except:
                         self.platform = omm.Platform.getPlatformByName('CPU')
                         self.platformProperties = None
-                        
             
                 print(f"Using platform {self.platform.getName()}")
                 
         return self.platform, self.platformProperties
-    
 
     
 
@@ -727,43 +728,52 @@ class Tasks:
                            'n' : 1, 
                            'mem' : '2gb', 
                            'time' : self.run_time,
-                           'partition' : 'gpu_4',
-                           'script_path' : '/pfs/work7/workspace/scratch/st_ac131353-SETD2-0/SETD2/',
                            'chain_jobs' : 2},
                  
                  'Local' : {'n_gpu' : self.n_gpu,
                             'gpu_index' : 0,
                             'time' : self.run_time}}
+        #'partition' : 'gpu_4', #set in __init__
+        #'script_path' : '/pfs/work7/workspace/scratch/st_ac131353-SETD2-0/SETD2/',
         try:
             return hosts[machine]
         except KeyError:
             print('Try: ', hosts.keys()) 
     
-    def setSpecs(self, *args):
+    def setSpecs(self, **kwargs):
         
-
-        specs = self.getSpecs(self.machine)
-
-            
+        specs = self.getSpecs(self.machine)  
         print('Machine set: ') 
         for k, v in specs.items():
             self.__dict__[k] = v
         
-        for arg_tuple in args:
-            
-            print('adding ', arg_tuple)
-            self.__dict__[arg_tuple[0]] = arg_tuple[1]
+        
+        try:
+            for attribute, value in kwargs.items():
+                self.__dict__[attribute] = value
+        except AttributeError:
+            pass
         
         print(self.__dict__)            
-        return self
 
-    def generateSripts(self, name, workdir, *args):
+    def generateSripts(self, name, workdir, replicate, compute_time, **kwargs):
         
-        self.setSpecs(*args)
-        
+        self.setSpecs(**kwargs)
+        self.replicate = replicate
         chain_file = os.path.abspath(f'{workdir}/{name}_chain.sh')
         job_file = os.path.abspath(f'{workdir}/{name}.sh')
-        
+
+        try:
+            process = subprocess.Popen('ws_find', self.ws_name, stdout=subprocess.PIPE) 
+            output, error = process.communicate()
+            self.script_path = process
+            print('Script path modified: ', self.script_path)
+        except AttributeError as v:
+            print('Attribute not set: ', v)
+        except Exception as vv:
+            print(vv.__class__, vv)
+            self.script_path = f'/pfs/work7/workspace/scratch/st_ac131353-SETD2/{self.ws_name}/'
+        print('Workspace: ', self.script_path)
         with open(job_file, 'w') as f:
             f.write(
 f'''#!/bin/bash
@@ -784,15 +794,16 @@ module load compiler/pgi/2020
 module load devel/cuda/11.0
 module load devel/miniconda
 eval "$(conda shell.bash hook)"
-conda activate {self.env_name}
+conda activate {Tasks.env_name}
 set -eu
 echo "----------------"
 echo {name}
 echo $(date -u) "Job was started"
 echo "----------------"
 
-python {self.script_path}/SFv2_standAlone.py {name}
+python {self.script_path}/{self.notebook_name}.py {self.replicate} {compute_time}
 exit 0''')
+        
 
     @staticmethod
     def parallel_task(input_function, container, fixed, n_cores=-1):
