@@ -18,14 +18,19 @@ import numpy as np
 import pandas as pd
 import hvplot
 import holoviews as hv
-#hv.extension('bokeh')
+hv.extension('bokeh')
 pd.options.plotting.backend = 'holoviews'
 import pickle
 import glob
 import nglview
-import Trajectory
-import tools_plots
-import tools
+try:
+    import Discretize
+    import Trajectory
+    import tools_plots
+    import tools
+except Exception as v:
+    print(v)
+    pass
 import mdtraj as md
 from mdtraj.utils import in_units_of
 from simtk.unit import angstrom
@@ -60,8 +65,8 @@ class MSM:
 
     def __init__(self,
                  project,
-                 regions,
-                 timestep,  
+                 regions=None,
+                 timestep=1,  
                  chunksize=0, 
                  stride=1,
                  skip=0,
@@ -111,8 +116,8 @@ class MSM:
         for name, system in self.systems.items(): 
             result_paths.append(system.project_results)
         if len(list(set(result_paths))) == 1:
-            result_path = list(set(result_paths))[0]
-            self.results = os.path.abspath(f'{result_path}/MSM') 
+            self.result_path = list(set(result_paths))[0]
+            self.results = os.path.abspath(f'{self.result_path}/MSM') 
         else:
             self.results=os.path.abspath(f'{self.project.results}/MSM')
             print('Warning! More than one project result paths defined. reverting to default.')
@@ -149,7 +154,7 @@ class MSM:
         plt.show()
  
     
-    def model_comparison(self, vamp_cross_val=True):
+    def model_comparison(self, has_tica=False, vamp_cross_val=True):
         
 # =============================================================================
 #         def get_mean(vamp_):
@@ -167,22 +172,31 @@ class MSM:
 
         files=glob.glob(f'{self.results}/ModelRegistry_*.csv')
         df_=pd.DataFrame() 
+
+        #print(count)
+        if has_tica:
+            fix = ['Discretized feature', 'feature', 'name', 'model']
+            cols = [0,1,2,3]
+        else:
+            fix = ['feature', 'name', 'model']
+            cols = [0,1,2]
         if len(files) > 0:
             print(f'{len(files)} files collected.')
             for idx, f in enumerate(files, 1):
-                df=pd.read_csv(f, index_col=[0,1,2,3])
+                     
+                df=pd.read_csv(f, index_col=cols)
                 df_=pd.concat([df_, df])
         else:
-            print('No files found.')
-        #print(count)
-        fix = ['Discretized feature', 'feature', 'name', 'model']
+            print('No files found.')    
+        
         fix_=df_.loc[:,~df_.columns.str.contains('VAMP2')].columns.to_list()
         fix+=fix_
+        df_.reset_index(inplace=True)
         if vamp_cross_val:
             print('Subset with VAMP2 cv')
-            df_.reset_index(inplace=True)
             df_= df_.melt(id_vars=fix, var_name="VAMP2cv", value_name="Score")  
         else:
+            
             pass
             print('Subset wit single VAMP2')
             #To obtain vamp from bayesMSM
@@ -249,36 +263,40 @@ class MSM:
         msm_name = f'{self.n_state}@{lag_}'
         stored_parameters = ['Test', 'Filters', 'Processes', 'States', 'Lag', 'Cluster method']
         df_name = f'{self.results}/ModelRegistry_{self.ft_base_name}.csv'
-        try:
-            df=pd.read_csv(df_name, index_col=[0,1,2,3])
-        except FileNotFoundError:
-            df=pd.DataFrame()
-        
         if self.get_tica:
-            index_row= pd.MultiIndex.from_product([[self.disc_ft_name], [self.feature], [self.ft_name], [msm_name]], names=['Discretized feature', 'feature', 'name', 'model'])
+            cols=[0,1,2,3]
+            index_row= pd.MultiIndex.from_product([[self.disc_ft_name], [self.feature], [self.ft_name], [msm_name]], 
+                                                  names=['Discretized feature', 'feature', 'name', 'model'])
             location = (self.disc_ft_name, self.feature, self.ft_name, msm_name)
             stored_parameters.append('Dimensions')
             stored_parameters.append('tICA lag')
             if self.tica_weights:
                 stored_parameters.append('re-weighting')
-            else:
-                index_row= pd.MultiIndex.from_product([[self.feature], [self.ft_name], [msm_name]], names=['feature', 'name', 'model'])
-                location = (self.feature, self.ft_name, msm_name)
+        else:
+            cols = [0,1,2]
+            index_row= pd.MultiIndex.from_product([[self.feature], [self.ft_name], [msm_name]], 
+                                                  names=['feature', 'name', 'model'])
+            location = (self.feature, self.ft_name, msm_name)
+        
+        if os.path.exists(df_name):
+            df=pd.read_csv(df_name, index_col=cols)           
+        else:
+            df=pd.DataFrame()
         
         
         if msm != None:
             resolved_processes = self.spectral_analysis(msm, self.lag, plot=False)
             
             if self.get_vamp:
-                clusters=self.clustering(self.n_state)
+                _, disc_trajs, _ = self.load_discTrajs() #clusters=self.clustering(self.n_state)
                 if self.w_cv:
                     vamp_scores = [f'VAMP2 {i}' for i in range(1, vamp_iters+1)]
                     for v_s in vamp_scores:
                         stored_parameters.append(v_s)
                     try:
                         print('\tCalculating a MSM surrogate and VAMP2 score with cross-validation...', end='\r')
-                        score_model = pyemma.msm.estimate_markov_model(clusters.dtrajs, lag=self.lag, dt_traj=str(self.timestep))
-                        vamp = score_model.score_cv(clusters.dtrajs, n=vamp_iters, score_method='VAMP2', score_k=min(10, self.n_state)) 
+                        score_model = pyemma.msm.estimate_markov_model(disc_trajs, lag=self.lag, dt_traj=str(self.timestep))
+                        vamp = score_model.score_cv(disc_trajs, n=vamp_iters, score_method='VAMP2', score_k=min(10, self.n_state)) 
                     except Exception as v:
                         passed = False
                         print(f'\tMSM estimation failed: {v}')
@@ -287,7 +305,7 @@ class MSM:
                     print('\tCalculating single VAMP2 score...', end='\r')
                     stored_parameters.append('VAMP2')
                     try:
-                        vamp = msm.score(clusters.dtrajs, score_method='VAMP2', score_k=min(10, self.n_state))
+                        vamp = msm.score(disc_trajs, score_method='VAMP2', score_k=min(10, self.n_state))
                     except Exception as v:
                         passed = False
                         print(f'MSM estimation failed: {v}')
@@ -328,10 +346,12 @@ class MSM:
 
         df=pd.concat([df, df_])
         df.to_csv(df_name)
+        
+        #print(df)
 
         return passed
 
-        
+    @tools.log    
     def check_registry(self):
         """
         
@@ -435,7 +455,7 @@ class MSM:
         return keep   
 
     
-    @log
+    @tools.log
     def load_models(self, load_discretized=True):
         """
         
@@ -462,17 +482,25 @@ class MSM:
                             model = self.bayesMSM_calculation(lag)
                         else:
                             model = None
-                        models_loaded[self.full_name] = (model, ft_name, feature, n_state, lag, d_lag)
+                        if self.get_tica:
+                            models_loaded[self.full_name] = (model, ft_name, feature, n_state, lag, d_lag)
+                        else:
+                            models_loaded[self.full_name] = (model, ft_name, feature, n_state, lag)
                     elif self.full_name in models_to_load:
+                        model = self.bayesMSM_calculation(lag)
+                        filter_passed=self.create_registry(model, vamp_iters=10)
                         try:
                             model = self.bayesMSM_calculation(lag)
                             filter_passed=self.create_registry(model, vamp_iters=10)
                             if filter_passed:
-                                models_loaded[self.full_name] = (model, ft_name, feature, n_state, lag, d_lag)
+                                if self.get_tica:
+                                    models_loaded[self.full_name] = (model, ft_name, feature, n_state, lag, d_lag)
+                                else:
+                                    models_loaded[self.full_name] = (model, ft_name, feature, n_state, lag)
                             else:
                                 models_failed.append(self.full_name) 
                         except Exception as v:
-                            print(f'Warning! model failed due to {v.__class__}')
+                            print(f'Warning! model failed due to {v.__class__}\n{v}')
                             models_failed.append(self.full_name)
                     else:
                         models_failed.append(self.full_name)
@@ -510,6 +538,7 @@ class MSM:
         for input_params in self.inputs:
             (ft_name, feature, n_state_sets, lag_sets) = input_params[:4]
             n_states = self.check_inputs(n_state_sets)
+            #TODO: n_states to be fetched from self.discretized_data, or some other auto mechanism.
             lags = self.check_inputs(lag_sets)
             
             if self.get_tica:
@@ -592,13 +621,17 @@ class MSM:
         else:
             append = ''
 
-        self.ft_base_name = f'{ft_name}_{self.feature}{append}_s{self.stride}'
+        self.ft_base_name = f'{self.ligand}_{self.iterable}_{ft_name}_{self.feature}{append}_s{self.stride}'
         if set_mode == 'MSM':
             if self.cluster_method == 'regspace':
                 append2 = f'_{self.cluster_method}'
             else:
                 append2 = ''
-            self.selections = self.regions[ft_name]
+            if isinstance(self.regions, dict):
+                self.selections = self.regions[ft_name]
+            else:
+                self.selections = self.ft_name
+                #TODO: make more robust maybe
             self.lag = lag
             self.n_state = n_state
             self.full_name = f'{self.ft_base_name}_{n_state}@{lag_}{append2}'
@@ -609,23 +642,24 @@ class MSM:
     def set_systems(self):
         systems_specs=[]
         for name, system in self.systems.items():
-            results_folder=system.results_folder
-            topology=Trajectory.Trajectory.fileFilter(name, 
-                                                        system.topology, 
-                                                        self.w_equilibration, 
-                                                        self.w_production, 
-                                                        def_file=self.def_top,
-                                                        warnings=self.warnings, 
-                                                        filterW=self.heavy_and_fast)
-            
-            trajectory=Trajectory.Trajectory.fileFilter(name, 
-                                                        system.trajectory, 
-                                                        self.w_equilibration, 
-                                                        self.w_production,
-                                                        def_file=self.def_traj,
-                                                        warnings=self.warnings, 
-                                                        filterW=self.heavy_and_fast)
-            systems_specs.append((trajectory, topology, results_folder, name))            
+            if system.parameter == self.iterable:
+                results_folder=system.results_folder
+                topology=Trajectory.Trajectory.fileFilter(name, 
+                                                            system.topology, 
+                                                            self.w_equilibration, 
+                                                            self.w_production, 
+                                                            def_file=self.def_top,
+                                                            warnings=self.warnings, 
+                                                            filterW=self.heavy_and_fast)
+                
+                trajectory=Trajectory.Trajectory.fileFilter(name, 
+                                                            system.trajectory, 
+                                                            self.w_equilibration, 
+                                                            self.w_production,
+                                                            def_file=self.def_traj,
+                                                            warnings=self.warnings, 
+                                                            filterW=self.heavy_and_fast)
+                systems_specs.append((trajectory, topology, results_folder, name))            
 
         trajectories_to_load = []
         tops_to_load = []
@@ -661,10 +695,19 @@ class MSM:
             except AttributeError:
                 print('No selections found. Getting input information from MSM.regions')
                 inputs_ = self.regions[self.ft_name]
-            self.discretized_data = self.load_features(self.tops_to_load, 
-                                          self.trajectories_to_load, 
-                                          [feature], 
-                                          inputs=inputs_)[0] #because its yielding a list.
+
+            file = glob.glob(f'{self.project.results}/{feature}_{inputs_}_{self.iterable}_*.csv')
+            if len(file) == 1:
+                self.discretized_data = file[0]
+            else:
+                print(file)
+                self.discretized_data = file[int(input('More than one file found. Which one (index)?'))]
+# =============================================================================
+#             self.discretized_data = self.load_features(self.tops_to_load, 
+#                                           self.trajectories_to_load, 
+#                                           [feature], 
+#                                           inputs=inputs_)[0] #because its yielding a list.
+# =============================================================================
 
     def load_discTrajs(self):
         #Warning: some function calls might need np.concatenate(disc_trajs) others don't.
@@ -674,14 +717,11 @@ class MSM:
             clusters=self.clustering(self.n_state) #tica, n_clusters
             disc_trajs = clusters.dtrajs #np.concatenate(clusters.dtrajs)
         else:
-            data_concat = np.concatenate(self.discretized_data)
-            clusters=self.clustering(self.n_state) #tica, n_clusters
-            disc_trajs = clusters.dtrajs #np.concatenate(clusters.dtrajs)
-
-        #TODO: elif:
-            #data_concat = []
-            #disc_trajs = []
-            #clusters = []
+            
+            data_concat = None
+            clusters= None
+            df = pd.read_csv(self.discretized_data, index_col = 0, header = Discretize.Discretize.headers[:-2])
+            disc_trajs = df.values.T.astype(int).tolist()
         
         return data_concat, disc_trajs, clusters
 
@@ -697,7 +737,7 @@ class MSM:
                  compare_pdbs = [],
                  compare_dists = [],
                  hmsm_lag = False,
-                 eval_vamps=False,
+                 eval_vamps=True,
                  vamp_cross_validation=True,
                  overwrite=False,
                  cluster_method='k-means',
@@ -715,6 +755,8 @@ class MSM:
             self.get_tica=True
             self.disc_lag = self.check_inputs(tica_lag)
             self.tica_weights = tica_weights
+        else:
+            self.get_tica=False
         if hmsm_lag != False:
             self.CG = 'HMSM'
         else:
@@ -732,20 +774,23 @@ class MSM:
 
         flux, committor, pathway = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
+        self.ligand = self.project.ligand[0]
+        for iterable in self.project.parameter:
+            print(iterable)
+            self.iterable = iterable
+            self.set_systems()
+            models = self.load_models() #(model, ft_name, feature, n_state, lag, d_lag)
 
-        self.set_systems()
-        models = self.load_models() #(model, ft_name, feature, n_state, lag, d_lag)
-        if len(models):
-        
-            if method == 'generate':
-                pass
-            else:
-                out_data_models = []
-                
-                
-                for name, model in models.items():
+            out_data_models = []
+            for name, model in models.items():
+                if method == 'generate':
+                    pass
+                else:
                     out_data = []
-                    (msm, ft_name, feature, n_state, lag, d_lag) = model
+                    if self.get_tica:
+                        (msm, ft_name, feature, n_state, lag, d_lag) = model
+                    else:
+                        (msm, ft_name, feature, n_state, lag) = model   
                     self.set_specs(ft_name, feature, lag, n_state, set_mode='MSM')
                     if method == 'PCCA' or method == 'CKtest':
                         self.load_discretized_data(feature=feature)
@@ -800,20 +845,22 @@ class MSM:
                         self.ITS_calculation(c_stride=1)
                     else:
                         raise SyntaxError('Analysis method not defined')
-                
+            
                     out_data_models.append(out_data)
-                
-                
-                if method == 'flux':
-                    print(flux)
-                    flux.to_csv(f'{self.results}/flux_all.csv')
-                    committor.to_csv(f'{self.results}/committor_all.csv')
-                    pathway.to_csv(f'{self.results}/pathway_all.csv')
-                    print(committor)
-                    print(pathway)
-                if method == 'Visual':
-                    return self.viewer
-
+        
+        
+        if method == 'flux':
+            print(flux)
+            flux.to_csv(f'{self.results}/flux_all.csv')
+            committor.to_csv(f'{self.results}/committor_all.csv')
+            pathway.to_csv(f'{self.results}/pathway_all.csv')
+            print(committor)
+            print(pathway)
+        if method == 'Visual':
+            return self.viewer
+        if len(out_data_models):
+                    
+            return out_data_models
 
     def calculate(self,
                   inputs=None,
@@ -1241,7 +1288,7 @@ class MSM:
             n_frames = int(np.rint(dist*MSM.visual_samples))
             if n_frames == 0:
                 n_frames +=1
-            n_state_frames = np.rint(dist*MSM.ref_samples)
+            n_state_frames = int(np.rint(dist*MSM.ref_samples))
             if n_state_frames == 0:
                 n_state_frames += 1
 
@@ -1470,6 +1517,7 @@ class MSM:
         rows, columns=tools_plots.plot_layout(distances)
         
         for distance in distances:
+            
             for idx, file_name in file_names.items():
                 (traj_, top) = file_name
                 traj= md.load(traj_, top=top)
@@ -1493,8 +1541,9 @@ class MSM:
         kde=[]
         distances_ = df.columns.get_level_values(0).unique()
         for d in distances_:
-            kde.append(df.loc[:, d].plot.kde(title=d, value_label=MSM.report_units))
+            kde.append(df.loc[:, d].plot.kde(title=d, cmap='Category10', value_label=MSM.report_units))
         layout = hv.Layout(kde).cols(columns)
+        print(layout)
         return layout
 
         

@@ -422,6 +422,10 @@ end structure
               box_size=9.0*unit.nanometers,
               insert_smiles=None,
               padding_=None):
+                
+        
+        
+        #*kilojoules_per_mole/angstroms**2
         """
         Method to prepare an openMM system from PDB and XML/other force field definitions.
         Returns self, so that other methods can act on it.
@@ -803,8 +807,9 @@ end structure
         trj_file=f'{system.name_folder}/{name}' 
         
         print(name)
-        
-        reportTime=float(compute_time_) * reportFactor_
+        if isinstance(compute_time_, str):
+            compute_time_ = float(compute_time_)
+        reportTime=compute_time_ * reportFactor_
         
         #Initiate simulation from stored state.
         simulation_init = app.Simulation(system.topology_omm, 
@@ -829,7 +834,7 @@ end structure
         elif kind == 'minimization' and system.status == 'new':
                
             print('\tEnergy minimization')
-            simulation.minimizeEnergy()
+            simulation.minimizeEnergy() #TODO: set energy minimum
             simulation.saveState(checkpoints['final'])
             state_sim=simulation.context.getState(getPositions=True, getVelocities=True, getEnergy=True)
             system.structures[name]=self.writePDB(system.name_folder, system.topology_omm, state_sim.getPositions(), name=name)
@@ -1096,7 +1101,7 @@ end structure
             for restrained_set, force_value in zip(restrained_sets['selections'], restrained_sets['forces']):
         
                 force = omm.CustomExternalForce(equation)
-                force.addGlobalParameter("k", force_value*kilojoules_per_mole/angstroms**2)
+                force.addGlobalParameter("k", force_value)
                 force.addPerParticleParameter("x0")
                 force.addPerParticleParameter("y0")
                 force.addPerParticleParameter("z0")

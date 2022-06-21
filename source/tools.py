@@ -11,6 +11,7 @@ import simtk.unit as unit
 import pandas as pd
 from functools import wraps
 import subprocess
+import numpy as np
 import re
 
 def log(func):
@@ -24,6 +25,26 @@ def log(func):
 
 
 class Functions:
+    
+
+
+    @staticmethod
+    def pathHandler(project, results):
+        
+        result_paths = []
+        for name, system in project.systems.items(): 
+            result_paths.append(system.project_results)
+        if results is not None:
+            if len(list(set(result_paths))) == 1:
+                result_path = list(set(result_paths))[0]
+                results = os.path.abspath(f'{result_path}') 
+            else:
+                results=os.path.abspath(f'{project.results}')
+                print('Warning! More than one project result paths defined. reverting to default.')
+        else:
+            results = results
+        
+        return results
     
     @staticmethod
     def fileHandler(path, confirmation=False, _new=False, *args):
@@ -106,17 +127,14 @@ class Functions:
 
         """
 
-        
-        try:
-            if (len(labels) == len(regions) + 1):
-                region_labels=labels
-        except TypeError:
+
+        region_labels=[]
+        if (len(labels) == len(regions) + 1):
+            region_labels=labels
+        else:
             print('Region labels not properly defined. Number of regions is different from number of labels.') 
-            region_labels=None 
-                
-        if region_labels == None:
             print('No region labels defined. Using default numerical identifiers.')
-            region_labels=[]
+            
             for idx, value in enumerate(regions, 1):
                 region_labels.append(idx)
             region_labels.append(idx+1)
@@ -124,7 +142,7 @@ class Functions:
         return region_labels 
     
     @staticmethod
-    def sampledStateLabels(shells, sampled_states=None, labels=None):
+    def sampledStateLabels(shells, labels, sampled_states=None):
         """
 
         Static method that generates state labels for sampled states.
@@ -137,7 +155,7 @@ class Functions:
             DESCRIPTION.
         sampled_states : TYPE, optional
             DESCRIPTION. The default is None.
-        labels : TYPE, optional
+        labels : TYPE
             DESCRIPTION. The default is None.
 
         Returns
@@ -146,10 +164,11 @@ class Functions:
             DESCRIPTION.
 
         """      
-        
+        #DO NOT TOUCH. MAKING IT CORRECT MAKES IT FOOBAR
         state_names=Functions.stateEncoder(shells, labels)[1] #Call to stateEncoder[0] = state_names
         
-        if sampled_states is not None:
+        
+        if sampled_states is not None:        
             sampled=[]
             for i in sampled_states:
                 sampled.append(state_names[i])
@@ -182,23 +201,39 @@ class Functions:
         import itertools
         
         
-        region_labels=Functions.regionLabels(shells, labels)
+        #region_labels=Functions.regionLabels(shells, labels)
+        
+        shell_labels=[]
+        if (len(labels) == len(shells) + 1):
+            shell_labels=labels
+        else:
+            print('Region labels not properly defined. Number of regions is different from number of labels.') 
+            print('No region labels defined. Using default numerical identifiers.')
+            
+            for idx, value in enumerate(shells, 1):
+                shell_labels.append(idx)
+            shell_labels.append(idx+1)
+        
+        
         state_encodings = list(itertools.product([0, 1], repeat=len(shells)+1))
 
-        state_names=[[] for i in range(len(state_encodings))]
+        state_indexes=[[] for i in range(len(state_encodings))]
+        
         
         for i, encoding in enumerate(state_encodings):
             for f, value in enumerate(encoding):
                 if value == 1:
-                    state_names[i].append(region_labels[f])
-        for i, name in enumerate(state_names):
-            state_names[i]=''.join(map(str,name))
+                    state_indexes[i].append(shell_labels[f])
+        for i, name in enumerate(state_indexes):
+            state_indexes[i]=''.join(map(str,name))
+            
+        #print(state_names, state_encodings)
         
-        return state_encodings, state_names  
+        return state_encodings, state_indexes
     
     
     @staticmethod
-    def state_mapper(shells, array, labels=None):
+    def state_mapper(shells, df, labels=None):
         """
         
 
@@ -219,132 +254,41 @@ class Functions:
         """
 
 
-        
-        import numpy as np
-        import pandas as pd
-        
-        def state_evaluator(x):
-            """
- 
-            
-            """
-            for c,v in enumerate(Functions.stateEncoder(shells, labels)[0]): #Call to stateEncoder[0] = state_encodings
-                if np.array_equal(v, x.values):
-                    return c 
-                         
+        encodings, encoding_indexes = Functions.stateEncoder(shells, labels)
 
-        state_map=np.digitize(array, shells, right=True) #Discretize array values in state bins.
-            #state_map=NAC.applymap(lambda x:np.digitize(x, states, right=True)) #Deprecated. Much slower.
- 
-                
-        state_comb=pd.DataFrame()
+        def state_evaluator(x):
+            x= tuple(x)
+            if x in encodings: #.values():
+                return encodings.index(x)
+
+        #Discretize array values in state bins.                 
+        
+        #state_map=np.digitize(df, shells, right=True) 
+        state_map = np.searchsorted(shells, df, side='right')
+        state_comb=pd.DataFrame(index=df.index)
+        
+        
         for s in range(0, len(shells)+1):
             state_comb[s]=(state_map == s).any(1).astype(int)
-        state_df=state_comb.apply(state_evaluator, axis=1)
-        
-        state_df=state_df.reindex_like(array)
 
+        state_df=state_comb.apply(state_evaluator, raw=True, axis=1)
+        
         return state_df
     
     @staticmethod
-    def get_descriptors(input_df, 
-                        level, 
-                        iterable, 
-                        describe=None, 
-                        quantiles=[0.1, 0.5, 0.99]):
-        """
-        Get properties of input_df.
+    def remap_trajectories_states(df, states):
+        original_values, replaced_values, labels = [], [], []
+        for idx,(index, label) in enumerate(states.items()):
+            original_values.append(index)
+            replaced_values.append(idx)
+            labels.append(label)
+        
+        remap_states_df = df.replace(to_replace=original_values, value=replaced_values)
+        
+        remap_states = {r : l for r, l in zip(replaced_values, labels)}
 
-        Parameters
-        ----------
-        input_df : TYPE
-            DESCRIPTION.
-        level : TYPE
-            DESCRIPTION.
-        describe : TYPE, optional
-            DESCRIPTION. The default is 'sum'.
-        quantiles : TYPE, optional
-            DESCRIPTION. The default is [0.1, 0.5, 0.99].
-
-        Returns
-        -------
-        df : TYPE
-            DESCRIPTION.
-        pairs : TYPE
-            DESCRIPTION.
-        replicas : TYPE
-            DESCRIPTION.
-        molecules : TYPE
-            DESCRIPTION.
-        frames : TYPE
-            DESCRIPTION.
-
-        """
-        """
-        
-        
-        """
-        
-        
-        #print(f'Descriptor of: {describe}')
-   
-        df_it=input_df.loc[:,input_df.columns.get_level_values(f'l{level+1}') == iterable] #level +1 due to index starting at l1
-
-
-        pairs=len(df_it.columns.get_level_values(f'l{level+2}'))
-        replicas=len(df_it.columns.get_level_values(f'l{level+2}').unique()) #level +2 is is the replicates x number of molecules
-        
-
-        
-        molecules=int(pairs/replicas)
-        
-        frames = 0
-        
-        #TODOTODODOTODOTODOTODOTODO: Fix this for multi selection.
-        
-        #Access the replicate level
-        for i in df_it.columns.get_level_values(f'l{level+2}').unique():         
-            sub_df = df_it.loc[:,df_it.columns.get_level_values(f'l{level+2}') == i]
-            
-            print(pairs, replicas, molecules)
-            print(sub_df.sum(axis=0))
-            
-            
-            frames_i=int(sub_df.sum(axis=0).unique())
-            frames += frames_i
-            
-        frames=int(df_it.sum(axis=0).unique()[0])
-        print(f'Iterable: {iterable}\n\tPairs: {pairs}\n\treplicas: {replicas}\n\tmolecules: {molecules}')
-
-        if describe == 'single':
-            descriptor=df_it.quantile(q=0.5)/frames*molecules
-
-        elif describe == 'mean':
-            descriptor=pd.DataFrame()
-            mean=df_it.mean(axis=1)/frames*molecules
-            mean.name=iterable
-            sem=df_it.sem(axis=1)/frames*molecules    
-            sem.name=f'{iterable}-St.Err.'
-            descriptor=pd.concat([mean, sem], axis=1)
-        
-        elif describe == 'quantile':
-            descriptor=pd.DataFrame()                    
-            for quantile in quantiles:        
-                descriptor_q=df_it.quantile(q=quantile, axis=1)/frames*molecules
-                descriptor_q.name=f'{iterable}-Q{quantile}'
-                descriptor=pd.concat([descriptor, descriptor_q], axis=1)
-                
-            #print(descriptor)
-            #descriptor.plot(logy=True, logx=True)
-    
-        else: #TODO: make more elif statements if need and push this to elif None.
-            descriptor=df_it
-    
-        descriptor.name=iterable           
-        
-        return descriptor
-    
-
+        #print(df, remap_states_df)
+        return remap_states_df, remap_states
     
     @staticmethod
     def density_stats(level_unique, stride, results, unique=None, method='histogram'):
@@ -574,8 +518,51 @@ class XML:
             
         return et.tostring(project_info, encoding='unicode')
         
-        
-        
+# =============================================================================
+#     @staticmethod
+#     def get_structure_specs():        
+#         from scipy import stats 
+#         import numpy as np
+#         features = np.array(specs_systems).reshape(len(project.parameter), project.replicas, 7) 
+#         fts = ['n. atoms', 'n. res', 'size', 'n. prot', 'n. lig', 'n. water', 'n. NA']
+#         print('modes')
+#         for idx, i in enumerate(features):
+#             print(idx)
+#             modes = stats.mode(i)
+#             for mode in modes[::2]:
+#                 for i, y in zip(mode.flat, fts):
+#                     print(y, i)
+#         print('min/max')
+#         for i in features:
+#         
+#             for x, y in zip(range(7), fts):
+#                 ft = i[:,x]
+#                 print(y, ft.min(), ft.max())        
+# =============================================================================
+
+# =============================================================================
+#     @staticmethod
+#     def get_other_structure_specs():
+#         import mdtraj as md
+#         import re
+#         
+#         selections = ['name CA', f'name O07', 'water', 'name NA']
+#         specs_systems = []
+#         now = []
+#         for name,system in project.systems.items():
+#             for top in system.topology:
+#                 if re.search(f'{project.protein[0]}.gro', top) or re.search(f'{project.protein[0]}-eq.gro', top):
+#                     print(top)
+#                     traj = md.load(top)
+#                     specs = (traj.n_atoms, traj.n_residues, traj.unitcell_lengths[0][0])
+#                     specs2 = [len(traj.topology.select(sel)) for sel in selections]
+#                     specs = specs + tuple(specs2)
+#                     print(specs)
+#                     specs_systems.append(specs)
+#                     break
+#                 
+#         print(specs_systems)
+# =============================================================================
 
     
     
@@ -596,6 +583,56 @@ class Tasks:
         self.machine = machine
         self.n_gpu = n_gpu
         self.run_time = run_time
+        
+        
+    @staticmethod
+    def parallel_task(input_function, container, fixed, n_cores=-1, run_silent=True):
+        """
+        
+        Core function for multiprocessing of a given task.Takes as input a function and an iterator.
+        Warning: Spawns as many threads as the number of elements in the iterator.
+        (Jupyter and Pandas compatible)
+    
+
+        Parameters
+        ----------
+        input_function : TYPE
+            DESCRIPTION.
+        container : TYPE
+            DESCRIPTION.
+        fixed : TYPE
+            DESCRIPTION.
+        n_cores : TYPE, optional
+            DESCRIPTION. The default is -1.
+
+        Returns
+        -------
+        out : TYPE
+            DESCRIPTION.
+
+        """
+
+        
+        import psutil
+        from functools import partial
+        from multiprocessing import Pool
+                
+        if n_cores <=0:
+            num_cpus = psutil.cpu_count(logical=True)
+        else:
+            num_cpus = n_cores
+        process_pool = Pool(processes=num_cpus)
+        #try:    
+        if not run_silent:   
+            print(f'Performing {input_function.__name__} tasks for {len(container)} elements on {num_cpus} logical cores.', end='\r')
+        calc=partial(input_function, specs=fixed)                     
+        out=list(process_pool.map(calc, container))
+        if not run_silent:
+            print(f'Pooling results of {len(out)} tasks..', end='\r')
+        process_pool.close()
+        process_pool.join()
+        
+        return out
 
         
     @staticmethod    
@@ -805,53 +842,11 @@ python {self.script_path}/{self.notebook_name}.py {self.replicate} {compute_time
 exit 0''')
         
 
-    @staticmethod
-    def parallel_task(input_function, container, fixed, n_cores=-1):
-        """
-        
-        Core function for multiprocessing of a given task.Takes as input a function and an iterator.
-        Warning: Spawns as many threads as the number of elements in the iterator.
-        (Jupyter and Pandas compatible)
-    
-
-        Parameters
-        ----------
-        input_function : TYPE
-            DESCRIPTION.
-        container : TYPE
-            DESCRIPTION.
-        fixed : TYPE
-            DESCRIPTION.
-        n_cores : TYPE, optional
-            DESCRIPTION. The default is -1.
-
-        Returns
-        -------
-        out : TYPE
-            DESCRIPTION.
-
-        """
 
         
-        import psutil
-        from functools import partial
-        from multiprocessing import Pool
-                
-        if n_cores <=0:
-            num_cpus = psutil.cpu_count(logical=True)
-        else:
-            num_cpus = n_cores
-            
-        print(f'Performing {input_function.__name__} tasks for {len(container)} elements on {num_cpus} logical cores.')
-        
-        process_pool = Pool(processes=num_cpus)
-        
-        calc=partial(input_function, specs=fixed)                     
-        out=list(process_pool.map(calc, container))
-
-        print(f'Pooling results of {len(out)} tasks..')
-        process_pool.close()
-        process_pool.join()
-        
-        #print(out)
-        return out
+# =============================================================================
+#         except Exception as v:
+#             print(v, v.__class__)
+#             process_pool.terminate()
+#             raise v.__class__()            
+# =============================================================================

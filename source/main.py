@@ -115,8 +115,11 @@ class Project:
         self.hierarchy=hierarchy
         self.parameter=parameter
         self.parameter_dict=tools.Functions.setScalar(self.parameter)
-        
-        self.replicas=int(replicas)
+        if isinstance(replicas, str):
+            replicas = int(replicas)
+        self.replicas=replicas
+        if isinstance(initial_replica, str):
+            initial_replica = int(initial_replica)
         self.initial_replica=initial_replica
         
         self.protein=protein
@@ -199,7 +202,7 @@ class Project:
                                       ligand=ligand_,
                                       parameter=parameter_,
                                       parameter_dict=self.parameter_dict,
-                                      replicate=system[-1],
+                                      replicate=int(system[-1]),
                                       timestep=self.timestep,
                                       replica_name=replica_name))
         

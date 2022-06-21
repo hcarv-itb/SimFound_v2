@@ -9,13 +9,13 @@ Created on Fri Feb 12 16:34:14 2021
 import MSM
 try:
     import Trajectory
-    
+    import Discretize
     import tools_plots
     import tools
 except:
     pass
 
-
+import matplotlib.gridspec as gridspec
 import functools
 import numpy as np
 import matplotlib.pyplot as plt
@@ -24,12 +24,14 @@ import pandas as pd
 import os
 import re
 import pickle
-import holoviews as hv
-#hv.extension('bokeh')
-pd.options.plotting.backend = 'holoviews'
-import hvplot.pandas as hvplot
+import time
 
-import MDAnalysis as mda
+import glob
+#import holoviews as hv
+#hv.extension('bokeh')
+#pd.options.plotting.backend = 'holoviews'
+#import hvplot.pandas as hvplot
+
 import MDAnalysis.analysis.distances as D
 
 
@@ -37,30 +39,7 @@ import mdtraj as md
 from simtk.unit import picoseconds
 
 
-def calculator(func):
-     
-     @functools.wraps(func)
-     def wrapper(system_specs, specs):
-         
-        print('Calculator')
-        (trajectory, topology, results_folder, name)=system_specs
-        (selection,  start, stop, timestep, stride, units_x, units_y, task, store_traj, subset)=specs   
-        names, indexes, column_index=Featurize.Featurize.df_template(system_specs, unit=[units_y])
-        traj=Trajectory.Trajectory.loadTrajectory(system_specs, specs)
-        
 
-        if traj != None and topology != None:
-            
-            result=func(selection, traj, start, stop, stride)
-            rows=pd.Index(np.arange(0, len(result), stride)*timestep, name=units_x)
-            df_system=pd.DataFrame(result, columns=column_index, index=rows)
-    
-        else:
-            df_system = pd.DataFrame()
-        
-        return df_system
- 
-     return wrapper
 
 
 
@@ -82,12 +61,14 @@ class Featurize:
     
     def __init__(self,
                  project,
-                 timestep, 
-                 results,
+                 timestep=None, 
+                 results=None,
                  systems=None,
                  warnings=False,
-                 heavy_and_fast=True,
-                 overwrite=False):
+                 filter_water=True,
+                 overwrite=False,
+                 def_top=None,
+                 def_traj=None):
         """
         
 
@@ -111,28 +92,41 @@ class Featurize:
         else:
             self.systems=project.systems
         self.scalars={}
-        self.results=results
         self.features={}
         #self.levels=self.systems.getlevels()
-        self.timestep=timestep
+        if timestep is None:
+            self.timestep=self.project.timestep
+        else:
+            self.timestep = timestep
         self.unit='ps'
         self.warnings=warnings 
-        self.heavy_and_fast=heavy_and_fast
+        self.filter_water=filter_water
         self.subset='not water'
         self.overwrite = overwrite
+        self.def_top= def_top
+        self.def_traj = def_traj
+        self.results = tools.Functions.pathHandler(self.project, results)
+        self.save_df = False
         
-        
-        result_paths = []
-        for name, system in self.systems.items(): 
-            result_paths.append(system.project_results)
-        if len(list(set(result_paths))) == 1:
-            result_path = list(set(result_paths))[0]
-            self.results = os.path.abspath(f'{result_path}') 
-        else:
-            self.results=os.path.abspath(f'{self.project.results}')
-            print('Warning! More than one project result paths defined. reverting to default.')
+# =============================================================================
+#         result_paths = []
+#         for name, system in self.systems.items(): 
+#             result_paths.append(system.project_results)
+#         if results is not None:
+#             if len(list(set(result_paths))) == 1:
+#                 result_path = list(set(result_paths))[0]
+#                 self.results = os.path.abspath(f'{result_path}') 
+#             else:
+#                 self.results=os.path.abspath(f'{self.project.results}')
+#                 print('Warning! More than one project result paths defined. reverting to default.')
+#         else:
+#             self.results = results
+# =============================================================================
         self.stored=os.path.abspath(f'{self.results}/storage')
         print('Results will be stored under: ', self.results)
+        if def_traj != None or def_top != None:
+            print(f'Using pre-defined trajectory {self.def_traj} and/or topology {self.def_top}')
+        tools.Functions.fileHandler([self.results, self.stored])
  
 
     def calculate(self, 
@@ -145,8 +139,10 @@ class Featurize:
                 feature_name=None,
                 equilibration=False,
                 production=True,
-                def_top=None,
-                def_traj=None):
+                load=True,
+                subset=None,
+                shells = None,
+                labels = None):
         """
         Wrapper function to calculate features based on "method" and "feature". 
         
@@ -194,79 +190,85 @@ class Featurize:
             A dataframe containing all featurized values across the list of iterables*replicas*pairs.
 
         """
+        self.shells = shells
+        self.labels = labels
         
-        df_name = f'{self.results}/{method}_{feature_name}.csv'
-        if not os.path.exists(df_name) or self.overwrite:
+        if subset == None:
+            subset = self.project.parameter
+        else:
+            for s in subset:
+                if not s in self.project.parameter:
+                    print('Subset not defined under Project parameters')
+                    raise ValueError()
+            
+        supra_df = pd.DataFrame()
+        timestep_=''.join(str(self.timestep).split(' '))
+        df_name=f'{method}_{feature_name}_{start}_{stop}_{timestep_}_{stride}.csv'
         
-            #Get function, kind (optional), xy units, task
+
+        print('Calculating: ', feature_name)
+        #System looper
+        systems_specs=[]
+        
+        for name, system in self.systems.items():
+            if system.parameter in subset:
+                file= glob.glob(f'{system.results_folder}/{df_name}')
+                if len(file) and not self.overwrite:                    
+                    print(f'Loading {system.name}', end='\r')
+                    out_df = pd.read_csv(file[0], index_col=0, header=Discretize.Discretize.headers[:-1]) #[0,1,2,3,4,5,6])
+                    #os.rename(file, f'{system.results_folder}/{df_name}')
+                    supra_df = pd.concat([supra_df, out_df], axis=1)
+
+                else:
+                    print(f'Setting {system.name} for calculation', end='\r')
+                    self.scalars[name] = system.scalar
+                    results_folder=system.results_folder
+                    topology=Trajectory.Trajectory.fileFilter(name, 
+                                                                system.topology, 
+                                                                equilibration, 
+                                                                production, 
+                                                                def_file=self.def_top,
+                                                                warnings=self.warnings, 
+                                                                filterW=self.filter_water)
+    
+                    trajectory=Trajectory.Trajectory.fileFilter(name, 
+                                                                system.trajectory, 
+                                                                equilibration, 
+                                                                production,
+                                                                def_file=self.def_traj,
+                                                                warnings=self.warnings, 
+                                                                filterW=self.filter_water)
+                    systems_specs.append((trajectory, topology, results_folder, name, df_name))
+        #Spawn multiprocessing tasks
+        if len(systems_specs):
             method_function, _, unit_x, unit_y, task=self.getMethod(method) 
-     
-            #Pack fixed measurement hyperparameters
-            measurements=(inputs, start, stop, self.timestep, stride, unit_x, unit_y, task, self.heavy_and_fast, self.subset)
-            
-            # Define system definitions and measurement hyperparameters
-            #Note: system cannot be sent as pickle for multiproc, has to be list
-            systems_specs=[]
-    
-            for name, system in self.systems.items():
-                
-                 #input_topology
-                self.scalars[name] = system.scalar
-                results_folder=system.results_folder
-                topology=Trajectory.Trajectory.fileFilter(name, 
-                                                            system.topology, 
-                                                            equilibration, 
-                                                            production, 
-                                                            def_file=def_top,
-                                                            warnings=self.warnings, 
-                                                            filterW=self.heavy_and_fast)
-    
-                trajectory=Trajectory.Trajectory.fileFilter(name, 
-                                                            system.trajectory, 
-                                                            equilibration, 
-                                                            production,
-                                                            def_file=def_traj,
-                                                            warnings=self.warnings, 
-                                                            filterW=self.heavy_and_fast)
-                
-                
-                   
-                systems_specs.append((trajectory, topology, results_folder, name))
-    
-            
-            #Spawn multiprocessing tasks    
-            data_t=tools.Tasks.parallel_task(method_function, systems_specs, measurements, n_cores=n_cores)
-            
-            
-            
-            # concat dataframes from multiprocessing into one dataframe
-            #Update state of system and features with the feature df.
-            out_df=pd.DataFrame()
-                
-            for data_df, system in zip(data_t, self.systems.values()):
-                system.data[f'{method}-{feature_name}']=data_df
-                system.features[f'{method}-{feature_name}']=inputs
-                out_df=pd.concat([out_df,  data_df], axis=1)
-            out_df.index.rename=data_df.index.name
-            out_df.to_csv(df_name)
-    
-        else:
-            print(f'Loading pre-calculated {method} dataframe')
-            
-            out_df = pd.read_csv(df_name, index_col=0, header=[0,1,2,3])
+            out_df=pd.DataFrame()  
+            measurements=(inputs, start, stop, self.timestep, stride, unit_x, unit_y, task, self.filter_water, self.subset)
+            if n_cores != 1:
+                data_t=tools.Tasks.parallel_task(method_function, systems_specs, measurements, n_cores=n_cores)
+            else:
+                for system_specs in systems_specs:
+                    method_function(system_specs, measurements)
         
-        print(out_df)
+        print(supra_df)
+        if self.save_df:
+            supra_df.to_csv(f'{self.results}/{df_name}')
         if feature_name != None:
-            self.features[f'{feature_name}']=out_df
+            self.features[f'{method}_{feature_name}']=supra_df
         else:
-            self.features['undefined']=out_df
-                
-        out_df.name=method
+            self.features['{method}_undefined']=supra_df
 
         print('Featurization updated: ', [feature for feature in self.features.keys()])
 
-        return out_df
+        return supra_df
 
+
+    @staticmethod
+    def test(system_specs, specs):
+        (trajectory, topology, results_folder, name)=system_specs
+        print(name)
+        print(trajectory, topology)
+        #traj=Trajectory.Trajectory.loadTrajectory(system_specs, specs)
 
     def getMethod(self, method):
         
@@ -276,7 +278,9 @@ class Featurize:
                      'RMSF' : (Featurize.rmsf_calculation, 'by_element', ('Index', 'nm'), 'MDTraj'),
                      'RDF' : (Featurize.rdf_calculation, 'by_element', (r'$G_r$', r'$\AA$'), 'MDAnalysis'), 
                      'distance' : (Featurize.distance_calculation, 'global', ('ps', r'$\AA$'), 'MDAnalysis'),
-                     'dNAC' : (Featurize.nac_calculation, 'global', ('ps', r'$\AA$'), 'MDAnalysis')} 
+                     'dNAC' : (Featurize.nac_calculation, 'global', ('ps', r'$\AA$'), 'MDAnalysis'),
+                     'test' : (Featurize.test, None, (None, None), 'MDTraj'),
+                     'dNAC_combinatorial_onTheFly' : (Featurize.dNAC_combinatorial_onTheFly, 'global', (self.shells, self.labels), 'MDAnalysis')} #('ps', r'$\AA$')
         
         try:
             method_function = methods_hyp[method][0]
@@ -676,8 +680,128 @@ class Featurize:
         else:
             return pd.DataFrame()
       
+    
+    
     @staticmethod
-    def nac_calculation(system_specs, specs=(), results_folder=os.getcwd()):
+    @tools.log
+    def dNAC_combinatorial_onTheFly(system_specs, specs=(), shells=None, labels=None):
+        
+        (trajectory, topology, results_folder, name, df_name)=system_specs
+        (selection,  start, stop, timestep, stride, shells, labels, task, store_traj, subset)=specs   
+        units_y = r'$\AA$'
+
+        def run(frame):
+            #print('frame ', frame, end='\r') 
+            t0 = time.clock()
+            distances_ = []
+            for distance in distances:        
+                sel_, ref_ = distance[0], distance[1]  
+                dist=D.distance_array(ref_.positions, sel_.positions, box=traj.dimensions)
+                distances_.append(dist)
+
+            #distances=np.asarray(distances) 
+
+            dO = distances_[0]
+            dH1 = distances_[1]
+            dH2 = distances_[2]
+
+            nac_d = [dO, np.minimum(dH1, dH2)]
+            nac_array = np.around(np.sqrt(np.power(nac_d, 2).sum(axis=0)/len(nac_d)), 3) 
+            
+            
+            
+            hist_subunits = np.empty([len(ref), len(feature_range)-1])
+            
+            
+            df = pd.DataFrame(nac_array.T)
+            
+            states=tools.Functions.state_mapper(shells, df, labels=labels)
+            states_total_frames[frame,:] = states
+            
+            for (idx_sub, subunit) in df.iterrows():
+                hist, _ = np.histogram(subunit, bins=feature_range) 
+                hist_subunits[idx_sub,:] = hist
+
+            hist_total_frames[frame,:] = hist_subunits 
+            t1 = time.clock()
+            #print(frame, t1-t0, end='\r')
+            
+
+        print(name)
+        traj=Trajectory.Trajectory.loadTrajectory(system_specs, specs)
+        
+        fig=plt.figure(figsize=(10,4))
+        gs = gridspec.GridSpec(nrows=1, ncols=3)
+        plot_hist = fig.add_subplot(gs[0, 0]) 
+        plot_states = fig.add_subplot(gs[0, 1:]) 
+        
+        limits=(0,150)
+        thickness = 0.25
+        feature_range=np.arange(limits[0], limits[1], thickness)
+        feature_center_bin=feature_range+(thickness/2) 
+        
+        distances = []
+        for selection_ in selection:        
+            sel, ref = traj.select_atoms(selection_[0]), traj.select_atoms(selection_[1])  
+            if not len(ref) or not len(sel):
+                #print(f'\tReference: {ref[0]} x {len(ref)}')
+                #print(f'\tSelection: {sel[0]} x {len(sel)}')
+                print(f'Warning on {name}! No atoms selected:\n\tRef: {ref}\n\tSel: {sel}')
+                sel, ref = traj.select_atoms(input('Which sel ?')), traj.select_atoms(input('Which ref ?'))
+            distances.append((ref, sel))
+
+
+        n_frames = len(traj.trajectory[start:stop:stride])
+
+        shells_name=''.join(labels)
+        base_name = f'{df_name.split(".")[0]}.npy'
+        states_name = f'{results_folder}/states_water_{shells_name}_b{start}_e{stop}_s{stride}.npy'
+        hist_name = f'{results_folder}/histogram_water_b{start}_e{stop}_s{stride}.npy'
+
+        if not os.path.exists(hist_name) or not os.path.exists(states_name):
+            print('Calculating: ', name)
+            hist_total_frames = np.empty([n_frames, len(ref), len(feature_range)-1])
+            states_total_frames = np.empty([n_frames, len(ref)])
+            [run(frame) for frame, _ in enumerate(traj.trajectory[start:stop:stride])]
+            np.save(states_name, states_total_frames)
+            hist_final= hist_total_frames.sum(axis=0)
+            np.save(hist_name, hist_final)
+        else:
+            print('Loading: ', hist_name)
+            hist_final = np.load(hist_name)
+            states_total_frames = np.load(states_name)
+        
+        
+        
+        #print(hist_final, np.shape(hist_final))
+        #print(states_total_frames, np.shape(states_total_frames))
+        for sub in hist_final:
+            plot_hist.plot(feature_center_bin[:-1], sub)
+        plot_hist.set_xscale('log')
+        plot_hist.set_yscale('log')
+        
+        for sub in states_total_frames.T:
+            plot_states.plot(np.arange(0, len(sub)), sub, '.')
+        plt.show()
+        
+        
+        names, indexes, column_index, rows=Featurize.df_template(name,
+                                                                 (start, stride, timestep, 'ps'),
+                                                                 (n_frames, len(sel), len(ref)),
+                                                                 sel_range=True)
+        
+        df_hist=pd.DataFrame(hist_final.T.astype(int), columns=column_index, index=feature_center_bin[:-1])
+        df_hist.to_csv(f'{results_folder}/{df_name}')
+        
+        df_states = pd.DataFrame(states_total_frames.astype(int), columns=column_index, index=rows)
+        df_states.to_csv(f'{results_folder}/discTraj_{df_name}')
+        
+        print(df_hist, df_states)
+                
+    
+    @staticmethod
+    @tools.log
+    def nac_calculation(system_specs, specs=()):
         """
         The workhorse function for nac_calculation. 
         Retrieves the d_NAC array and corresponding dataframe.
@@ -708,49 +832,55 @@ class Featurize:
         
         """
 
-        (trajectory, topology, results_folder, name)=system_specs
+        (trajectory, topology, results_folder, name, df_name)=system_specs
         (selection,  start, stop, timestep, stride, units_x, units_y, task, store_traj, subset)=specs   
-        
+
+        print(name)
         traj=Trajectory.Trajectory.loadTrajectory(system_specs, specs)
-        
-        if traj != None and topology != None:
-            
-            distances = []
-            for selection_ in selection:        
-                ref, sel = traj.select_atoms(selection_[0]), traj.select_atoms(selection_[1])            
+        distances = []
+        for selection_ in selection:        
+            ref, sel = traj.select_atoms(selection_[0]), traj.select_atoms(selection_[1])  
+            if not len(ref) or not len(sel):
                 #print(f'\tReference: {ref[0]} x {len(ref)}')
-                #print(f'\tSelection: {sel[0]} x {len(sel)}')          
-                dist=[D.distance_array(ref.positions, sel.positions, box=traj.dimensions) for ts in traj.trajectory[start:stop:stride]]             
-                distances.append(dist)
-                #print(f'\t{name} {ref[0]}: {np.round(np.min(dist), decimals=2)} and {np.round(np.max(dist), decimals=2)}')
-                
+                #print(f'\tSelection: {sel[0]} x {len(sel)}')
+                print(f'Warning on {name}! No atoms selected:\n\tRef: {ref}\n\tSel: {sel}')
+                ref_ = input('Which ref ?')
+                sel_ = input('Which sel ?')
+                ref, sel = traj.select_atoms(ref_), traj.select_atoms(sel_)
+            dist=[D.distance_array(ref.positions, sel.positions, box=traj.dimensions) for ts in traj.trajectory[start:stop:stride]]             
+            distances.append(dist)
+
+            #print(f'\t{name} {ref[0]}: {np.round(np.min(dist), decimals=2)} and {np.round(np.max(dist), decimals=2)}')
+        
+        if len(distances) == len(selection):
             distances=np.asarray(distances)  
             #SQRT(SUM(di^2)/#i)
             nac_array=np.around(np.sqrt(np.power(distances, 2).sum(axis=0)/len(distances)), 3) #sum(axis=0)  
-            #TODO: Check behaviour for ref > 1
+    
             frames, sel, ref=np.shape(nac_array)
             dist_reshape=np.asarray(nac_array).reshape(frames, ref*sel)
             print(f'{name} \n\tNumber of frames: {frames}\n\tSelections: {sel}\n\tReferences: {ref}')
             print(f'\tLimits: {np.round(np.min(dist_reshape), decimals=2)} and {np.round(np.max(dist_reshape), decimals=2)}')
-
+    
             names, indexes, column_index, rows=Featurize.df_template(name,
                                                                (start, stride, timestep, 'ps'),
                                                                (frames, sel, ref), 
                                                                unit=[units_y])
             
-            #rows=pd.Index(np.arange(start, frames)*(stride*timestep), name=self.unit)
-            df_system=pd.DataFrame(dist_reshape, columns=column_index, index=rows)            
-            #print(df_system)
             
-            return df_system
+            
+            df_system=pd.DataFrame(dist_reshape, columns=column_index, index=rows)
+            df_system.to_csv(f'{results_folder}/{df_name}')
     
         else:
-            return pd.DataFrame()
-
-
+            print('No df for ', name)
+            df_system = pd.DataFrame()
+        
+        return df_system
+        
 
     @staticmethod
-    def df_template(name, traj_tuple, dims_tuple, unit=['nm']):
+    def df_template(name, traj_tuple, dims_tuple, unit=None, sel_range=False):
         """
         
 
@@ -785,10 +915,14 @@ class Featurize:
         refs=[f'ref_{i}' for i in range(1, ref+1)]
         indexes.append(refs)
         
-        sels=[f'sel_{i}' for i in range(1, sel+1)]
-        indexes.append(sels)
+        if not sel_range:
+            sels=[f'sel_{i}' for i in range(1, sel+1)]
+            indexes.append(sels)
+        else:
+            indexes.append([f'sel_1-{sel}'])
         
-        indexes.append(unit)
+        if unit != None:
+            indexes.append(unit)
         
         names=[f'l{i}' for i in range(1, len(indexes)+1)]
         column_index=pd.MultiIndex.from_product(indexes, names=names)
