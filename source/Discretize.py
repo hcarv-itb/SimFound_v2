@@ -22,6 +22,10 @@ import matplotlib.gridspec as gridspec
 import re
 import glob
 import collections
+from multiprocessing import Process, Pool
+
+
+import itertools
 from tqdm import tqdm as tq
 import matplotlib.pylab as pl
 from matplotlib.ticker import FormatStrFormatter
@@ -629,82 +633,92 @@ class Discretize:
         #scalars = tools.Functions.setScalar(iterables, ordered=False, get_uniques=True)
         for idx_, (it, ax_fit) in enumerate(zip(iterables, axes_fit)):
             (iterable, it_df) = it
-            ranges=it_df.index.values
-            resolution = float(ranges[1]) - float(ranges[0])  
-            if isinstance(bulk, tuple):
-                (bulk_min, bulk_max) = bulk
-            elif isinstance(bulk, dict):
-                try:
-                    (bulk_min, bulk_max) =  bulk[iterable]
-                except KeyError:
-                    raise KeyError('No bulk range provided for ', iterable)
-            bulk_range=np.arange(min(ranges, key=lambda x:abs(x-bulk_min)), min(ranges, key=lambda x:abs(x-bulk_max)), resolution)
-            #bulk_range=np.arange(bulk_min, bulk_max, resolution)
+            dG_it_name = f'{self.binding_profile_path}/binding_profile_{self.feature_name}_{describe}_b{start}_e{stop}_s{stride}_{iterable}.csv'
+            if not os.path.exists(dG_it_name):
             
-            #TODO: get shell labels and limits from shell_profile. also in dG_plot.
-            state_labels=['A', 'P', 'E', 'S', 'B']
-            iterable_df = self.get_descriptors(it_df, iterable, sel_range=sel_range)
-            bulk_fitting(iterable_df, ax_fit)
-            
-            if plot_all:
-                ax_dG = axes_dG
-                color = colors_all[idx_]
+                ranges=it_df.index.values
+                resolution = float(ranges[1]) - float(ranges[0])  
+                if isinstance(bulk, tuple):
+                    (bulk_min, bulk_max) = bulk
+                elif isinstance(bulk, dict):
+                    try:
+                        (bulk_min, bulk_max) =  bulk[iterable]
+                    except KeyError:
+                        raise KeyError('No bulk range provided for ', iterable)
+                bulk_range=np.arange(min(ranges, key=lambda x:abs(x-bulk_min)), min(ranges, key=lambda x:abs(x-bulk_max)), resolution)
+                #bulk_range=np.arange(bulk_min, bulk_max, resolution)
+                
+                #TODO: get shell labels and limits from shell_profile. also in dG_plot.
+                state_labels=['A', 'P', 'E', 'S', 'B']
+                iterable_df = self.get_descriptors(it_df, iterable, sel_range=sel_range)
+                bulk_fitting(iterable_df, ax_fit)
+                
+                if plot_all:
+                    ax_dG = axes_dG
+                    color = colors_all[idx_]
+                else:
+                    ax_dG = axes_dG[idx_]
+                    color = 'green'
+                
+                dG_fit, ax_dG = dG_plot(iterable_df, dG_fits, ax_dG, color=color, transp=0.6)
+    
+                self.discretized[f'dGProfile_{self.feature_name}_{iterable}_{describe}']=dG_fit
+                if plot_replicas:
+                    
+                    rep_dfs = pd.DataFrame()
+                    
+                    for idx, rep in enumerate(reps): 
+                        rep_df = it_df.loc[:, it_df.columns.get_level_values(Discretize.rep_level) == rep]
+                        iterable_df_rep = self.get_descriptors(rep_df, iterable, sel_range=sel_range) 
+                        rep_dfs = pd.concat([rep_dfs, iterable_df_rep], axis=1)
+    
+                        if plot_multi:
+                            try:
+                                ax_dG_multi = axes_rep_dG[idx, idx_]
+                            except IndexError:
+                                ax_dG_multi = axes_rep_dG[idx]
+                            except TypeError:
+                                ax_dG_multi = axes_rep_dG
+                            refs = rep_df.columns.get_level_values(Discretize.ref_level).unique()
+                            colors = pl.cm.tab10(np.linspace(0,1,len(refs)))
+                            for idx_r, ref in enumerate(refs):
+                                
+                                label = 'chain_'+chr(ord('@')+idx_r+1)
+                                print(f'Processing {iterable}:{rep}-{label}', end='\r')
+                                ref_df = rep_df.loc[:, rep_df.columns.get_level_values(Discretize.ref_level) == ref]
+                                iterable_df_multi = self.get_descriptors(ref_df, iterable, sel_range=sel_range)
+                                #N_enz, N_error_p, N_error_m, N_opt, N_enz_fit, N_t, bulk_value, fitted_bulk, factor, unit = _fit(iterable_df_multi)
+                                #bulk_fitting(iterable_df_multi, axes_ref_fit[idx, idx_], label=f'Replica {idx_r+1}', transp=0.2, color='darkgrey')
+                                dG_fit_multi, ax_dG_rep = dG_plot(iterable_df_multi, 
+                                                                  dG_fits, 
+                                                                  ax_dG_multi,
+                                                                  title=f'{iterable}-{rep}',
+                                                                  label=label, 
+                                                                  transp=0.2, 
+                                                                  color=colors[idx_r],
+                                                                  multi_plot=True)
+                                
+                                self.discretized[f'dGProfile_{self.feature_name}_{iterable}_{rep}_{ref}_{describe}']=dG_fit_multi
+    # =============================================================================
+    #                     else:
+    #                         print(f'Processing {iterable}:{rep}-{label}', end='\r')
+    #                         bulk_fitting(iterable_df_multi, ax_fit, label=rep, color=colors[rep])
+    #                         dG_fit_rep,ax_dG_rep = dG_plot(iterable_df_rep, 
+    #                                                        dG_fits, 
+    #                                                        axes_rep_dG[idx, idx_], 
+    #                                                        label=rep, 
+    #                                                        color='black')    
+    #                         self.discretized[f'dGProfile_{self.feature_name}_{iterable}_{rep}_{describe}']=dG_fit_rep
+    # =============================================================================
+    
+                dG_fit.to_csv(dG_it_name)
             else:
-                ax_dG = axes_dG[idx_]
-                color = 'green'
-            
-            dG_fit, ax_dG = dG_plot(iterable_df, dG_fits, ax_dG, color=color, transp=0.6)
-
-            self.discretized[f'dGProfile_{self.feature_name}_{iterable}_{describe}']=dG_fit
-            if plot_replicas:
-                
-                rep_dfs = pd.DataFrame()
-                
-                for idx, rep in enumerate(reps): 
-                    rep_df = it_df.loc[:, it_df.columns.get_level_values(Discretize.rep_level) == rep]
-                    iterable_df_rep = self.get_descriptors(rep_df, iterable, sel_range=sel_range) 
-                    rep_dfs = pd.concat([rep_dfs, iterable_df_rep], axis=1)
-
-                    if plot_multi:
-                        try:
-                            ax_dG_multi = axes_rep_dG[idx, idx_]
-                        except IndexError:
-                            ax_dG_multi = axes_rep_dG[idx]
-                        except TypeError:
-                            ax_dG_multi = axes_rep_dG
-                        refs = rep_df.columns.get_level_values(Discretize.ref_level).unique()
-                        colors = pl.cm.tab10(np.linspace(0,1,len(refs)))
-                        for idx_r, ref in enumerate(refs):
-                            
-                            label = 'chain_'+chr(ord('@')+idx_r+1)
-                            print(f'Processing {iterable}:{rep}-{label}', end='\r')
-                            ref_df = rep_df.loc[:, rep_df.columns.get_level_values(Discretize.ref_level) == ref]
-                            iterable_df_multi = self.get_descriptors(ref_df, iterable, sel_range=sel_range)
-                            #N_enz, N_error_p, N_error_m, N_opt, N_enz_fit, N_t, bulk_value, fitted_bulk, factor, unit = _fit(iterable_df_multi)
-                            #bulk_fitting(iterable_df_multi, axes_ref_fit[idx, idx_], label=f'Replica {idx_r+1}', transp=0.2, color='darkgrey')
-                            dG_fit_multi, ax_dG_rep = dG_plot(iterable_df_multi, 
-                                                              dG_fits, 
-                                                              ax_dG_multi,
-                                                              title=f'{iterable}-{rep}',
-                                                              label=label, 
-                                                              transp=0.2, 
-                                                              color=colors[idx_r],
-                                                              multi_plot=True)
-                            
-                            self.discretized[f'dGProfile_{self.feature_name}_{iterable}_{rep}_{ref}_{describe}']=dG_fit_multi
-# =============================================================================
-#                     else:
-#                         print(f'Processing {iterable}:{rep}-{label}', end='\r')
-#                         bulk_fitting(iterable_df_multi, ax_fit, label=rep, color=colors[rep])
-#                         dG_fit_rep,ax_dG_rep = dG_plot(iterable_df_rep, 
-#                                                        dG_fits, 
-#                                                        axes_rep_dG[idx, idx_], 
-#                                                        label=rep, 
-#                                                        color='black')    
-#                         self.discretized[f'dGProfile_{self.feature_name}_{iterable}_{rep}_{describe}']=dG_fit_rep
-# =============================================================================
-
+                print('Loading DG of ', iterable)
+                dG_fit = pd.read_csv(dG_it_name, index_col=0, header=[0])
+        
             dG_fits=pd.concat([dG_fits, dG_fit], axis=1)
+        
+            
         dG_fits.to_csv(f'{self.binding_profile_path}/binding_profile_{self.feature_name}_{describe}_b{start}_e{stop}_s{stride}.csv')
         
         if not axes_fit[-1].lines: 
@@ -738,8 +752,8 @@ class Discretize:
                 fig_rep_dG.text(0.5, 0.00, r'$\itd$$_{NAC}$ ($\AA$)')
             fig_rep_dG.suptitle(f'Feature: {self.feature_name}\n{describe}')
             fig_rep_dG.subplots_adjust(wspace=0, hspace=0)
-            handles_, labels_ = ax_dG_rep.get_legend_handles_labels()
-            fig_rep_dG.legend(handles_, labels_, loc='center right') #, ncol=4) #, bbox_to_anchor=Discretize.def_locs_multi)
+            #handles_, labels_ = ax_dG_rep.get_legend_handles_labels()
+            #fig_rep_dG.legend(handles_, labels_, loc='center right') #, ncol=4) #, bbox_to_anchor=Discretize.def_locs_multi)
             #fig_rep_dG.tight_layout()
             fig_rep_dG.show()
             fig_rep_dG.savefig(f'{self.binding_profile_path}/binding_profile_{self.feature_name}_refs_{describe}_b{start}_e{stop}_s{stride}.png', dpi=600, bbox_inches="tight")
@@ -1163,22 +1177,22 @@ class Discretize:
         
         
     @staticmethod
-    def run_correlation(inputs, corr_mode='single'):
+    def run_metric(inputs, corr_mode='single', method='correlation'):
         
-        #TODO: BuOH is not being calculated. 
-        def run_correlation_parallel():
+        def run_metric_parallel():
             
-            fixed = (ref, ref2)
+            fixed = (ref, ref2, method)
             values=state_combs # iterable_df[value] values_]
             
-            _correlation = tools.Tasks.parallel_task(Discretize.correlation_calculation, values, fixed, n_cores=n_cores, run_silent=True)
+            _metric = tools.Tasks.parallel_task(Discretize.metric_calculation, values, fixed, n_cores=n_cores, run_silent=True)
 
-            return _correlation
+            return _metric
         
         (df_mol, df_mol2, mol1, mol2, _states, state_combs, n_cores) = inputs
-        (states1, states2) = _states
+
+        states1, states2 = _states
         traj_mol = pd.DataFrame()
-        correlations = [] #np.empty((len(states1)*len(states2))*len(df_mol.columns))
+        metrics = [] #np.empty((len(states1)*len(states2))*len(df_mol.columns))
         for idx, col in enumerate(df_mol.columns):
             ref = df_mol[col]
             ref2 = df_mol2.iloc[:, idx]
@@ -1187,18 +1201,20 @@ class Discretize:
             if corr_mode == 'all_median':
 
                 print(ref.name, ref2.name, end='\r')
-                correlations.append(run_correlation_parallel())
+                metrics.append(run_metric_parallel())
         if corr_mode == 'all_median':
-            out_corr = np.nanmedian(np.asarray(correlations).reshape((len(states1),len(states2), len(df_mol.columns))), axis=2)
+            out_corr = np.nanmedian(np.asarray(metrics).reshape((len(states1),len(states2), len(df_mol.columns))), axis=2)
 
             
-            correlation_table_mol = out_corr #correlation_tables[mol1] = out_corr
+            metric_table_mol = out_corr #correlation_tables[mol1] = out_corr
+        
+            return np.asarray(metric_table_mol).reshape(len(states1), len(states2)), traj_mol
         
         elif corr_mode == 'single':         
             ref = traj_mol.iloc[:,0]
             ref2 = traj_mol.iloc[:,1]
 
-            correlation_table_mol  = run_correlation_parallel() #correlation_tables[mol1]
+            metric_table_mol  = run_metric_parallel() #correlation_tables[mol1]
             
             #X = mol, its
             #target = water
@@ -1208,15 +1224,19 @@ class Discretize:
             #f_test /= np.max(f_test)
             #cross_corr_trajectory[idx] = i[1]
             #out_cross_corr = cross_corr_trajectory.reshape((9,9,len(ref)))
-
-        #trajectories[mol1] = traj_mol
+            return np.asarray(metric_table_mol).reshape(len(states1), len(states2)), traj_mol
         
-        return np.asarray(correlation_table_mol), traj_mol
+        elif corr_mode == 'all':
+            X = traj_mol.iloc[:,0]
+            y = traj_mol.iloc[:,1]
+            
+            return mutual_info_classif(X.values.reshape(-1,1), y, discrete_features=True), traj_mol
+
 
     @staticmethod
-    def correlation_calculation(series_value, specs=()):
+    def metric_calculation(series_value, specs=()):
 
-        (ref, ref2)=specs
+        (ref, ref2, method)=specs
         (state_combs)=series_value
         
         s = state_combs[0]
@@ -1224,34 +1244,41 @@ class Discretize:
         ref_s = ref == s
         ref2_s2 = ref2 == s2
     
+    
+        if method == 'correlation':
         #cross_corr = np.correlate(ref_s.values, ref2_s2.values, mode='valid')
         #conv = np.convolve(ref_s.values, ref2_s2.values, mode='valid')
-        corr_coeff = ref_s.corr(ref2_s2)
+            out = ref_s.corr(ref2_s2)
         
-        X = ref_s
-        y = ref2_s2
-        
-        
-        
-        
-        #mi = mutual_info_classif(X.values.reshape(-1,1), y, discrete_features=False)
-        mi_disc = mutual_info_classif(X.values.reshape(-1,1), y, discrete_features=True)
-        #print(s, s2, mi_disc)
-        #print(corr_coeff)
+        elif method == 'mutualInformation':
+            X = ref_s
+            y = ref2_s2
+
+            #mi = mutual_info_classif(X.values.reshape(-1,1), y, discrete_features=False)
+            out = mutual_info_classif(X.values.reshape(-1,1), y, discrete_features=True)
+
+        else:
+            out = None
+
         #pbar.update(1)
-        return mi_disc #corr_coeff
+        return out #corr_coeff
 
 
     @staticmethod
-    def get_correlationsInhibition(combinatorial, mol_ternary, sampled_states, n_cores=10, corr_mode='single', remap_traj = False):
+    def get_metricsInhibition(combinatorial, 
+                                   mol_ternary, 
+                                   sampled_states, 
+                                   n_cores=10, 
+                                   corr_mode='single', 
+                                   remap_traj = False,
+                                   method='mutualInformation'):
         
-        import itertools
+        
         
         states_mol = sampled_states['inhibition'][0]
         states_list = list(states_mol.keys()) #list(states.keys())
         #state_combs = itertools.product(states_list, states_list)
-
-        _states = (states_list, states_list)
+        #_states = (states_list, states_list)
         
         correlation_tables = {}
         trajectories = {}
@@ -1259,17 +1286,21 @@ class Discretize:
 
         for mol1, mol2 in mol_ternary.items():
             print(mol1)
-            state_combs = itertools.product(states_list, states_list) #this needs to be here since its not reinitializing
+           
             df_mol = combinatorial['inhibition'][mol1].loc[:, ('acyl_octamer', mol1, f'100mM_{mol2}')] 
             df_mol2 = combinatorial['inhibition'][mol1].loc[:, ('acyl_octamer', mol2, '5mM')] #f'100mM_{mol2}')]  
             
+            states_mol_list = states_list# list(np.unique(df_mol2.values.flat))
+            #states_mol_list = {s : states_mol[s] for s in _states_mol_list}  
+            _states = (states_list, states_mol_list)
+            state_combs = itertools.product(states_list, states_mol_list) #this needs to be here since its not reinitializing
             _inputs = (df_mol, df_mol2, mol1, mol2, _states, state_combs, n_cores)
             
-            table, traj = Discretize.run_correlation(_inputs, corr_mode)
+            table, traj = Discretize.run_metric(_inputs, corr_mode, method=method)
             if remap_traj:
                 traj = tools.Functions.remap_trajectories_states(traj, states_mol)[0]
 
-            table = table.reshape(len(states_mol), len(states_mol))
+            #table = table.reshape(len(states_mol), len(states_mol))
             correlation_tables[mol1], trajectories[mol1] = table, traj
             
             
@@ -1280,14 +1311,277 @@ class Discretize:
         
         
     
-
     
     @staticmethod
-    def get_correlationsWater(combinatorial, mol_water, sampled_states, n_cores=10, corr_mode='single', remap_traj=False):
+    def double_combinatorial_calculation(series_value, specs=()):
         
-        from multiprocessing import Process, Pool
-        import itertools
-        import collections
+        (df_mol, df_mol2, encodings) = specs
+        (idx, col)=series_value
+        
+        def state_evaluator(x):
+            x= tuple(x)
+            if x in encodings: #.values():
+                
+                if np.isnan(encodings.index(x)):
+                    print(' is nan', x)
+                
+                
+                return encodings.index(x)
+        
+        ref = df_mol[col]
+        ref2 = df_mol2.iloc[:, idx]
+        
+        
+        
+        
+        discretized_df=pd.concat([ref, ref2], axis=1).apply(state_evaluator, raw=True, axis=1)
+
+        return discretized_df
+    
+    @staticmethod
+    def run_double_combinatorial(inputs):
+        
+        
+        
+        (df_mol, df_mol2, mol1, mol2, _states, state_combs, n_cores) = inputs
+
+        states1, states2 = _states
+        traj_mol = pd.DataFrame() #TODO: make new columns
+        metrics = [] #np.empty((len(states1)*len(states2))*len(df_mol.columns))
+        
+        fixed = (df_mol, df_mol2, state_combs)
+        values=[(i, j) for i,j in enumerate(df_mol.columns)] # iterable_df[value] values_]
+        
+        traj_mols = tools.Tasks.parallel_task(Discretize.double_combinatorial_calculation, values, fixed, n_cores=n_cores, run_silent=True)
+        
+        for t in traj_mols:
+            traj_mol = pd.concat([traj_mol, t], axis=1)
+        
+        #print(traj_mol)
+        return traj_mol
+        
+
+
+    @staticmethod
+    def get_double_combinatorial(combinatorial, 
+                                 mol_water, 
+                                 sampled_states, 
+                                 n_cores=10,  
+                                 remap_traj=True,
+                                 results=None,
+                                 overwrite=False):
+        
+        
+        base_water_df = combinatorial['water']['H2O']
+
+        base_mol = sampled_states['normal'][0]
+        base_water = sampled_states['water'][0]
+        states_mol = list(base_mol.keys())
+        states_water = list(base_water.keys())
+        
+        labels_mol = list(base_mol.values())
+        labels_water = list(base_water.values())
+        _states = (states_water, states_mol)
+        
+        
+        state_combs = list(itertools.product(states_water, states_mol))
+        label_combs = list(itertools.product(labels_water, labels_mol))
+
+        
+        
+        water_l = []
+        for idx, l in enumerate(label_combs):
+            
+            if l[0] == 'ATESB':
+                
+                label_combs[idx] = f'w_{l[1]}'
+                water_l.append(idx)
+            else:
+                label_combs[idx] = l[1]
+        
+        water_labels = [label_combs[l] for l in water_l]
+        comb_states = {k : v for k,v in enumerate(label_combs)}
+        comb_water_states = {k : v for k,v in enumerate(water_labels)}
+        comb_mol_states = {k : v for k,v in enumerate(label_combs) if v not in water_labels}
+        
+        
+        print(comb_states, comb_water_states, comb_mol_states)
+        
+        trajectories = collections.defaultdict(dict)
+        supra_traj = pd.DataFrame()
+        sampled_comb_states = []
+        fig=plt.figure(figsize=(9,6), constrained_layout=True)
+        outer_grid = gridspec.GridSpec(1,len(mol_water))
+        
+        
+        for idx_mol, (mol1, iterables_mol_w) in enumerate(mol_water.items()):
+            print(idx_mol, mol1, iterables_mol_w)
+            
+            mol_traj = pd.DataFrame()
+            (iterables, mol2) = iterables_mol_w
+            
+            #grid_mol = gridspec.GridSpecFromSubplotSpec(len(iterables),1 , subplot_spec = outer_grid[0,idx_mol])
+            for idx_it, it in enumerate(iterables):
+                print(idx_it, it)
+                if it == f'100mM_{mol2}_5mM':
+                    df_mol = combinatorial['inhibition'][mol1].loc[:, ('acyl_octamer', mol2, '5mM')] #f'100mM_{mol2}'
+                    #TODO: make here entry for mol2
+                else:
+                    df_mol = combinatorial['normal'][mol1].loc[:, ('acyl_octamer', mol1, it)] 
+
+                df_water =  base_water_df.loc[:, ('acyl_octamer', mol1, it)] #f'100mM_{mol2}')] 
+                df_water = df_water.iloc[:-1, :]
+                
+
+                _inputs = (df_water, df_mol, 'water', mol1, _states, state_combs, n_cores)
+                
+                file_name = f'{results}/temp/traj_{mol1}_{it}.csv'
+                if not os.path.exists(file_name) or overwrite:
+                    traj = Discretize.run_double_combinatorial(_inputs) 
+                    traj.to_csv(file_name)
+                else:
+                    traj = pd.read_csv(file_name, index_col=0, header=[0])
+
+                trajectories[mol1][it] = traj
+
+                mol_traj = pd.concat([mol_traj, traj], axis=1)
+                
+            mol_traj.columns = base_water_df.iloc[:, base_water_df.columns.get_level_values('l2') == mol1].columns
+            
+            
+            supra_traj = pd.concat([supra_traj, mol_traj], axis=1)
+
+        sampled_comb_states = {s : label_combs[idx] for idx, s in enumerate(list(set(supra_traj.values.flat)))}
+
+        sampling_fractions = collections.defaultdict(dict)
+        for idx_mol, (mol, it_trajs) in enumerate(trajectories.items()):
+            print(mol)
+            grid_mol = gridspec.GridSpecFromSubplotSpec(len(it_trajs),1 , subplot_spec = outer_grid[0,idx_mol])
+            for idx_it, (it, traj) in enumerate(it_trajs.items()):
+                print(it)
+                if idx_it == 0:
+                    ax = plt.subplot(grid_mol[idx_it,0])
+                else:
+                    ax = plt.subplot(grid_mol[idx_it,0], sharex=ax, sharey=ax)
+                if remap_traj: 
+                    traj, sampled_comb_states = tools.Functions.remap_trajectories_states(traj, sampled_comb_states)
+
+                state_fraction =  np.asarray([np.count_nonzero(traj == i) / traj.size for i in comb_states]) 
+                state_fraction_w = np.asarray([np.count_nonzero(traj == i) / traj.size for i, label in comb_states.items() if label in water_labels]).T 
+                state_fraction_mol = np.asarray([np.count_nonzero(traj == i) / traj.size for i, label in comb_states.items() if label not in water_labels]).T 
+               
+                water_vs_mol = state_fraction_w + state_fraction_mol
+
+                df = pd.DataFrame(data=np.column_stack((state_fraction_w / water_vs_mol, state_fraction_mol / water_vs_mol)), index=comb_mol_states.values(), columns=['ATESB', 'TESB'])
+                sampling_fractions[mol][it] = df
+            
+                df.plot.bar(stacked=True, ax=ax)
+                ax.set_xticks(list(comb_mol_states.keys()))
+                ax.set_xticklabels(list(comb_mol_states.values()), rotation=90)
+                ax.set_title(it)
+            
+        return (supra_traj, trajectories, sampling_fractions)
+        
+
+
+    
+
+    @staticmethod
+    def get_metricsNormal(combinatorial : dict, 
+                         mol_water, 
+                         sampled_states, 
+                         n_cores=10, 
+                         corr_mode='single', 
+                         remap_traj=False,
+                         method='correlation'):
+        
+
+        
+        base = combinatorial['normal']
+        
+        mols = list(base.keys())
+
+        states_mol = sampled_states['normal'][0]
+        states_mol_list = list(states_mol.keys())
+       
+
+        _states = (states_mol_list, states_mol_list)
+
+        trajectories = collections.defaultdict(dict)
+        correlation_tables = collections.defaultdict(dict)
+        
+        
+        def correlation_map(x):
+            
+            if x > 0:
+                return 1
+            elif x < 0:
+                return -1
+            else:
+                return 0
+        
+        
+        ref_map = {'A-B' : (0,1), 'C-H' : (2, 7), 'E-F' : (4,5), 'D-G' : (3,6)}
+        
+        from scipy import stats
+        
+        for idx_mol, mol in enumerate(mols):
+
+            df_mol = base[mol].iloc[:, base[mol].columns.get_level_values('l2') == mol]
+            iterables = df_mol.columns.get_level_values('l3').unique()
+            references = df_mol.columns.get_level_values('l3').unique()
+
+            print(idx_mol, mol)
+
+            for it in iterables:
+
+                df_it = df_mol.iloc[:, df_mol.columns.get_level_values('l3') == it]
+                references = df_it.columns.get_level_values('l5').unique()
+                
+                it_table = []
+                
+                for pair, index in ref_map.items():
+                    
+                    idx, idx2 = index[0], index[1]
+                    ref, ref2 = references[idx], references[idx2]
+                    df_ref = df_it.iloc[:, df_it.columns.get_level_values('l5') == ref]
+                    df_ref2 = df_it.iloc[:, df_it.columns.get_level_values('l5') == ref2]
+                    state_combs = itertools.product(states_mol_list, states_mol_list)
+                    _inputs = (df_ref, df_ref2, 'source', 'target', _states, state_combs, n_cores)
+                    table, _ = Discretize.run_metric(_inputs, corr_mode, method=method)
+                    it_table.append(table)
+                _it_table = np.asarray(it_table) 
+                    
+                #TODOTODOTODOTODOTO means only for MI, not for CORR COEFF!!!!!!!
+                if method == 'mutualInformation':
+                    out = _it_table.sum(axis=0)
+                else:
+                    mask = np.vectorize(correlation_map)(_it_table)
+                    out = stats.mode(mask, axis=0).mode[0]
+                print(np.shape(out))
+                correlation_tables[mol][it], trajectories[mol][it] = out, pd.DataFrame()
+
+        
+        
+        return correlation_tables, trajectories
+        
+        
+        
+        pass
+    
+        
+
+
+    @staticmethod
+    def get_metricsWater(combinatorial, 
+                         mol_water, 
+                         sampled_states, 
+                         n_cores=10, 
+                         corr_mode='single', 
+                         remap_traj=False,
+                         method='correlation'):
+        
+
         
         base_water_df = combinatorial['water']['H2O']
 
@@ -1295,7 +1589,7 @@ class Discretize:
         states_water = sampled_states['water'][0]
         states_mol_list = list(states_mol.keys())
         states_water_list = list(states_water.keys())
-        state_combs = list(itertools.product(states_mol.keys(), states_water.keys()))
+       
 
         _states = (states_water_list, states_mol_list)
 
@@ -1307,18 +1601,16 @@ class Discretize:
             (iterables, mol2) = iterables_mol_w
             for it in iterables:
                 if it == f'100mM_{mol2}_5mM':
-                    df_mol = combinatorial['inhibition'][mol1].loc[:, ('acyl_octamer', mol1, f'100mM_{mol2}')] 
-                    #TODO: make here entry for mol2
+                    df_mol = combinatorial['inhibition'][mol1].loc[:, ('acyl_octamer', mol2, '5mM')] #f'100mM_{mol2}' 
                 else:
                     df_mol = combinatorial['normal'][mol1].loc[:, ('acyl_octamer', mol1, it)] 
 
                 df_water =  base_water_df.loc[:, ('acyl_octamer', mol1, it)] #f'100mM_{mol2}')] 
                 df_water = df_water.iloc[:-1, :]
                 
+                state_combs = itertools.product(states_water_list, states_mol_list)
                 _inputs = (df_water, df_mol, 'water', mol1, _states, state_combs, n_cores)
-                table, traj = Discretize.run_correlation(_inputs, corr_mode)
-                table = table.reshape(len(states_mol), len(states_water))
-                print(np.sum(table))
+                table, traj = Discretize.run_metric(_inputs, corr_mode, method=method)
                 if remap_traj:
                     traj_w = tools.Functions.remap_trajectories_states(traj.loc[:,'water'], states_water)[0]
                     traj_mol = tools.Functions.remap_trajectories_states(traj.loc[:,mol1], states_mol)[0]
@@ -1383,205 +1675,9 @@ class Discretize:
 #         return msm_single_f
 # =============================================================================    
     
-#ad hoc dG comparison
-# =============================================================================
-#df_benzyl = pd.read_csv('/media/dataHog/hca/msAcT-acylOctamer/results/acyl_octamer-BeOH-100mM_BeAc-5mM/binding_profile_acylSer-His_BeAc_mean_b0_e-1_s1.csv', index_col=0)
-#df_benzyl_normal = pd.read_csv('/media/dataHog/hca/msAcT-acylOctamer/results/binding_profile_acylSer-His_BeOH_mean_b0_e-1_s1.csv', index_col=0)
 
-#df_vinyl = pd.read_csv('/media/dataHog/hca/msAcT-acylOctamer/results/acyl_octamer-BuOH-100mM_ViAc-5mM/binding_profile_acylSer-His_ViAc_mean_b0_e-1_s1.csv', index_col=0)
-#df_vinyl_normal = pd.read_csv('/media/dataHog/hca/msAcT-acylOctamer/results/binding_profile_acylSer-His_BuOH_mean_b0_e-1_s1.csv', index_col=0)
-
-#df_inib_benzyl = df_benzyl_normal[df_benzyl_normal.columns[6:9]]
-#df_inib_vinyl = df_vinyl_normal[df_vinyl_normal.columns[6:9]]
-# import matplotlib.pyplot as plt
-# import numpy as np
-# colors = ['grey', 'black'] #, 'black']
-# labels = {'BeAc' : ['100mM BeOH', '100mM BeOH + 5mM BeAc'], 'ViAc' : ['100mM BuOH', '100mM BuOH + 5mM ViAc']}#, '5mM BeAc']
-# #labels_vinyl = ['100mM BuOH', '100mM BuOH + 5mM ViAc'] #, '5mM ViAc
-# 
-# 
-# mols = ['ViAc', 'BeAc']
-# inibs = {'BeAc' : df_benzyl,
-#       'ViAc' : df_vinyl}
-# dfs = {'BeAc' : [df_benzyl_normal, df_inib_benzyl],
-#       'ViAc' : [df_vinyl_normal, df_inib_vinyl]}
-# plot, axes = plt.subplots(1,2, sharey=True, figsize=(10,6))
-# symbols = ['--', '-']
-# for mol, ax in zip(mols, axes.flat):
-#     df_mol = dfs[mol] #= (f'df_{mol}', f'df_{mol}_normal') #, f'df_inib_{mol}')
-#     labels_mol = labels[mol]
-#     lns= []
-#     for df, label, color, symbol in zip(df_mol, labels_mol, colors, symbols):
-#         ranges = df.index.values
-#         dg = df[df.columns[0]]
-#         dg_m = df[df.columns[1]]
-#         dg_p = df[df.columns[2]]
-#         ln = ax.plot(ranges, dg, symbol, color=color, label=label)
-#         ax.fill_between(ranges, dg_m, dg_p, alpha=0.5, color=color)
-#         lns.append(ln)
-#     ax.set_xlim(1, 95)
-#     ax.set_ylim(-4,8)
-#     ax.set_xscale('log')
-#     ax.axhline(y=0, ls='--', color='black')    
-#     #ax.legend()
-#     ax2 = ax.twiny()
-#     inib_df = inibs[mol]
-#     ranges2 = inib_df.index.values
-#     dg2 = inib_df[inib_df.columns[0]]
-#     dg2_m = inib_df[inib_df.columns[1]]
-#     dg2_p = inib_df[inib_df.columns[2]]
-#     ln2 = ax2.plot(ranges2, dg2,'.', color='green', label=f'5mM {mol}')
-#     ax2.fill_between(ranges2, dg2_m, dg2_p, alpha=0.2, color='green')
-#     ax2.set_xlim(1, 95)
-#     ax2.set_ylim(-4,7)
-#     ax2.set_xscale('log')
-#     #ax2.legend()
-#     ax2.tick_params(axis='x', labelcolor='green')
-#     lns.append(ln2)
-#     labs = [p[0].get_label() for p in lns]
-#         
-#     ax.legend([ln[0] for ln in lns], labs, loc='lower right')
-# plot.text(0.01, 0.5, r'$\Delta$G ($\it{k}$$_B$T)', rotation='vertical', fontsize=12) 
-# plot.text(0.5, 0.01, r'$\itd$$_{NAC}$ ($\AA$)', fontsize=12)
-# plot.text(0.5, 0.99, r'$\itd$$_5$ ($\AA$)', color='green', fontsize=12)
-# plot.tight_layout()
-# #plt.legend()
-# plt.show()
-# plot.savefig('/media/dataHog/hca/msAcT-acylOctamer/results/BindingProfile_Inibitors_all.png', dpi=600, bbox_inches='tight')
-# =============================================================================
     
-#ad hoc water comparison
-# =============================================================================
-# import pandas as pd
-# 
-# df_water = pd.read_csv(f'{project.results}/acyl_octamer-H2O-55.56M/binding_profile_acylSer-His_H2O_water_mean_b0_e-1_s1.csv', index_col=0)
-# df_beoh_water = pd.read_csv(f'{project.results}/binding_profile_acylSer-His_BeOH_water_mean_b0_e-1_s1.csv', index_col=0)
-# df_buoh_water = pd.read_csv(f'{project.results}/binding_profile_acylSer-His_BuOH_water_mean_b0_e-1_s1.csv', index_col=0)
-# df_water_combinatorial_BeOH = pd.read_csv(f'{project.results}/acyl_octamer-H2O-55.56M/combinatorial_acylSer-His_H2O_water_55.56M_AT1T2T3ESB.csv', index_col=0, header=[0,1,2,3,4,5])
-# df_water_combinatorial_BuOH = pd.read_csv(f'{project.results}/acyl_octamer-H2O-55.56M/combinatorial_acylSer-His_H2O_water_asBuOH_55.56M_AT1T2T3ESB.csv', index_col=0, header=[0,1,2,3,4,5])
-# 
-# iterables = { 'BeOH' : [['10mM', '20mM', '40mM', '100mM', '300mM'], df_beoh_water, df_water_combinatorial_BeOH], # ('o')], 
-#             'BuOH' : [['11mM', '22mM', '100mM', '500mM'], df_buoh_water, df_water_combinatorial_BuOH],
-#             'water' : [['55.56M'], df_water]} #, ('s')]}
-# 
-# supra_df = pd.DataFrame()
-# for name, specs in iterables.items():
-#     its = specs[0]
-#     df_all = pd.DataFrame()
-#     
-#     if name != 'water':
-#         df_all = pd.concat([df_all, specs[2]], axis=1)
-#         for it in its:
-#             df_it = pd.read_csv(f'{project.results}/combinatorial_acylSer-His_{name}_water_{it}_AT1T2T3ESB.csv', index_col=0, header=[0,1,2,3,4,5])
-#             df_all = pd.concat([df_all, df_it], axis=1)
-#         specs.append(df_all)
-# 
-#         supra_df = pd.concat([supra_df, df_all], axis=1)    
-# state_indexes = np.unique(supra_df.dropna().values.flat).astype(int)
-# state_labels = tools.Functions.sampledStateLabels([4,6,10,12,20,80], ['A', 'T1', 'T2', 'T3', 'E', 'S', 'B'], sampled_states=state_indexes)
-# states = {j : i for i, j in zip(state_labels, state_indexes)}
-# 
-# original_values, replaced_values, labels = [], [], []
-# for idx,(index, label) in enumerate(states.items()):
-#     original_values.append(index)
-#     replaced_values.append(idx)
-#     labels.append(label)
-# remap_states = {r : l for r, l in zip(replaced_values, labels)} 
-# print(remap_states)
-# import matplotlib.pyplot as plt
-# import matplotlib.pylab as pl
-# import numpy as np
-# import matplotlib.gridspec as gridspec
-# fig=plt.figure(figsize=(10,10))
-# gs = gridspec.GridSpec(nrows=3, ncols=2)
-# plot_values = fig.add_subplot(gs[0, 0])
-# loc1, loc2 =0, 250
-# 
-# scalars = {'BeOH': [10, 20, 40, 100, 300], 'BuOH' : [11, 22, 100, 500]}
-# markers = {'BeOH': 's', 'BuOH' : 'o'}
-# def plot_dg(dg):
-#     
-#     ranges = dg.iloc[loc1:loc2].index.values
-#     ax.plot(ranges, dg.iloc[loc1:loc2], '.', marker=marker, color=color, label=label)
-#     ax.fill_between(ranges, dg_m.iloc[loc1:loc2], dg_p.iloc[loc1:loc2], alpha=0.5, color=color)
-#     ax.set_ylim(-1,14)
-#     ax.set_xlabel(r'$\itd$$_{NAC}$ ($\AA$)')
-#     ax.set_ylabel(r'$\Delta$G ($\it{k}$$_B$T)')
-#     ax.set_xscale('log') 
-#     ax.axhline(y=0, ls='--', color='darkgray')
-#     ax.legend(ncol=2)
-# def plot_dg_diff(dg):
-#     ranges = dg.iloc[loc1:loc2].index.values
-#     ax.plot(ranges, dg.iloc[loc1:loc2], '.', marker=marker, color=color, label=label_diff)
-#     ax.set_xlabel(r'$\itd$$_{NAC}$ ($\AA$)')
-#     ax.set_ylabel(r'$\Delta$$\Delta$G ($\it{k}$$_B$T)')
-#     ax.set_xscale('log') 
-#     ax.axhline(y=0, ls='--', color='black')
-#     #ax.set_title(name, y=1.0, pad=-14)
-#     ax.legend(title=name)
-# counts_it_mol = {}
-# for name, specs in iterables.items():
-#     print(name)
-#     its = specs[0]
-#     df_profile = specs[1]
-#     if name == 'water':
-#         dg_water = df_profile['$\Delta$G 55.56M']
-#         dg_m = df_profile['0']
-#         dg_p = df_profile['1']
-#         label = name
-#         color = 'black'
-#         marker = '^'
-#         ax = plot_values
-#         plot_dg(dg_water)
-#     else:
-#         remaped_df = specs[3].replace(to_replace=original_values, value=replaced_values)
-#         counts_it = np.empty([len(its), len(remap_states)])
-#         ref_df = remaped_df.loc[:, remaped_df.columns.get_level_values('l3') == '55.56M']
-#         count_ref = np.asarray([np.count_nonzero(ref_df.values.flat == i) for i in remap_states])
-#         marker = markers[name]
-#         colors = pl.cm.Greens(np.linspace(0.2,1,len(its))) #(scalars[name]/np.max(scalars[name])) #
-#         ax = plot_dff
-#         if name == 'BeOH':
-#             plot_diff = fig.add_subplot(gs[1, 0], sharex=plot_values)
-#             plot_combinatorial = fig.add_subplot(gs[2, 0])
-#         else:
-#             plot_diff = fig.add_subplot(gs[1, 1], sharex=plot_diff, sharey=plot_diff)
-#             plot_combinatorial = fig.add_subplot(gs[2, 1], sharey=plot_combinatorial)
-#         for idx, it in enumerate(its): 
-#             
-#             dg = df_profile[f'$\Delta$G {it}']
-#             if idx == 0:
-#                 dg_m = df_profile['0']
-#                 dg_p = df_profile['1']
-#             else:
-#                 dg_m = df_profile[f'0.{idx}']
-#                 dg_p = df_profile[f'1.{idx}']
-#             label = f'{name} {it}'
-#             color= colors[idx]
-#             ax = plot_values
-#             plot_dg(dg)
-#             
-#             dg_diff = dg - dg_water
-#             label_diff = it
-#             ax = plot_diff
-#             plot_dg_diff(dg_diff)
-#             
-#             df = remaped_df.loc[:, remaped_df.columns.get_level_values('l3') == it]
-#             count = np.asarray([np.count_nonzero(df.values.flat == i) for i in remap_states])
-#             counts_it[idx] = count/ count_ref
-# 
-#         colors_comb = pl.cm.turbo(np.linspace(0,1,len(remap_states)))
-#         for idx_plot, it_s in enumerate(counts_it.T):
-#             plot_combinatorial.plot(scalars[name], it_s, '-', marker='o', color=colors_comb[idx_plot], label=remap_states[idx_plot])
-#         #plot_combinatorial.set_title(name)
-#         plot_combinatorial.set_yscale('log')
-#         plot_combinatorial.set_xlabel(f'[{name}] (mM)')
-#         plot_combinatorial.set_ylabel(f'{name}/{name}$_0$')
-# plot_combinatorial.legend(title='Sampled Fraction', ncol=2)            
-# fig.tight_layout()
-# plt.show()
-# fig.savefig('/media/dataHog/hca/msAcT-acylOctamer/results/BindingProfile_combinatorial_water.png', dpi=600, bbox_inches='tight')
-# =============================================================================
+
     
     
     

@@ -204,9 +204,8 @@ class Featurize:
         supra_df = pd.DataFrame()
         timestep_=''.join(str(self.timestep).split(' '))
         df_name=f'{method}_{feature_name}_{start}_{stop}_{timestep_}_{stride}.csv'
-        
 
-        print('Calculating: ', feature_name)
+        
         #System looper
         systems_specs=[]
         
@@ -215,7 +214,7 @@ class Featurize:
                 file= glob.glob(f'{system.results_folder}/{df_name}')
                 if len(file) and not self.overwrite:                    
                     print(f'Loading {system.name}', end='\r')
-                    out_df = pd.read_csv(file[0], index_col=0, header=Discretize.Discretize.headers[:-1]) #[0,1,2,3,4,5,6])
+                    out_df = pd.read_csv(file[0], index_col=0, header=Discretize.Discretize.headers['combinatorial']) #[0,1,2,3,4,5,6])
                     #os.rename(file, f'{system.results_folder}/{df_name}')
                     supra_df = pd.concat([supra_df, out_df], axis=1)
 
@@ -241,6 +240,7 @@ class Featurize:
                     systems_specs.append((trajectory, topology, results_folder, name, df_name))
         #Spawn multiprocessing tasks
         if len(systems_specs):
+            print(f'Calculating:  {feature_name} : {len(systems_specs)}')
             method_function, _, unit_x, unit_y, task=self.getMethod(method) 
             out_df=pd.DataFrame()  
             measurements=(inputs, start, stop, self.timestep, stride, unit_x, unit_y, task, self.filter_water, self.subset)
@@ -263,12 +263,6 @@ class Featurize:
         return supra_df
 
 
-    @staticmethod
-    def test(system_specs, specs):
-        (trajectory, topology, results_folder, name)=system_specs
-        print(name)
-        print(trajectory, topology)
-        #traj=Trajectory.Trajectory.loadTrajectory(system_specs, specs)
 
     def getMethod(self, method):
         
@@ -279,7 +273,7 @@ class Featurize:
                      'RDF' : (Featurize.rdf_calculation, 'by_element', (r'$G_r$', r'$\AA$'), 'MDAnalysis'), 
                      'distance' : (Featurize.distance_calculation, 'global', ('ps', r'$\AA$'), 'MDAnalysis'),
                      'dNAC' : (Featurize.nac_calculation, 'global', ('ps', r'$\AA$'), 'MDAnalysis'),
-                     'test' : (Featurize.test, None, (None, None), 'MDTraj'),
+                     'test' : (Featurize.test, None, (None, None), 'MDAnalysis'),
                      'dNAC_combinatorial_onTheFly' : (Featurize.dNAC_combinatorial_onTheFly, 'global', (self.shells, self.labels), 'MDAnalysis')} #('ps', r'$\AA$')
         
         try:
@@ -608,6 +602,22 @@ class Featurize:
         else:
             return pd.DataFrame()
 
+    @staticmethod
+    def test(system_specs, specs=()):
+        
+        
+        (trajectory, topology, results_folder, name, df_name)=system_specs
+        (selections,  start, stop, timestep, stride, shells, labels, task, store_traj, subset)=specs
+        units_y = r'$\AA$'
+        #names, indexes, column_index=Featurize.df_template(system_specs, unit=[units_y])
+        traj=Trajectory.Trajectory.loadTrajectory(system_specs, specs)
+        if traj != None and topology != None:
+            for selection in selections:
+                ref, sel = traj.select_atoms(selection[0]), traj.select_atoms(selection[1]) 
+                for r in ref:
+                    print(r)
+                print(f'\tReference: {ref[0]} x {len(ref)}')
+                print(f'\tSelection: {sel[0]} x {len(sel)}')
 
 
     def distance_calculation(self, system_specs, specs): #system_specs, measurements):
@@ -757,7 +767,6 @@ class Featurize:
         base_name = f'{df_name.split(".")[0]}.npy'
         states_name = f'{results_folder}/states_water_{shells_name}_b{start}_e{stop}_s{stride}.npy'
         hist_name = f'{results_folder}/histogram_water_b{start}_e{stop}_s{stride}.npy'
-
         if not os.path.exists(hist_name) or not os.path.exists(states_name):
             print('Calculating: ', name)
             hist_total_frames = np.empty([n_frames, len(ref), len(feature_range)-1])
@@ -795,7 +804,7 @@ class Featurize:
         
         df_states = pd.DataFrame(states_total_frames.astype(int), columns=column_index, index=rows)
         df_states.to_csv(f'{results_folder}/discTraj_{df_name}')
-        
+        print(df_states)
         print(df_hist, df_states)
                 
     
@@ -908,7 +917,7 @@ class Featurize:
 
         (start, stride, timestep, unit_) = traj_tuple
         (frames, sel, ref) = dims_tuple
-        
+        print('WARNING! not giving right for ternary mixtures. one level is added')
         #TODO: Fix this for differente "separator" value. This is now hardcorded to '-'.
         indexes=[[n] for n in name.split('-')]
 

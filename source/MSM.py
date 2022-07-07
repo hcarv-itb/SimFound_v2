@@ -8,6 +8,7 @@ Created on Thu Jan 21 18:52:02 2021
 import os
 import pyemma
 import re
+import collections
 import matplotlib.pyplot as plt
 import matplotlib.pylab as pl
 import matplotlib.gridspec as gridspec
@@ -34,9 +35,12 @@ except Exception as v:
 import mdtraj as md
 from mdtraj.utils import in_units_of
 from simtk.unit import angstrom
-from itertools import compress
+from itertools import compress, product
 from functools import wraps
 from sklearn.impute import SimpleImputer
+
+
+
 
 class MSM:
     """
@@ -53,7 +57,7 @@ class MSM:
     msm_var_cutoff = 0.95
     report_units = 'angstrom'
     report_flux_units = 'second'
-    ITS_lags=[1, 2, 5, 10, 20, 40, 100, 250, 500, 750, 1000, 1500, 2000]
+    ITS_lags=[1, 2, 5, 10, 20, 40, 100, 250, 500, 750, 1000, 1500, 2000, 4000]
     ref_samples=2000
     visual_samples=100
     movie_samples=200
@@ -66,7 +70,7 @@ class MSM:
     def __init__(self,
                  project,
                  regions=None,
-                 timestep=1,  
+                 timestep=None,  
                  chunksize=0, 
                  stride=1,
                  skip=0,
@@ -76,7 +80,9 @@ class MSM:
                  production=True,
                  def_top=None,
                  def_traj=None,
-                 heavy_and_fast=False):
+                 filter_water=True,
+                 results=None,
+                 overwrite=False):
         """
         
 
@@ -103,31 +109,401 @@ class MSM:
         self.chunksize=chunksize
         self.stride=stride
         self.skip=skip
-        self.timestep=timestep
-        self.unit=timestep.unit.get_symbol()
+        if timestep is None:
+            self.timestep=self.project.timestep
+        self.unit=self.timestep.unit.get_symbol()
         self.warnings=warnings
         self.pre_process=pre_process
         self.w_equilibration = equilibration
         self.w_production = production
-        self.def_top = def_top
-        self.def_traj = def_traj
-        self.heavy_and_fast=heavy_and_fast
-        result_paths = []
-        for name, system in self.systems.items(): 
-            result_paths.append(system.project_results)
-        if len(list(set(result_paths))) == 1:
-            self.result_path = list(set(result_paths))[0]
-            self.results = os.path.abspath(f'{self.result_path}/MSM') 
+
+        self.filter_water=filter_water
+        self.overwrite = overwrite
+        if results != None:
+            base_results = tools.Functions.pathHandler(self.project, results)
         else:
-            self.results=os.path.abspath(f'{self.project.results}/MSM')
-            print('Warning! More than one project result paths defined. reverting to default.')
+            base_results = self.project.results
+        self.results =os.path.abspath(f'{base_results}/MSM')
         self.stored=os.path.abspath(f'{self.results}/MSM_storage')
+        tools.Functions.fileHandler([self.results, self.stored])
         print('Results will be stored under: ', self.results)
         print('PyEMMA calculations will be stored under: ', self.stored)
-        if def_traj != None or def_top != None:
-            print(f'Using pre-defined trajectory {self.def_traj} and/or topology {self.def_top}')
-        tools.Functions.fileHandler([self.results, self.stored])
- 
+        
+        #self.def_top = def_top
+        #self.def_traj = def_traj
+        #if def_traj != None or def_top != None:
+        #    print(f'Using pre-defined trajectory {self.def_traj} and/or topology {self.def_top}')
+        
+
+    
+    def execute_or_load(func):
+        """Decorator for object calculation of loading"""
+        
+        @wraps(func)
+        def execute_or_load(self, *args, **kwargs):
+            
+            
+            if not os.path.exists(self.file_name) or self.overwrite:
+                print(f'Executing {func.__name__}', end='\r')
+                try:
+                    out = func(self, *args, **kwargs)
+                    out.save(self.file_name, overwrite=True)
+                except Exception as v:
+                    print(v.__class__, v)
+                    out=None
+                     
+            else:
+                #print(f'Loading data : {file_name}')
+                out=pyemma.load(self.file_name)
+            
+            setattr(self, func.__name__, out)
+            return out
+        return execute_or_load
+
+    
+    def set_specs_lite(self, inputs):
+        """Decorator for setting attributes"""
+
+
+        (method, mol, idx, it, lag) = inputs
+        self.method = method
+        self.data = self.input_df.loc[self.start:self.stop:self.msm_stride, (self.project.protein[0], mol)]        
+        self.mol = mol
+        self.it = it
+        self.idx = idx
+        self.lag = lag
+        self.dt_scalar = int(str(self.timestep*(self.stride)).split(' ')[0])
+        self._lag = str(lag*self.timestep).replace(" ", "")
+        self.file_name = f'{self.stored}/{self.method}_{self.project_type}_{mol}_{it}_@{self._lag}_b{self.start}_e{self.stop}_s{self.msm_stride}.npy'
+        self.name = f'{self.project_type} {mol} : {it} @{self._lag} ({self.start}:{self.stop}:{self.msm_stride})'
+        
+
+
+    @execute_or_load
+    def ITS(self):
+        disc_trajs = self.data.loc[:, self.it].values.T.astype(int).tolist()
+        its = pyemma.msm.its(disc_trajs, lags=MSM.ITS_lags, errors='bayes')
+        
+        its_plot=pyemma.plots.plot_implied_timescales(its, units=self.unit, dt=self.dt_scalar)
+        return its
+
+
+
+    @execute_or_load
+    def bayesMSM(self):
+        
+        disc_trajs = self.data.loc[:, self.it].values.T.astype(int).tolist()
+        msm = pyemma.msm.bayesian_markov_model(disc_trajs, lag=self.lag, dt_traj=str(self.timestep), conf=0.95)
+        
+        
+        self.msm = msm
+        return msm
+
+    @execute_or_load
+    def CKTest(self):
+        try:
+            msm = self.bayesMSM
+        except AttributeError as v:
+            print(f'Warning! {v} for {self.name}')
+            msm = self.bayesMSM()
+        
+        cktest = msm.cktest(len(msm.active_set))
+        ck_plot, axes=pyemma.plots.plot_cktest(cktest, 
+                                                dt=self.dt_scalar, 
+                                                layout='wide', 
+                                                marker='.',  
+                                                y01=True, 
+                                                units=self.unit) 
+        
+        return cktest
+
+    
+    
+    def run(self, measurements):
+
+        models = collections.defaultdict(dict)
+
+        for m in measurements:
+            print(f'Calculating :  {m} \n', end='\r')
+            
+            for method in self.methods:
+                self.method = method
+                self.set_specs_lite([method] + m)
+                func = self.method_functions[method]
+                out = func()
+                models[method][self.name] = out
+        
+        return models
+
+
+
+    def lite(self, mol, lags, project_type=None, input_df=None, regions={}, states={}, methods=['bayesMSM']):
+        
+        self.msm_stride = 1
+        
+        self.input_df = input_df
+        self.start=input_df.index.values[0]
+        self.stop=input_df.index.values[-1]
+        self.project_type = project_type
+        self.methods = methods
+        self.method_functions = {'bayesMSM' : self.bayesMSM,
+                                 'CKTest' : self.CKTest,
+                                 'flux' : self.flux_calculation}
+        self.states = states[project_type][0]
+        #print(len(self.states))
+        remap_states = states[project_type][1]
+
+# =============================================================================
+#         for r,subset_states in regions.items():
+#             print(r, subset_states)
+#             r_labels = [self.states[s] for s in subset_states]
+#             r_index = [k for k,label in self.states.items() if label in r_labels]
+#             for i, j in zip(r_labels, r_index):
+#                 print(i,j)
+#             regions[r] = r_index
+# =============================================================================
+            
+        self.regions = regions[project_type]
+        
+        print(self.regions)
+        
+        measurements = []
+        if project_type == 'normal':
+            mols = [mol]
+        elif project_type == 'inhibition':
+            if mol == 'BeOH':
+                mols = [mol, 'BeAc'] 
+            elif mol == 'BuOH':
+                mols = [mol, 'ViAc']
+        else:
+            mols = input_df.columns.get_level_values('l2').unique()
+        for _mol in mols:
+            (_mol)
+            data = input_df.loc[self.start:self.stop:self.msm_stride, (self.project.protein[0], _mol)]
+            
+            for idx, it in enumerate(data.columns.get_level_values('l3').unique()):
+                lag = lags[project_type][_mol][idx]
+                measurements.append([_mol, idx, it, lag])
+        #print(measurements)
+
+        return self.run(measurements)
+
+    def flux_calculation(self, 
+                         macrostate=None, 
+                         mode='by_region',
+                         between=([], [])):
+        """
+        Function to calculate flux of model. A and B need to provided.
+
+        Parameters
+        ----------
+        name : TYPE
+            DESCRIPTION.
+        data_tuple : TYPE
+            DESCRIPTION.
+        macrostate : TYPE, optional
+            DESCRIPTION. The default is None.
+        between : TYPE, optional
+            DESCRIPTION. The default is ([], []).
+        top_pathways : TYPE, optional
+            DESCRIPTION. The default is -1.
+
+        Returns
+        -------
+        None.
+
+        """
+
+        msm = self.bayesMSM
+        n_state = len(msm.active_set)
+        
+        lag_ =str(self.lag*self.timestep).replace(" ", "")
+        if mode == 'by_region':
+            between = self.regions
+        
+        if self.mol == 'BeAc' or (self.mol == 'ViAc' and self.project_type == 'inhibition'):
+            pass
+        else:
+            
+            A, B = between[0], between[1]
+            if len(A) > 0 and len(B) > 0:
+                pass
+            else:
+                raise ValueError("Source or sink states not defined (between =([A], [B])")
+    
+            if mode == 'manual':
+                A = [a-1 for a in A]#since user starts at index 1.
+                B = [b-1 for b in B]
+                
+    
+    
+            def set_labels(X):
+                label= []
+                for idx, set_ in enumerate(sets, 1):
+                    for x in X:
+                        if x in set_:
+                            label.append(f'MS {idx}')
+    
+                return list(set(label))
+    
+    
+                
+            def set_labels(X):
+                label= []
+                for idx, set_ in enumerate(sets, 1):
+                    for x in X:
+                        if x in set_:
+                            label.append(f'MS {idx}')
+    
+                return list(set(label))
+            
+            #TODO: make adap for hmsm
+            
+            if isinstance(macrostate, int): 
+                 msm.pcca(macrostate)
+                 sets = msm.metastable_sets
+                 _A = np.concatenate([sets[a] for a in A]) 
+                 _B = np.concatenate([sets[b] for b in B])
+                 label_names = [f'MS {i}' for i in range(1, macrostate+1)]  
+    
+                 
+                 not_I = list(_A)+ list(_B)
+                 I = list(set(not_I) ^ set(msm.active_set))
+                 label_A = set_labels(_A)
+                 label_B = set_labels(_B)
+                 label_I = set_labels(I)
+                 print(f'\tPerforming coarse-grained TPT from A->I->B\n\tA = {label_A}\n\tB = {label_B}\n\tI = {label_I}')
+                 label_names_reord = label_A+label_I+label_B
+                 cmap = pl.cm.Set1(np.linspace(0,1,macrostate))
+                 colors = []
+                 for reord in label_names_reord:
+                     idx = label_names.index(reord)
+                     colors.append(cmap[idx])
+                     
+                 flux_ =pyemma.msm.tpt(msm, _A, _B)
+                 cg, flux = flux_.coarse_grain(msm.metastable_sets)
+            else:
+                if mode == 'manual':
+                    #Warning! test this properly
+                    _A = np.concatenate([sets[a] for a in A]) 
+                    _B = np.concatenate([sets[b] for b in B])
+                    
+    
+                else:
+                    
+
+                    
+                    _A = [idx for idx, a in enumerate(msm.active_set) if a in A]
+                    _B = [idx for idx, b in enumerate(msm.active_set) if b in B]
+                    index_A = [a for idx, a in enumerate(msm.active_set) if a in A]
+                    index_B = [b for idx, b in enumerate(msm.active_set) if b in B]
+                    
+                    not_I = list(_A)+ list(_B)
+                    not_I_labels = list(index_A) + list(index_B)
+                    _I = list(set(not_I) ^ set(msm.active_set))
+                    I = list(set(not_I_labels) ^ set(msm.active_set))
+                    label_A = [self.states[a] for a in index_A]
+                    label_B = [self.states[b] for b in index_B]
+                    label_I = [self.states[i] for i in I]
+                    label_names_reord = label_A+label_I+label_B
+                    print(f'\tPerforming  TPT from A->I->B\n\tA = {label_A}\n\tB = {label_B}\n\tI = {label_I}')
+    
+                    
+                flux=pyemma.msm.tpt(msm, _A, _B)
+                label_names = [f'state {i}' for i in range(1, len(msm.active_set)+1)]
+            
+                print(flux.total_flux)
+            flux_name = f'{self.results}/flux_{self.mol}_{self.it}__tpt{"-".join(map(str,between[0]))}_{"-".join(map(str,between[1]))}'
+    # =============================================================================
+#         if self.make_tpt_movie:
+#             file_name = f'{flux_name}_movie'
+#             tpt_samples = msm.sample_by_distributions(msm.metastable_distributions, MSM.movie_samples)
+#             print('\tGenerating TPT trajectory ')
+#             self.save_samples(file_name, tpt_samples)
+# =============================================================================
+                
+
+            
+# =============================================================================
+#         #Calculate commmittors
+#         index_row_comm=pd.MultiIndex.from_product([[self.project_type], [self.mol], [self.it], [f'{n_state}@{lag_}'], label_names_reord], names=['project_type', 'mol', 'iterable', 'model', 'states'])
+#         f_committor=flux.forward_committor
+#         b_committor=flux.backward_committor
+#         
+#         committor_df=pd.DataFrame(zip(f_committor, b_committor), index=index_row_comm, columns=['Forward', 'Backward'])
+#         
+#         #Calculate fluxes
+#         index_row= pd.MultiIndex.from_product([[self.ft_name], [self.feature], [f'{self.n_state}@{lag_}']], 
+#                                               names=['name', 'feature', 'model'])
+#         net_flux = flux.net_flux
+#         net_flux_s = in_units_of(net_flux, f'second/{self.timestep.unit.get_name()}', 'second/second')
+#         rate_s = in_units_of(flux.rate, f'second/{self.timestep.unit.get_name()}', 'second/second')
+#         major_flux = flux.major_flux()
+#         gross_flux = flux.gross_flux
+#         total_flux = flux.total_flux
+#         if (net_flux.all() != major_flux.all() != gross_flux.all() != total_flux.all()):
+#             print('\tWarning! fluxes are not the same')
+#         unit = r'$s^{-1}$'
+#         report_flux = "{:.1e} {}".format(net_flux_s.sum(), unit)
+#         report_rate = "{:.1e} {}".format(rate_s, unit)
+# 
+#         
+#         #In units of gets the conversion of timestep to second
+#         flux_df=pd.DataFrame(columns=['net flux', 'rate'], index=index_row)
+#         flux_df.loc[:, 'net flux'] = net_flux_s.sum(1).sum()
+#         flux_df.loc[:, 'rate'] = rate_s
+#         fig, axes = plt.subplots(1,1, figsize=(10, 8))
+#         pyemma.plots.plot_flux(flux,
+#                                flux_scale = in_units_of(1, f'second/{self.timestep.unit.get_name()}', 'second/second'),
+#                                pos=None, 
+#                                state_sizes = flux.stationary_distribution,
+#                                show_committor=True,
+#                                state_labels = label_names_reord,
+#                                show_frame=False,
+#                                state_colors = colors,
+#                                arrow_curvature = 2,
+#                                state_scale = 0.5,
+#                                figpadding=0.1,
+#                                max_height=6,
+#                                max_width=8,
+#                                arrow_label_format='%.1e  / s',
+#                                ax=axes)
+#         axes.set_title(f'Flux {self.full_name}' +
+#                        f'\n{" ".join(label_A)} -> {" ".join(label_B)}' + 
+#                        f'\nRate: {report_rate} Net Flux: {report_flux}', 
+#                   ha='center',
+#                   fontsize=12)
+#         axes.axvline(0, linestyle='dashed', color='black')
+#         axes.axvline(1, linestyle='dashed', color='black')
+#         axes.grid(True, axis='x', linestyle='dashed')
+#         axes.set_xlim(-0.15, 1.15)
+#         axes.set_xticks(np.arange(0,1.1,0.1))
+#         plt.show()
+#         fig.savefig(f'{flux_name}.png')
+#         
+#         #Calculate the pathways	
+#         paths, path_fluxes = flux.pathways(fraction=0.95)
+#         path_labels=[[] for _ in paths]
+#         for idx, path in enumerate(paths):
+#             for p in path:
+#                 path_labels[idx-1].append(label_names_reord[p])
+#         path_labels=[' -> '.join(k) for k in path_labels]
+#         index_col_path = pd.MultiIndex.from_product([[self.ft_name], [self.feature], [f'{self.n_state}@{lag_}'], path_labels], 
+#                                                     names=['name', 'feature', 'model', 'pathway'])
+#         #path_fluxes_s = in_units_of(path_fluxes, f'second/{self.timestep.unit.get_name()}', 'second/second')
+#         pathway_df=pd.DataFrame((path_fluxes/np.sum(path_fluxes))*100, index=index_col_path, columns=['% Total'])
+# 
+# # =============================================================================
+# #             if scheme == 'combinatorial':    
+# #                 label_names=Functions.sampledStateLabels(regions, sampled_states=states, labels=labels)
+# # =============================================================================               
+#         return flux_df, committor_df, pathway_df
+# =============================================================================
+
+
+
+        
+    
     @staticmethod
     def plot_correlations(df,
                           target='Score', 
@@ -240,7 +616,7 @@ class MSM:
             return func(*args, **kwargs)
         return model
 
-    
+    @tools.log
     def create_registry(self, msm, vamp_iters=10):
         """
         
@@ -581,7 +957,7 @@ class MSM:
     
 
     
-
+    @tools.log
     def set_specs(self, ft_name, feature, lag=1, n_state=0, set_mode='base'):
         """
         
@@ -639,6 +1015,7 @@ class MSM:
         else:    
             return self.ft_base_name
 
+    @tools.log
     def set_systems(self):
         systems_specs=[]
         for name, system in self.systems.items():
@@ -650,7 +1027,7 @@ class MSM:
                                                             self.w_production, 
                                                             def_file=self.def_top,
                                                             warnings=self.warnings, 
-                                                            filterW=self.heavy_and_fast)
+                                                            filterW=self.filter_water)
                 
                 trajectory=Trajectory.Trajectory.fileFilter(name, 
                                                             system.trajectory, 
@@ -658,14 +1035,14 @@ class MSM:
                                                             self.w_production,
                                                             def_file=self.def_traj,
                                                             warnings=self.warnings, 
-                                                            filterW=self.heavy_and_fast)
+                                                            filterW=self.filter_water)
                 systems_specs.append((trajectory, topology, results_folder, name))            
 
         trajectories_to_load = []
         tops_to_load = []
         for system in systems_specs: #trajectory, topology, results_folder, name
             #TODO: check if only trj_list[0] is always the enough.
-            trj_list, top=system[0], system[1][0] #[0] because only a single top must be handed out and Trajectory returns a list.
+            trj_list, top=system[0][0], system[1][0] #[0] because only a single top must be handed out and Trajectory returns a list.
             if len(trj_list):
                 trajectories_to_load.append(trj_list)
                 tops_to_load.append(top)
@@ -673,9 +1050,11 @@ class MSM:
         
         self.topology=tops_to_load[0]
         self.trajectories=trajectories_to_load
-        superpose_indices=md.load(topology).topology.select(MSM.superpose)
-        subset_indices=md.load(topology).topology.select(MSM.subset)
-        md_top=md.load(topology) #, atom_indices=ref_atom_indices )
+        
+        
+        superpose_indices=md.load(self.topology).topology.select(MSM.superpose)
+        subset_indices=md.load(self.topology).topology.select(MSM.subset)
+        md_top=md.load(self.topology) #, atom_indices=ref_atom_indices )
         
         if self.pre_process:
             self.trajectories=Trajectory.Trajectory.pre_process_trajectory(self.trajectories, md_top, superpose_to=superpose_indices)
@@ -685,6 +1064,12 @@ class MSM:
    
     @log
     def load_discretized_data(self, feature=None):
+        
+        
+        print(self.ft_name)
+        print(self.regions)
+        
+        
         if self.get_tica:
             self.discretized_data=self.TICA_calculation(self.d_lag, feature)
         else:
@@ -695,6 +1080,8 @@ class MSM:
             except AttributeError:
                 print('No selections found. Getting input information from MSM.regions')
                 inputs_ = self.regions[self.ft_name]
+
+            print(f'{self.project.results}/{feature}_{inputs_}_{self.iterable}_*.csv')
 
             file = glob.glob(f'{self.project.results}/{feature}_{inputs_}_{self.iterable}_*.csv')
             if len(file) == 1:
@@ -724,6 +1111,9 @@ class MSM:
             disc_trajs = df.values.T.astype(int).tolist()
         
         return data_concat, disc_trajs, clusters
+
+
+
 
 
 
@@ -974,167 +1364,7 @@ class MSM:
 
 
 
-    @log
-    def flux_calculation(self, 
-                         msm, 
-                         macrostate=None, 
-                         between=([], [])):
-        """
-        Function to calculate flux of model. A and B need to provided.
 
-        Parameters
-        ----------
-        name : TYPE
-            DESCRIPTION.
-        data_tuple : TYPE
-            DESCRIPTION.
-        macrostate : TYPE, optional
-            DESCRIPTION. The default is None.
-        between : TYPE, optional
-            DESCRIPTION. The default is ([], []).
-        top_pathways : TYPE, optional
-            DESCRIPTION. The default is -1.
-
-        Returns
-        -------
-        None.
-
-        """
-
-        lag_ =str(self.lag*self.timestep).replace(" ", "")
-
-        A, B = between[0], between[1]
-        A = [a-1 for a in A]#since user starts at index 1.
-        B = [b-1 for b in B]
-        if len(A) > 0 and len(B) > 0:
-            pass
-        else:
-            raise("Source or sink states not defined (between =([A], [B])")
-            
-        def set_labels(X):
-            label= []
-            for idx, set_ in enumerate(sets, 1):
-                for x in X:
-                    if x in set_:
-                        label.append(f'MS {idx}')
-
-            return list(set(label))
-        
-        #TODO: make adap for hmsm
-        
-        if isinstance(macrostate, int): 
-             msm.pcca(macrostate)
-             sets = msm.metastable_sets
-             A_ = np.concatenate([sets[a] for a in A]) 
-             B_ = np.concatenate([sets[b] for b in B])
-             
-             label_names = [f'MS {i}' for i in range(1, macrostate+1)]  
-
-             
-             not_I = list(A_)+ list(B_)
-             I = list(set(not_I) ^ set(msm.active_set))
-             label_A = set_labels(A_)
-             label_B = set_labels(B_)
-             label_I = set_labels(I)
-             print(f'\tPerforming coarse-grained TPT from A->I->B\n\tA = {label_A}\n\tB = {label_B}\n\tI = {label_I}')
-             label_names_reord = label_A+label_I+label_B
-             cmap = pl.cm.Set1(np.linspace(0,1,macrostate))
-             colors = []
-             for reord in label_names_reord:
-                 idx = label_names.index(reord)
-                 colors.append(cmap[idx])
-                 
-             flux_ =pyemma.msm.tpt(msm, A_, B_)
-             cg, flux = flux_.coarse_grain(msm.metastable_sets)
-        else:
-            #Warning! test this properly
-            A_ = np.concatenate([sets[a] for a in A]) 
-            B_ = np.concatenate([sets[b] for b in B])
-            flux=pyemma.msm.tpt(msm, A_, B_)
-            label_names = [f'state {i}' for i in range(1, self.n_state+1)]
-        
-        flux_name = f'{self.results}/{self.full_name}_tpt{"-".join(map(str,between[0]))}_{"-".join(map(str,between[1]))}'
-        if self.make_tpt_movie:
-            file_name = f'{flux_name}_movie'
-            tpt_samples = msm.sample_by_distributions(msm.metastable_distributions, MSM.movie_samples)
-            print('\tGenerating TPT trajectory ')
-            self.save_samples(file_name, tpt_samples)
-                
-
-            
-        #Calculate commmittors
-        index_row_comm=pd.MultiIndex.from_product([[self.ft_name], [self.feature], [f'{self.n_state}@{lag_}'], label_names_reord], names=['name', 'feature', 'model', 'states'])
-        f_committor=flux.forward_committor
-        b_committor=flux.backward_committor
-        
-        committor_df=pd.DataFrame(zip(f_committor, b_committor), index=index_row_comm, columns=['Forward', 'Backward'])
-        
-        #Calculate fluxes
-        index_row= pd.MultiIndex.from_product([[self.ft_name], [self.feature], [f'{self.n_state}@{lag_}']], 
-                                              names=['name', 'feature', 'model'])
-        net_flux = flux.net_flux
-        net_flux_s = in_units_of(net_flux, f'second/{self.timestep.unit.get_name()}', 'second/second')
-        rate_s = in_units_of(flux.rate, f'second/{self.timestep.unit.get_name()}', 'second/second')
-        major_flux = flux.major_flux()
-        gross_flux = flux.gross_flux
-        total_flux = flux.total_flux
-        if (net_flux.all() != major_flux.all() != gross_flux.all() != total_flux.all()):
-            print('\tWarning! fluxes are not the same')
-        unit = r'$s^{-1}$'
-        report_flux = "{:.1e} {}".format(net_flux_s.sum(), unit)
-        report_rate = "{:.1e} {}".format(rate_s, unit)
-
-        
-        #In units of gets the conversion of timestep to second
-        flux_df=pd.DataFrame(columns=['net flux', 'rate'], index=index_row)
-        flux_df.loc[:, 'net flux'] = net_flux_s.sum(1).sum()
-        flux_df.loc[:, 'rate'] = rate_s
-        fig, axes = plt.subplots(1,1, figsize=(10, 8))
-        pyemma.plots.plot_flux(flux,
-                               flux_scale = in_units_of(1, f'second/{self.timestep.unit.get_name()}', 'second/second'),
-                               pos=None, 
-                               state_sizes = flux.stationary_distribution,
-                               show_committor=True,
-                               state_labels = label_names_reord,
-                               show_frame=False,
-                               state_colors = colors,
-                               arrow_curvature = 2,
-                               state_scale = 0.5,
-                               figpadding=0.1,
-                               max_height=6,
-                               max_width=8,
-                               arrow_label_format='%.1e  / s',
-                               ax=axes)
-        axes.set_title(f'Flux {self.full_name}' +
-                       f'\n{" ".join(label_A)} -> {" ".join(label_B)}' + 
-                       f'\nRate: {report_rate} Net Flux: {report_flux}', 
-                  ha='center',
-                  fontsize=12)
-        axes.axvline(0, linestyle='dashed', color='black')
-        axes.axvline(1, linestyle='dashed', color='black')
-        axes.grid(True, axis='x', linestyle='dashed')
-        axes.set_xlim(-0.15, 1.15)
-        axes.set_xticks(np.arange(0,1.1,0.1))
-        plt.show()
-        fig.savefig(f'{flux_name}.png')
-        
-        #Calculate the pathways	
-        paths, path_fluxes = flux.pathways(fraction=0.95)
-        path_labels=[[] for _ in paths]
-        for idx, path in enumerate(paths):
-            for p in path:
-                path_labels[idx-1].append(label_names_reord[p])
-        path_labels=[' -> '.join(k) for k in path_labels]
-        index_col_path = pd.MultiIndex.from_product([[self.ft_name], [self.feature], [f'{self.n_state}@{lag_}'], path_labels], 
-                                                    names=['name', 'feature', 'model', 'pathway'])
-        #path_fluxes_s = in_units_of(path_fluxes, f'second/{self.timestep.unit.get_name()}', 'second/second')
-        pathway_df=pd.DataFrame((path_fluxes/np.sum(path_fluxes))*100, index=index_col_path, columns=['% Total'])
-
-# =============================================================================
-#             if scheme == 'combinatorial':    
-#                 label_names=Functions.sampledStateLabels(regions, sampled_states=states, labels=labels)
-# =============================================================================               
-        return flux_df, committor_df, pathway_df
 
 
     @log
@@ -1859,139 +2089,6 @@ class MSM:
                 plot()
             else:
                 print('\tPCCA skipped')
-
-
-    @log
-    def CKTest_calculation(self, msm, macrostates):
-        """
-        
-
-        Parameters
-        ----------
-        macrostates : TYPE
-            DESCRIPTION.
-        mlags : TYPE, optional
-            DESCRIPTION. The default is 7.
-
-        Returns
-        -------
-        ck_tests : TYPE
-            DESCRIPTION.
-
-        """
-        
-        pyemma.config.show_progress_bars = False
-        
-        f = mtick.ScalarFormatter(useOffset=False, useMathText=True)
-        g = lambda x,pos : "${}$".format(f._formatSciNotation('%1e' % x))
-        for macrostate in macrostates:
-            file_name = f'CKtest_{self.full_name}_{macrostate}macrostates'
-            if not os.path.exists(f'{self.stored}/{file_name}.npy') or self.overwrite:
-                print(f'\tCK test: {self.full_name} -> {macrostate} macrostates')
-                cktest=msm.cktest(macrostate)
-                cktest.save(f'{self.stored}/{file_name}.npy', overwrite=True)
-            else:
-                print('\tCK test found: ', self.full_name)
-                cktest=pyemma.load(f'{self.stored}/{file_name}.npy')
-    
-            dt_scalar=int(str(self.timestep*self.stride).split(' ')[0])
-            ck_plot, axes=pyemma.plots.plot_cktest(cktest, 
-                                                   dt=dt_scalar, 
-                                                   layout='wide', 
-                                                   marker='.',  
-                                                   y01=True, 
-                                                   units=self.unit)
-            for ax in axes:
-                for subax in ax:
-                    subax.xaxis.set_major_formatter(mtick.FuncFormatter(g))    
-                #TODO (maybe?): play around with subplot properties
-    # =============================================================================
-    #             for ax in axes:
-    #                 for subax in ax:
-    #                     #subax.set_xscale('log')
-    # =============================================================================
-            ck_plot.suptitle(f'CK test: {self.full_name} -> {macrostate} macrostates', va='top', ha='center', weight='bold', fontsize=12)
-            ck_plot.tight_layout()
-            ck_plot.savefig(f'{self.results}/{file_name}.png', dpi=600, bbox_inches="tight")
-            plt.show()
-
-    def bayesMSM_calculation(self,   
-                             lag, 
-                             msm_stride=1,
-                             statdist=None) -> dict:
-        """
-        
-
-        Parameters
-        ----------
-        discretized_data : TYPE
-            DESCRIPTION.
-        states : TYPE
-            DESCRIPTION.
-        lags : TYPE
-            DESCRIPTION.
-        statdist : TYPE, optional
-            DESCRIPTION. The default is None.
-
-        Raises
-        ------
-        TypeError
-            DESCRIPTION.
-
-        Returns
-        -------
-        dict
-            DESCRIPTION.
-
-        """
-        #Important legacy
-        #data=np.array(np.load(self.values['discretized'][0]))
-        #data_i=np.ascontiguousarray(data[0::msm_stride])
-
-        #TODO: make statdist into arguments for msm construction.
-        file_name=f'{self.stored}/bayesMSM_{self.full_name}.npy'
-        if not os.path.exists(file_name) or self.overwrite:
-            _, disc_trajs, _ = self.load_discTrajs()
-            try:
-                print(f'\tGenerating Bayesian MSM for {self.full_name}')
-                bayesMSM=pyemma.msm.bayesian_markov_model(disc_trajs[0::msm_stride], lag=lag, dt_traj=str(self.timestep), conf=0.95)
-                bayesMSM.save(file_name, overwrite=True)
-            except Exception as v:
-                print(v)
-                bayesMSM=None
-             
-        else:
-            #print(f'\tBayesian MSM found for {self.full_name} ', end='\r')
-            bayesMSM=pyemma.load(file_name)
-
-        return bayesMSM
-        
-    def ITS_calculation(self, c_stride=1) -> dict:
-
-        pyemma.config.show_progress_bars = False
-        data_concat, disc_trajs, clusters = self.load_discTrajs()
-        file_name = f'ITS_{self.ft_base_name}_{self.n_state}'            
-        its=None
-        its_stride=1
-        while its == None and its_stride < 10000:
-            try:
-                its_name=f'{self.stored}/{file_name}_{its_stride}sits.npy'
-                if not os.path.exists(its_name) or self.overwrite:                
-                    print(f'\tCalculating ITS for {self.n_state} states and trajectory stride of {its_stride}', end='\r')
-                    its=pyemma.msm.its(disc_trajs[0::its_stride], lags=MSM.ITS_lags, errors='bayes')
-                    its.save(f'{self.stored}/{file_name}_{its_stride}sits.npy', overwrite=self.overwrite)  
-                else:
-                    print(f'ITS profile found for: {self.ft_base_name}, {self.n_state} states and {its_stride} sits')
-                    its=pyemma.load(its_name)
-            except:
-                print('\tWarning!Could not generate ITS. Increasing stride.')
-                its_stride=its_stride*2      
-        dt_scalar=int(str(self.timestep*(self.stride*its_stride)).split(' ')[0])
-        its_plot=pyemma.plots.plot_implied_timescales(its, units=self.unit, dt=dt_scalar)
-        its_plot.set_title(f'ITS of {self.ft_base_name} \n{self.n_state} states', ha='center', weight='bold', fontsize=10)
-        plt.tight_layout()
-        plt.savefig(f'{self.results}/{file_name}.png', dpi=600, bbox_inches="tight")
-        plt.show()
     
     def TICA_calculation(self,
                          lags,

@@ -38,7 +38,8 @@ class Trajectory:
                  production=True, 
                  def_top=None, 
                  def_traj=None,
-                 results=None):
+                 results=None,
+                 overwrite=False):
         """
         
 
@@ -61,6 +62,7 @@ class Trajectory:
         self.def_traj = def_traj
         self.systems=project.systems
         self.project = project
+        self.overwrite = overwrite
         if results != None:
             self.results=results
         else:
@@ -147,17 +149,21 @@ class Trajectory:
 
         """
         extracted_frames= []
+        
         def extract():
-            if not sel_frames.empty: 
             
+            if not sel_frames.empty: 
                 frames = sel_frames.index.values
-                if self.n_samples != 0:
-                    frames = np.random.choice(frames, size=min(int(self.n_samples / samples[state][parameter]), len(frames)))
+                print(name, frames)
+                if self.n_samples > 1:
+                    frames = np.random.choice(frames, size=min(self.n_samples, len(frames))) #int(self.n_samples / samples[state][parameter]),
+                if self.n_samples == 1:
+                    frames = [frames[0]]
                 #frames = np.random.choice(frames, size=self.n_samples, replace=False)
                 topology=self.fileFilter(name, system.topology, self.equilibration, self.production, def_file=self.def_top)[0]
                 trajectory=self.fileFilter(name, system.trajectory, self.equilibration, self.production, def_file=self.def_traj)[0]
                 if mode == 'all':
-                    extracted_frames.append((state, system.parameter, system.replicate, topology, trajectory, frames))  
+                    extracted_frames.append((state, '5mM', system.replicate, topology, trajectory, frames))  #system.parameter
                 elif mode == 'by_reference':
                     extracted_frames.append((state, system.parameter, system.replicate, topology, trajectory, {ref : frames})) 
                 
@@ -182,35 +188,26 @@ class Trajectory:
         
         
         for name, system in self.systems.items():
-            
-            if system.parameter in set(parameters_extract):
-            
-                parameter_cols = df.columns.get_level_values(2) == system.parameter
+            print('WARNING! set for ternary!!!!!!!!')
+            #TODO: propagate this behavior
+            if system.parameter in set(parameters_extract) or system.parameter == f'100mM_{self.mol2}_5mM':
+                parameter_cols = df.columns.get_level_values(2) == '5mM' #system.parameter
                 replicate_cols = df.columns.get_level_values(3) == str(system.replicate)
                 extract_columns = np.logical_and(parameter_cols, replicate_cols)
                 system_df = df.loc[:, extract_columns]
-                
+                system_df.reset_index(drop=True, inplace=True)
                 for state in states:
-                    system_df.reset_index(drop=True, inplace=True)
                     if mode == 'all':
                         sel_frames = system_df.loc[(system_df.values == state)]
                         extract()
-                        if not sel_frames.empty: 
-                            frames = sel_frames.index.values
-                            if self.n_samples != 0:
-                                frames = np.random.choice(frames, size=min(int(self.n_samples / samples[state][parameter]), len(frames)))
-                            #frames = np.random.choice(frames, size=self.n_samples, replace=False)
-                            topology=self.fileFilter(name, system.topology, self.equilibration, self.production, def_file=self.def_top)[0]
-                            trajectory=self.fileFilter(name, system.trajectory, self.equilibration, self.production, def_file=self.def_traj)[0]
-                            extracted_frames.append((state, system.parameter, system.replicate, topology, trajectory, frames))
                     elif mode == 'by_reference':
                         references = system_df.columns.get_level_values(4).unique()
                         for ref in references:
                             ref_df = system_df.loc[:, system_df.columns.get_level_values(4) == ref]
                             sel_frames = ref_df.loc[(ref_df.values == state)]
                             extract()
-                            
-              
+    
+        #print(extracted_frames)
                                     
         return np.asarray(extracted_frames) #needs to be like this for file selector
 
@@ -235,22 +232,25 @@ class Trajectory:
             DESCRIPTION.
 
         """
+        #print(frames_to_extract)
         
         out_files = []
-        for iterable in states:
-            iterable_frames = frames_to_extract[frames_to_extract[:,0] == iterable]
+        for state in states:
+            iterable_frames = frames_to_extract[frames_to_extract[:,0] == state]
+            print(iterable_frames[:,1])
             for parameter in parameters:
                 parameter_frames = iterable_frames[iterable_frames[:,1] == parameter]
+                print(parameter, parameter_frames)
                 if len(parameter_frames):
-                    print(f'Processing {iterable}: {parameter}', end='\r')
+                    print(f'Processing {state}: {parameter}', end='\r')
                     _trajs = parameter_frames[:,4]
                     _topology = parameter_frames[:,3]
                     _frames = parameter_frames[:,5]
                     systems_to_concatenate = list(zip(_trajs, _topology, _frames))
                     if state_labels is None:
-                        trajectory_name = f'{self.project.results}/structures/stateFrames_{self.feature_name}_{iterable}_{parameter}'
+                        trajectory_name = f'{self.project.results}/structures/stateFrames_{self.feature_name}_{state}_{parameter}'
                     else:
-                        trajectory_name = f'{self.project.results}/structures/stateFrames_{self.feature_name}_{state_labels[iterable]}_{parameter}'
+                        trajectory_name = f'{self.project.results}/structures/stateFrames_{self.feature_name}_{state_labels[state]}_{parameter}'
                     if self.n_samples != 0:
                         trajectory_name = f'{trajectory_name}_samples'
                     out_files.append((systems_to_concatenate, trajectory_name))
@@ -265,7 +265,8 @@ class Trajectory:
                                feature_name=None, 
                                state_labels= None,
                                subset=None,
-                               n_samples = 0):
+                               n_samples = 0,
+                               mol2 = None):
         """
         
 
@@ -290,6 +291,8 @@ class Trajectory:
 
         self.feature_name = feature_name
         self.n_samples = n_samples
+        if mol2 != None:
+            self.mol2 = mol2
 
         
         if not isinstance(states, list):
@@ -536,17 +539,12 @@ class Trajectory:
         """
         
         import mdtraj as md
-        
-        def superpose_save(save_file=None):
-            
-            if save_file != None:
-                trajectory_name = save_file
-            
-                
+        def superpose_save(trajectory_name):
+
             n_frames = concatenated_trajectories.n_frames
             out_frames = np.random.choice(range(n_frames), size=min(self.n_samples, n_frames))
             out_traj = concatenated_trajectories[out_frames]
-            print(f'Superposing {out_traj.n_frames} frames of {trajectory_name}', end='\r')   
+            print(f'Superposing {out_traj.n_frames} frames...', end='\r')   
             out_traj.image_molecules(inplace=True)
             atom_indices=out_traj.topology.select(atom_set)
             superposed=out_traj.superpose(out_traj, frame=ref_frame, atom_indices=atom_indices)
@@ -555,14 +553,14 @@ class Trajectory:
             superposed[0].save(f'{trajectory_name}.pdb')
         
         #Warning! check_topology set to False since top files are not the same. works OK for replicates with same top/trj    
-        if not w_frames:
-            if os.path.exists(f'{trajectory_name}.dcd'):
+
+        if not os.path.exists(f'{trajectory_name}.dcd') or self.overwrite:
+            if not w_frames:
                 print(f'Concatenating {len(systems_to_concatenate)} trajectory file(s) of {trajectory_name}') #, end='\r')
                 concatenated_trajectories=md.join([md.load(file[0], top=file[1])[start:stop:stride] for file in systems_to_concatenate], check_topology=False)  
-                superpose_save()
-        else:        
-            if mode == 'all':
-                if not os.path.exists(f'{trajectory_name}.dcd'):
+                superpose_save(trajectory_name)
+            else:        
+                if mode == 'all':
                     try:
                         trajs = [md.load(file[0], top=file[1])[file[2]] for file in systems_to_concatenate]
                         concatenated_trajectories=md.join(trajs, check_topology=False)
@@ -571,31 +569,31 @@ class Trajectory:
                         concatenated_trajectories = md.join([md.join(
                                 [md.load_frame(file[0], frame, top=file[1]) for frame in file[2]],
                                 check_topology = False) for file in systems_to_concatenate], check_topology = False)
-                    superpose_save()
+                    superpose_save(trajectory_name)
                     
-            elif mode == 'by_reference':
-                chain_rep_traj = []
-                for file in systems_to_concatenate:
-                    #traj = md.load(file[0], top=file[1])
-                    for ref, frames in file[2].items():
-                        if len(frames):
-                            ref_traj = md.join([md.load_frame(file[0], frame, top=file[1]) for frame in frames], check_topology = False)
-                            #TODO: this, together with previous comment out make full traj load and  then slice. Consider memoryError/speed up 
-                            #ref_traj = traj[frames] 
-                            chain_rep_traj.append((ref, ref_traj))
-                chain_rep_traj = np.asarray(chain_rep_traj)
-                chains = set(chain_rep_traj[:,0])
-                
-                ref_trajectory_names = []
-                for chain_ in chains:
-                    ref_trajectory_name = f'{trajectory_name}_{chain_}'
-                    ref_trajectory_names.append(ref_trajectory_name)
-                    if not os.path.exists(f'{ref_trajectory_name}.dcd'):                  
-                        chain_trajs = [chain_traj[1] for chain_traj in chain_rep_traj if chain_traj[0] == chain_]
-                        concatenated_trajectories = md.join(chain_trajs, check_topology = False)
-                        superpose_save(save_file=ref_trajectory_name)
+                elif mode == 'by_reference':
+                    chain_rep_traj = []
+                    for file in systems_to_concatenate:
+                        #traj = md.load(file[0], top=file[1])
+                        for ref, frames in file[2].items():
+                            if len(frames):
+                                ref_traj = md.join([md.load_frame(file[0], frame, top=file[1]) for frame in frames], check_topology = False)
+                                #TODO: this, together with previous comment out make full traj load and  then slice. Consider memoryError/speed up 
+                                #ref_traj = traj[frames] 
+                                chain_rep_traj.append((ref, ref_traj))
+                    chain_rep_traj = np.asarray(chain_rep_traj)
+                    chains = set(chain_rep_traj[:,0])
+                    
+                    ref_trajectory_names = []
+                    for chain_ in chains:
+                        ref_trajectory_name = f'{trajectory_name}_{chain_}'
+                        ref_trajectory_names.append(ref_trajectory_name)
+                        if not os.path.exists(f'{ref_trajectory_name}.dcd') or self.overwrite:                  
+                            chain_trajs = [chain_traj[1] for chain_traj in chain_rep_traj if chain_traj[0] == chain_]
+                            concatenated_trajectories = md.join(chain_trajs, check_topology = False)
+                            superpose_save(ref_trajectory_name)
                         
-                return ref_trajectory_names
+                    return ref_trajectory_names
             
                         
                           
@@ -776,7 +774,6 @@ class Trajectory:
                     filtered.append(t)
             if len(filtered) > 0:
                 file = filtered
-            print('filtered ', file)
     
         if def_file == None:
             if len(file) > 1 and warnings:

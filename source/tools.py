@@ -13,6 +13,7 @@ from functools import wraps
 import subprocess
 import numpy as np
 import re
+import pyemma
 
 def log(func):
     """Decorator for system setup"""
@@ -22,6 +23,9 @@ def log(func):
         print(f'Executing {func.__name__} \n', end='\r')
         return func(*args, **kwargs)
     return logger
+
+
+
 
 
 class Functions:
@@ -116,6 +120,23 @@ class Functions:
         
         else:
            return parameter_dict 
+
+    @staticmethod
+    def getStateSamplingFraction(df, states, w_subset=True) -> list:
+        
+        
+        count_total = df.size
+        
+        state_sampling_fraction = []
+        if w_subset:
+            for idx_regions, (label_state, subset) in enumerate(self.subset_states[self.project_type].items()):
+                state_sampling_fraction.append(np.asarray([np.count_nonzero(df == i) / count_total for i in states if i in subset]).sum())
+        else:
+            state_sampling_fraction = np.asarray([np.count_nonzero(df == i) / count_total for i in states])
+        
+        return state_sampling_fraction
+
+
 
     @staticmethod
     def regionLabels(regions, labels):
