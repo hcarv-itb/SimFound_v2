@@ -1162,16 +1162,10 @@ class Discretize:
         state_labels = tools.Functions.sampledStateLabels(state_boundaries, state_labels, sampled_states=state_indexes) 
         states = {j : i for i, j in zip(state_labels, state_indexes)}
     
-        original_values, replaced_values, labels = [], [], []
-        for idx,(index, label) in enumerate(states.items()):
-            original_values.append(index)
-            replaced_values.append(idx)
-            labels.append(label)
-        remap_states = {r : l for r, l in zip(replaced_values, labels)} 
     
-        sampled_states = (states, remap_states)
-
+        sampled_states = tools.Functions.state_remaper(states)
         
+
         
         return combinatorial, supra_df, sampled_states
         
@@ -1387,7 +1381,7 @@ class Discretize:
         state_combs = list(itertools.product(states_water, states_mol))
         label_combs = list(itertools.product(labels_water, labels_mol))
 
-        
+        #print(label_combs)
         
         water_l = []
         for idx, l in enumerate(label_combs):
@@ -1468,8 +1462,8 @@ class Discretize:
 
                 state_fraction =  np.asarray([np.count_nonzero(traj == i) / traj.size for i in comb_states]) 
                 state_fraction_w = np.asarray([np.count_nonzero(traj == i) / traj.size for i, label in comb_states.items() if label in water_labels]).T 
-                state_fraction_mol = np.asarray([np.count_nonzero(traj == i) / traj.size for i, label in comb_states.items() if label not in water_labels]).T 
-               
+                state_fraction_mol = np.asarray([np.count_nonzero(traj == i) / traj.size for i, label in comb_states.items() if label not in water_labels]).T               
+
                 water_vs_mol = state_fraction_w + state_fraction_mol
 
                 df = pd.DataFrame(data=np.column_stack((state_fraction_w / water_vs_mol, state_fraction_mol / water_vs_mol)), index=comb_mol_states.values(), columns=['ATESB', 'TESB'])
@@ -1480,7 +1474,8 @@ class Discretize:
                 ax.set_xticklabels(list(comb_mol_states.values()), rotation=90)
                 ax.set_title(it)
             
-        return (supra_traj, trajectories, sampling_fractions)
+        #TODO: change to lean output
+        return (supra_traj, trajectories, sampling_fractions, comb_states)
         
 
 
@@ -1491,6 +1486,7 @@ class Discretize:
                          mol_water, 
                          sampled_states, 
                          n_cores=10, 
+                         compare_method='by_pair',
                          corr_mode='single', 
                          remap_traj=False,
                          method='correlation'):
@@ -1529,7 +1525,6 @@ class Discretize:
 
             df_mol = base[mol].iloc[:, base[mol].columns.get_level_values('l2') == mol]
             iterables = df_mol.columns.get_level_values('l3').unique()
-            references = df_mol.columns.get_level_values('l3').unique()
 
             print(idx_mol, mol)
 
@@ -1538,27 +1533,27 @@ class Discretize:
                 df_it = df_mol.iloc[:, df_mol.columns.get_level_values('l3') == it]
                 references = df_it.columns.get_level_values('l5').unique()
                 
-                it_table = []
-                
-                for pair, index in ref_map.items():
-                    
-                    idx, idx2 = index[0], index[1]
-                    ref, ref2 = references[idx], references[idx2]
-                    df_ref = df_it.iloc[:, df_it.columns.get_level_values('l5') == ref]
-                    df_ref2 = df_it.iloc[:, df_it.columns.get_level_values('l5') == ref2]
-                    state_combs = itertools.product(states_mol_list, states_mol_list)
-                    _inputs = (df_ref, df_ref2, 'source', 'target', _states, state_combs, n_cores)
-                    table, _ = Discretize.run_metric(_inputs, corr_mode, method=method)
-                    it_table.append(table)
-                _it_table = np.asarray(it_table) 
-                    
-                #TODOTODOTODOTODOTO means only for MI, not for CORR COEFF!!!!!!!
+                it_table = {}
+                if compare_method == 'by_pair':
+                    for pair, index in ref_map.items():
+                        #TODO: map ref_i for letter (references may not be sorted)
+                        idx, idx2 = index[0], index[1]
+                        ref, ref2 = references[idx], references[idx2]
+                        label, label2 = pair.split('-')
+                        print(label, label2)
+                        df_ref = df_it.iloc[:, df_it.columns.get_level_values('l5') == ref]
+                        df_ref2 = df_it.iloc[:, df_it.columns.get_level_values('l5') == ref2]
+                        state_combs = itertools.product(states_mol_list, states_mol_list)
+                        _inputs = (df_ref, df_ref2, label, label2, _states, state_combs, n_cores)
+                        table, _ = Discretize.run_metric(_inputs, corr_mode, method=method)
+                        it_table[pair] = table
+ 
                 if method == 'mutualInformation':
-                    out = _it_table.sum(axis=0)
+                    out = it_table #.sum(axis=0)
                 else:
+                    _it_table = np.asarray(it_table) 
                     mask = np.vectorize(correlation_map)(_it_table)
                     out = stats.mode(mask, axis=0).mode[0]
-                print(np.shape(out))
                 correlation_tables[mol][it], trajectories[mol][it] = out, pd.DataFrame()
 
         

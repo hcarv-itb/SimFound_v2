@@ -12,39 +12,12 @@ import pyemma
 import matplotlib.pyplot as plt
 from matplotlib import colors
 import matplotlib.pylab as pl
-from matplotlib.ticker import FormatStrFormatter, AutoLocator, MaxNLocator, ScalarFormatter, LogLocator, AutoMinorLocator
+from matplotlib.ticker import FormatStrFormatter, AutoLocator, PercentFormatter, MaxNLocator, ScalarFormatter, LogLocator, LinearLocator, AutoMinorLocator
 import matplotlib.gridspec as gridspec
 
 import Discretize
 
-def plot_scheme(states_scheme):
-       
-    color_rect = ['white', 'dimgrey']
-    for idx_combination, (label,combination) in enumerate(states_scheme.items()):
-        fig, ax_scheme = plt.subplots(1,1, figsize=(5,1)) 
-        print(label)
 
-        #ax_scheme.s
-        for idx,color_idx in enumerate(combination):
-            color = color_rect[color_idx]
-            if idx == 0 and color_idx == 1:
-                color = 'darkorange'
-            rect = plt.Rectangle((idx,0), 1, 1, facecolor=color, edgecolor='black', linewidth=5)
-            #print(idx, color, rect)
-            ax_scheme.add_patch(rect)
-        #ax_scheme.set_title(label)
-        ax_scheme.set_xlim([0,5])
-        ax_scheme.axis('off')
-        #ax_scheme.set_ylim([0,9])
-        fig.show()
-        fig.savefig(f'/media/dataHog/hca/msAcT-acylOctamer/results/figures/comb_states/{label}.png', dpi=300)
-            #(idx, idx+1), 2, 1, linewidth=1, edgecolor='r', facecolor='none')
-    #ax_scheme.set_xticks(ax_scheme.get_xticks()-0.5)
-    #ax_scheme.set_xticklabels(['A', 'T', 'E', 'S', 'B'])
-    
-    #ax_scheme.set_ylim([0,9])
-    #ax_scheme.axis('scaled')
-        
       
 
             
@@ -66,7 +39,7 @@ class Plots:
                     plot_specs :dict,
                     input_states : dict,
                     subset_states : dict,
-                    labels_regions = ['A', 'T', 'E', 'S', 'B'],
+                    #labels_regions = ['A', 'T', 'E', 'S', 'B'],
                     mol_water={} ,
                     color2='darkorange',
                     mol2={'BuOH' : 'ViAc', 'BeOH' : 'BeAc'},
@@ -84,6 +57,7 @@ class Plots:
         self.plot_specs : dict = plot_specs
         self.input_states : dict = input_states
         self.subset_states : dict = subset_states
+        #self.labels_regions : labels_regions
         self.mol2 :dict = mol2
         self.color2 : str = color2
         self.mol_water : dict = mol_water
@@ -164,9 +138,9 @@ class Plots:
             ax.axhline(y=0, ls='--', color='darkgray')
             
             if self.mol == 'H2O':
-                ax.set_title('water', fontweight='bold', size=12)
+                ax.set_title('water', size=12)
             else:
-                ax.set_title(self.mol, fontweight='bold', size=12)
+                ax.set_title(self.mol, size=12)
 
 
             ax.spines["right"].set_visible(False)
@@ -346,25 +320,122 @@ class Plots:
 
         ax.legend().remove() 
         
+
+    def plot_combinatorial_polar(self, df, opt_color=None):
+        
+        index = df.index.values
+        num_vars = len(index)
+        
+        angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+        angles += angles[:1]
+        
+        for idx, column in enumerate(df.columns):
+            
+            _df = df[column]
+            values = _df.values.tolist()
+            values += values[:1]
+            ax = self.ax_comb
+            
+            ax.plot(angles, values, color=self.color_mol[idx], linewidth=1)
+            
+        #plt.show()
+    
+        
+    def plot_subunitsStateSampling(self, input_df, 
+                                   subunit_pair_labels, 
+                                   ref_map = {'A-B' : (0,1), 
+                                              'C-H' : (2,7), 
+                                              'E-F' : (4,5), 
+                                              'D-G' : (3,6)}):
+        
+        
+        ax = self.ax_subunits
+        #ax2 = self.ax_subunits2
+        
+        df = input_df.iloc[:, input_df.columns.get_level_values('l3') == self.it]
+        total_sf = np.array(self.getStateSamplingFraction(df))
+        references = df.columns.get_level_values('l5').unique()
+        
+
+        sampling_fraction ={}
+        
+        for ref_pair_label, indexes in ref_map.items():
+            pair_sf = []
+            for idx, idx_r in enumerate(indexes):
+
+                label = chr(ord('@')+idx_r+1)
+                ref = references[idx_r]
+                ref_df = df.loc[:, df.columns.get_level_values('l5') == ref]
+                _sf = self.getStateSamplingFraction(ref_df)
+                pair_sf.append(_sf)
+            sampling_fraction[ref_pair_label] = pair_sf
+        
+        total_sf = np.asarray(list(sampling_fraction.values()))
+        
+        number_pairs = np.shape(total_sf)[0]
+        number_regions = np.shape(total_sf)[2]
+
+            
+        
+        for idx_pair, pair in enumerate(total_sf):
+            sampled_regions = total_sf.sum(axis=0).sum(axis=0)
+            _sampled_regions = total_sf.sum(axis=1).sum(axis=0)
+            _pair = ((pair / sampled_regions) * number_pairs*2) * 0.5
+            _pair2 = (pair / _sampled_regions) 
+
+            # * number_pairs #number dimers
+            #max_pair = _pair.max()
+            #_pair = pair
+            
+            #print(_pair, self.idx_it, self.idx_mol, self.mol)
+            for idx_r, region in enumerate(_pair.T):
+                
+                x = [idx_r, idx_r+0.5]
+                ax.plot(x, region, '.-' , color=self.color_mol[self.idx_it]) #, alpha=(1/number_pairs*2))
+
+        ax.set_xticks(np.arange(0.25, number_regions+0.25))
+        ax.set_xticklabels(self.labels_regions)
+        ax.set_ylim(-0.25,4.5)
+        ax.set_yticks(range(5))
+        ax.set_yticklabels(['0:0', '2:1', '3:1', '4:1', '5:1'])
+        
+        if self.idx_mol == 1:
+            ax.set_ylabel('Dimer sampling ratio')
+        #ax.axhline(y=0, linestyle='dotted', color='red')
+        
+        
+
+        #ax.yaxis.set_major_locator(LinearLocator(numticks=3))
+        #ax.yaxis.set_major_formatter(PercentFormatter(25.0))
+
+        #ax.set_ylim(-1, 3)
+        
+
+        if self.idx_mol != len(self.projects) -1:
+            #plt.setp(ax.get_xticks(), visible=False)
+            plt.setp(ax.get_xticklabels(), visible=False)
+            #plt.setp(ax.get_yticklabels(), visible=False)
+        else:
+            ax.set_xlabel('Shells')
+
+            #ax.spines["bottom"].set_visible(False)
+            #ax.grid(linestyle='--', axis='y')
+        
+        if self.idx_it != len(self.iterables) -1 :
+            ax.axhline(y=0.5, linestyle='solid', color='gray')
+            ax.text(4, 0.8, '1:1', color='gray')
+            
+        
+
+        
+        
+
+        
+        
         
     
-    def plot_wrapper(self, 
-                     dG_df : pd.DataFrame, 
-                     comb_df : pd.DataFrame):
-        
-        idx = self.idx_it
-        list_its_ = comb_df.columns.get_level_values('l3').unique().to_list()
-        
-        if self.project_type == 'inhibition':
-            list_its_.remove('5mM')
+    
 
-        comb_it_df = comb_df.loc[:, comb_df.columns.get_level_values('l3') == list_its_[idx]]
-             
-        self.counts_states[idx] =  np.asarray([np.count_nonzero(comb_it_df == i) for i in self.states]) / comb_it_df.size
-        self.count_regions[idx] = self.getStateSamplingFraction(comb_it_df)
-        
-        self.plot_dg(dG_df)
-        self.plot_regions(comb_it_df)
         
 
     
@@ -388,12 +459,15 @@ class Plots:
                         if value < 0:
                             
                             _value = '-'
+                            _color = 'red'
                         elif value > 0:
                             _value = '+'
+                            _color = 'green'
                         else:
                             _value = ''
+                            _color = 'white'
                         
-                        ax.text(j, i, _value, ha="center", va="center", color='red')
+                        ax.text(j, i, _value, ha="center", va="center", color=_color)
         
         #cmap.set_bad('grey')
         _legend = False
@@ -410,8 +484,22 @@ class Plots:
             
             
             (state_labels, states) = list(self.states.values()), list(self.states.keys())
+            plot = []
+
+            df = pd.DataFrame()
+            for iterable, matrix_pairs in metric.items():
+                _data = []
+                _labels = []
+                for pair_label, matrix in matrix_pairs.items(): 
+                    _data.append(matrix) #[data_pair, data_pair_1]
+                    _labels.append(pair_label)
+
+                data = np.asarray(_data).mean(axis=0)
+                mean_sums = np.vstack([data.sum(axis=0),data.sum(axis=1)]).mean(axis=0)
+                df_it = pd.DataFrame(mean_sums / mean_sums.max(), columns=[self.it])
+                df = pd.concat([df, df_it], axis=1)
             
-            plot = metric.plot.bar(ax=ax, 
+            plot = df.plot.bar(ax=ax, 
                         color=color, 
                         label=False, 
                         width=Plots.p_type[self.project_type]['bar_width']) 
@@ -421,13 +509,13 @@ class Plots:
             ax.set_xticklabels(state_labels, rotation=90)
             ax.grid(linestyle='--', axis='y')
             if self.idx_mol == 1:
-                ax.set_ylabel('Mutual Information (normalized)')
+                ax.set_ylabel('Dimer mutual Information (normalized)')
             #ax.text(-0.05, 0.5, 'Mutual Information', orientation='vertical')
             if self.idx_mol != len(self.projects)-1:
                 plt.setp(ax.get_xticklabels(), visible=False)
             else:
                 ax.set_xlabel('States')
-            ax.yaxis.set_minor_locator(AutoMinorLocator())
+            ax.yaxis.set_minor_locator(AutoMinorLocator(4))
         
         elif self.project_type == 'inhibition':
             
@@ -524,13 +612,19 @@ class Plots:
                 if value < 0:
                     
                     _value = r'$\ominus$'
+                    _color = 'red'
                 elif value > 0:
                     _value = r'$\oplus$'
+                    _color = 'green'
                 else:
                     _value = ''
+                    _color = 'white'
                 
                 markers[i] = _value
-                ax.text(ax.get_xticks()[i], metric[i], _value, fontsize=12, ha="center", va="center", color='red') 
+                
+                if metric[i] != 0:
+                
+                    ax.text(ax.get_xticks()[i], metric[i], _value, fontsize=12, ha="center", va="center", color=_color) 
             
             
             #ax.grid(which='major', axis='y', linestyle='--')
@@ -542,7 +636,80 @@ class Plots:
         return plot
 
 
-    def setSubplots(self, grid_dG, grid_comb):
+
+
+    def plot_state_cartoon(self, orientation='horizontal'):
+        
+
+        color_code = {'B' : [0,0,0,0,1], 
+                     'SB' : [0,0,0,1,1],
+                     'ESB' : [0,0,1,1,1],
+                     'TSB' : [0,1,0,1,1],
+                     'TESB' : [0,1,1,1,1],
+                     'ASB' : [1,0,0,1,1],
+                     'AESB' : [1,0,1,1,1],
+                     'ATSB' : [1,1,0,1,1],
+                     'ATES' : [1,1,1,1,0],
+                     'ATESB' : [1,1,1,1,1]}
+
+       
+        color_rect = ['white', 'lightgrey']
+        
+        
+        ax = self.ax_scheme
+        ax.set_xticks(range(len(color_code)))
+        #ax.set_xticklabels(list(color_code.keys()))
+        ax.set_ylim(0,5.5)
+        ax.set_xlim(0,10)
+        ax.get_xaxis().set_visible(False)
+
+        for k, spine in ax.spines.items():
+            spine.set_visible(False)
+        ax.set_yticks(np.arange(0.5, len(self.labels_regions)+0.5))
+        ax.set_yticklabels = self.labels_regions
+        #ax.set_ylabel('Shells')
+        for idx_combination, (label,combination) in enumerate(color_code.items()):
+            
+            for idx,sampled in enumerate(combination):
+                   
+                if orientation == 'horizontal':
+                    anchor = (idx_combination,idx)
+                else:
+                    anchor = (idx, idx_combination)
+                
+                color = color_rect[sampled]
+                if idx == 0 and sampled:
+                    color = 'magenta'
+                rect = plt.Rectangle(anchor, 0.8, 1, facecolor=color, edgecolor='black', linewidth=2)
+
+                ax.add_patch(rect)        
+        #ax_scheme.axis('scaled')
+             
+
+
+    def plot_wrapper(self, 
+                     dG_df : pd.DataFrame, 
+                     comb_df : pd.DataFrame):
+        
+        idx = self.idx_it
+        list_its_ = comb_df.columns.get_level_values('l3').unique().to_list()
+        
+        if self.project_type == 'inhibition':
+            list_its_.remove('5mM')
+
+        it_df = comb_df.loc[:, comb_df.columns.get_level_values('l3') == list_its_[idx]]
+             
+        self.counts_states[idx] =  np.asarray([np.count_nonzero(it_df == i) for i in self.states]) / it_df.size
+        self.count_regions[idx] = self.getStateSamplingFraction(it_df)
+
+        self.plot_dg(dG_df)
+        self.plot_regions(it_df)
+
+    def setSubplots(self):
+        
+        
+        grid_dG = self.grid_dG
+        grid_comb = self.grid_comb
         
         idx_mol = self.idx_mol
         project_type = self.project_type
@@ -550,8 +717,9 @@ class Plots:
         if idx_mol == 0:
             if project_type == 'normal':
                 self.ax_dG = plt.subplot(grid_dG[0, idx_mol])
-                self.ax_comb = plt.subplot(grid_comb[idx_mol, 0])
+                self.ax_comb = plt.subplot(grid_comb[idx_mol, 0], projection='polar')
                 self.ax_regions = plt.subplot(grid_dG[1, idx_mol])
+
             elif project_type == 'inhibition':
                 self.ax_dG = plt.subplot(grid_dG[0, idx_mol])
                 self.ax_regions = plt.subplot(grid_dG[1, idx_mol])
@@ -562,7 +730,9 @@ class Plots:
         else:
             if project_type == 'normal':
                 self.ax_dG = plt.subplot(grid_dG[0, idx_mol], sharex=self.ax_dG, sharey=self.ax_dG)
-                self.ax_comb = plt.subplot(grid_comb[idx_mol, 0], sharex=self.ax_comb, sharey=self.ax_comb)
+                self.ax_comb = plt.subplot(grid_comb[idx_mol, 0], sharex=self.ax_comb, sharey=self.ax_comb, projection='polar')
+                
+
                 #self.ax_comb = plt.subplot(grid_comb[0, idx_mol], sharex=self.ax_comb, sharey=self.ax_comb)
             elif project_type == 'inhibition':
                 self.ax_dG = plt.subplot(grid_dG[0, idx_mol], sharey=self.ax_dG)
@@ -585,26 +755,71 @@ class Plots:
             else:
                 self.ax_comb = plt.subplot(grid_comb[0,idx_mol])
                 self.ax_comb2 = plt.subplot(grid_comb[0,idx_mol])
-        elif project_type == 'normal':          
+        elif project_type == 'normal': 
+            
+            #self.ax_subunits2 = self.ax_subunits.twinx()
             if self.metrics:
-                self.ax_metric = plt.subplot(grid_comb[idx_mol, 1])
+                self.ax_metric = plt.subplot(grid_comb[idx_mol, 2])
+        
+        #elif project_type == 'water':
+        #    if self.metrics:
+        #        self.sub_w_grid_metrics = gridspec.GridSpecFromSubplotSpec(len(self.iterables),1, subplot_spec = grid_comb[:, self.idx_mol+1])
+                
 
+    def setGrids(self):
+        
+        p_type_specs = self.p_type
+        project_type = self.project_type
+        projects = self.projects
+        
+        self.fig=plt.figure(figsize=p_type_specs[project_type]['figsize'], constrained_layout=True) #
+        (nrows, ncols) = p_type_specs[project_type]['grid_layout']
+        
+        outer_grid = gridspec.GridSpec(nrows, 
+                                       ncols, 
+                                       hspace=0.3, 
+                                       height_ratios = p_type_specs[project_type]['outer_grid_heights'], 
+                                       width_ratios=p_type_specs[project_type]['outer_grid_widths'])
+        
+        #TODO: use figure, subfigures  instead of gridspec to make axes sharing/handling MORE EASY
+        if project_type == 'normal':
+            grid_dG = gridspec.GridSpecFromSubplotSpec(2, len(projects), subplot_spec = outer_grid[0,:], hspace=0.1, wspace=0.1, height_ratios=[4,2]) 
+            grid_comb = gridspec.GridSpecFromSubplotSpec(len(projects), 3, subplot_spec = outer_grid[2,:], width_ratios=[1,0.8,0.8], wspace=0.3) #, wspace=0.1) #wspace=0.2)
+            grid_figure = gridspec.GridSpecFromSubplotSpec(1, 3, subplot_spec = outer_grid[1,:], width_ratios=[1,0.8,0.8], wspace=0.3)
+            self.grid_figure = grid_figure
+            self.ax_scheme = plt.subplot(grid_figure[0,0])
+        elif project_type == 'inhibition':
+            grid_dG = gridspec.GridSpecFromSubplotSpec(2, len(projects), subplot_spec = outer_grid[0,:], hspace=0.1, wspace=0.1, height_ratios=[4,2]) 
+            grid_comb = gridspec.GridSpecFromSubplotSpec(2, len(projects), subplot_spec = outer_grid[1,:], height_ratios=[10,2], wspace=0.2)
+            #grid_figure = gridspec.GridSpecFromSubplotSpec(1, 2, subplot_spec = outer_grid[2,:], wspace=0.1)
+        elif project_type == 'water':
+            grid_dG = gridspec.GridSpecFromSubplotSpec(2, 3, subplot_spec = outer_grid[0,:], height_ratios=[2,1], hspace=0.1, wspace=0.2)  
+            grid_comb = gridspec.GridSpecFromSubplotSpec(2,3, subplot_spec = outer_grid[1,:], height_ratios=[6,5], wspace=0.2)
+            
+            sub_w_grid_dG = gridspec.GridSpecFromSubplotSpec(2,2, subplot_spec = grid_dG[:,1:], height_ratios=[2,1], hspace=0.2, wspace=0.1)
+            self.sub_w_grid_dG = sub_w_grid_dG
+            #grid_figure = gridspec.GridSpecFromSubplotSpec(2,2, subplot_spec = outer_grid[2,1:], wspace=0.3, height_ratios=[10,2])
+            #grid_corr = gridspec.GridSpecFromSubplotSpec(1, 1, subplot_spec = outer_grid[2,:], wspace=0.1)      
+
+        self.grid_dG = grid_dG
+        self.grid_comb = grid_comb
         
         
+        self.outer_grid = outer_grid
         
         
         
 
                         
 
-    def plotBindingProfileAndCombinatorial(self):
+    def plot_thermodynamics(self):
         figures = {}
         for project_type, projects in self.supra_project.items():
-                        
-            
+        
+
             print(project_type)
             input_states = self.input_states
-            p_type = self.p_type
+            
             dG = self.dG
             combinatorial = self.combinatorial
             plot_specs = self.plot_specs
@@ -614,27 +829,9 @@ class Plots:
                 self.loc1, self.loc2 = 0, 250
             mol2 = self.mol2
             color2 = self.color2
-             
-            fig=plt.figure(figsize=p_type[project_type]['figsize'], constrained_layout=True) #
-            (nrows, ncols) = p_type[project_type]['grid_layout']
-            outer_grid = gridspec.GridSpec(nrows, ncols, hspace=0.3, height_ratios = p_type[project_type]['outer_grid_heights'], width_ratios=p_type[project_type]['outer_grid_widths']) #, width_ratios = [3,1]) 
             
             
-            
-            #TODO: use figure, subfigures  instead of gridspec to make axes sharing/handling MORE EASY
-            if project_type == 'normal':
-                grid_dG = gridspec.GridSpecFromSubplotSpec(2, len(projects), subplot_spec = outer_grid[0,:], hspace=0.1, wspace=0.1, height_ratios=[4,2]) 
-                grid_comb = gridspec.GridSpecFromSubplotSpec(len(projects),2 , subplot_spec = outer_grid[2,:], wspace=0.2) #, wspace=0.1) #wspace=0.2)
-                grid_figure = gridspec.GridSpecFromSubplotSpec(1, len(projects), subplot_spec = outer_grid[1,:], wspace=0.1)
-            elif project_type == 'inhibition':
-                grid_dG = gridspec.GridSpecFromSubplotSpec(2, len(projects), subplot_spec = outer_grid[0,:], hspace=0.1, wspace=0.1, height_ratios=[4,2]) 
-                grid_comb = gridspec.GridSpecFromSubplotSpec(2, len(projects), subplot_spec = outer_grid[1,:], height_ratios=[10,2], wspace=0.2)
-                #grid_figure = gridspec.GridSpecFromSubplotSpec(1, 2, subplot_spec = outer_grid[2,:], wspace=0.1)
-            elif project_type == 'water':
-                grid_dG = gridspec.GridSpecFromSubplotSpec(2, 3, subplot_spec = outer_grid[0,:], height_ratios=[2,1], hspace=0.1, wspace=0.2)  
-                grid_comb = gridspec.GridSpecFromSubplotSpec(2,3, subplot_spec = outer_grid[1,:], height_ratios=[6,5], wspace=0.2)
-                #grid_figure = gridspec.GridSpecFromSubplotSpec(2,2, subplot_spec = outer_grid[2,1:], wspace=0.3, height_ratios=[10,2])
-                #grid_corr = gridspec.GridSpecFromSubplotSpec(1, 1, subplot_spec = outer_grid[2,:], wspace=0.1)
+
                     
             
             
@@ -644,6 +841,12 @@ class Plots:
             self.project_type : str = project_type
             self.labels_regions = list(self.subset_states[project_type].keys())
             
+            self.setGrids()
+            
+            
+            if project_type == 'normal':
+                
+                self.plot_state_cartoon()
             
             for idx_mol, (mol, project) in enumerate(projects.items()):
                 print(mol)
@@ -678,12 +881,18 @@ class Plots:
                 self.idx_mol = idx_mol
                 self.mol = mol
                 
-                self.setSubplots(grid_dG, grid_comb)
+                self.setSubplots()
                 self.lns = []
 
                 #ax_comb = plt.subplot(grid_comb[idx_mol])
                 self.counts_states = np.empty([len(self.iterables), len(self.states)])
                 self.count_regions = np.empty([len(self.iterables), len(self.steps)+1])
+                
+                
+                if project_type == 'normal':
+                    
+                    subgrid_normal_subunits = gridspec.GridSpecFromSubplotSpec(len(self.iterables),1, subplot_spec = self.grid_comb[idx_mol, 2], hspace=0)
+                    
                 
                 for idx, it in enumerate(self.iterables): 
                     self.it : str = it
@@ -691,17 +900,33 @@ class Plots:
                     
                     self.plot_wrapper(dG_df, combinatorial_df) 
                     
-                    
+                            
+        
+                    if self.project_type == 'normal':
+                        subunit_pair_labels = list(self.metric_data[project_type][mol][it].keys())
+                        
+                        #if idx_mol == 0:
+                            #self.ax_subunits = plt.subplot(subgrid_normal_subunits[idx,0])
+                        self.ax_subunits = plt.subplot(self.grid_comb[idx_mol, 1])
+                        #else:
+                            #self.ax_subunits = plt.subplot(subgrid_normal_subunits[idx,0], sharey=self.ax_subunits)
+                        #    self.ax_subunits = plt.subplot(self.grid_comb[idx_mol, 2], sharey=self.ax_subunits)
+                        self.plot_subunitsStateSampling(combinatorial_df, subunit_pair_labels)
                     
                     
                 mol_df = pd.DataFrame(self.counts_states.T, index=self.states, columns=self.iterables)
 
+                
                 if project_type == 'normal':
                     self.plot_metrics((self.metric_data[project_type][mol], []))
+                    self.base_combinatorial = self.plot_combinatorial_polar(mol_df)
+                elif project_type == 'inhibition':
+                    self.base_combinatorial = self.plot_combinatorial(mol_df)
+                    
                 if project_type != 'water':
                     self.base_combinatorial = self.plot_combinatorial(mol_df)
                 
-                
+                    
 
                     
                 #NOTE: loading of mol1 and mol1 + mol2 is done above. Here is only to handle mol2
@@ -723,7 +948,7 @@ class Plots:
                     metric = self.plot_metrics((self.metric_data[project_type][mol], self.correlation_data[project_type][mol]))
                     if self.idx_mol == 1:
                     
-                        _colorbar = plt.subplot(grid_comb[-1,:])
+                        _colorbar = plt.subplot(self.grid_comb[-1,:])
                         _colorbar.axis('off')
                         cbar = plt.colorbar(metric, ax=_colorbar, orientation='horizontal')
                         cbar.set_label(self.metric_method) 
@@ -745,9 +970,9 @@ class Plots:
             #NOTE: This is only loading the other _water dfs. The df of water has been handled before
             if project_type == 'water':
 
-                sub_w_grid_dG = gridspec.GridSpecFromSubplotSpec(2,2, subplot_spec = grid_dG[:,1:], height_ratios=[2,1], hspace=0.2, wspace=0.1)
+                
 
-                self.ax_comb = plt.subplot(grid_comb[0, 0])
+                self.ax_comb = plt.subplot(self.grid_comb[0, 0])
                 
                 
                 for idx_mol_w, (mol_w, iterables_mol_w2) in enumerate(self.mol_water.items()):
@@ -765,8 +990,8 @@ class Plots:
                     self.mol = mol_w
                     self.idx_mol = idx_mol_w 
                     
-                    self.ax_dG = plt.subplot(sub_w_grid_dG[0, idx_mol_w])
-                    self.ax_regions = plt.subplot(sub_w_grid_dG[1, idx_mol_w], sharey=self.ax_regions)
+                    self.ax_dG = plt.subplot(self.sub_w_grid_dG[0, idx_mol_w])
+                    self.ax_regions = plt.subplot(self.sub_w_grid_dG[1, idx_mol_w], sharey=self.ax_regions)
                     self.iterables = iterables_mol_w2[0] + [f'100mM_{iterables_mol_w2[1]}_5mM']
                     
                     self.counts_states = np.empty([len(self.iterables), len(self.states)])
@@ -788,7 +1013,7 @@ class Plots:
 
 
                     if self.metrics:
-                        sub_w_grid_metrics = gridspec.GridSpecFromSubplotSpec(len(self.iterables),1, subplot_spec = grid_comb[:, idx_mol_w+1])
+                        sub_w_grid_metrics = gridspec.GridSpecFromSubplotSpec(len(self.iterables),1, subplot_spec = self.grid_comb[:, idx_mol_w+1])
                     for idx_w, it_w in enumerate(self.iterables): 
                         self.it = it_w
                         self.idx_it = idx_w
@@ -864,13 +1089,13 @@ class Plots:
     # =============================================================================
                     
     
+
+        #plot_combinatorial(supra_df)
+        self.fig.tight_layout()
+        self.fig.show()
+        figures[project_type] = self.fig
+        self.fig.savefig(f'{project.results}/figures/BindingProfile_combinatorial_{project_type}.png', dpi=600, bbox_inches='tight')
     
-            #plot_combinatorial(supra_df)
-            #fig.tight_layout()
-            fig.show()
-            figures[project_type] = fig
-            fig.savefig(f'{project.results}/figures/BindingProfile_combinatorial_{project_type}.png', dpi=600, bbox_inches='tight')
-        
         return figures
                
     def getDeltaG(self, input_df, it, idx):
@@ -904,13 +1129,17 @@ class Plots:
             states = self.states
         
         count_total = df.size
-        
+        label_states = []
         state_sampling_fraction = []
         if w_subset:
             for idx_regions, (label_state, subset) in enumerate(self.subset_states[self.project_type].items()):
                 state_sampling_fraction.append(np.asarray([np.count_nonzero(df == i) / count_total for i in states if i in subset]).sum())
+                label_states.append(label_state)
         else:
             state_sampling_fraction = np.asarray([np.count_nonzero(df == i) / count_total for i in states])
+        
+        
+        self.labels_regions = label_states
         
         return state_sampling_fraction
 

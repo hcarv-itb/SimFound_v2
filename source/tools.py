@@ -163,6 +163,21 @@ class Functions:
         return region_labels 
     
     @staticmethod
+    def state_remaper(states):
+        
+        original_values, replaced_values, labels = [], [], []
+        for idx,(index, label) in enumerate(states.items()):
+            original_values.append(index)
+            replaced_values.append(idx)
+            labels.append(label)
+        remap_states = {r : l for r, l in zip(replaced_values, labels)} 
+    
+        sampled_states = (states, remap_states)
+
+        return sampled_states
+    
+    
+    @staticmethod
     def sampledStateLabels(shells, labels, sampled_states=None):
         """
 
