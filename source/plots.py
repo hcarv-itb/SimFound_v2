@@ -329,6 +329,8 @@ class Plots:
         angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
         angles += angles[:1]
         
+        print(df)
+        
         for idx, column in enumerate(df.columns):
             
             _df = df[column]
@@ -921,7 +923,7 @@ class Plots:
                     self.plot_metrics((self.metric_data[project_type][mol], []))
                     self.base_combinatorial = self.plot_combinatorial_polar(mol_df)
                 elif project_type == 'inhibition':
-                    self.base_combinatorial = self.plot_combinatorial(mol_df)
+                    self.base_combinatorial = self.plot_combinatorial_polar(mol_df)
                     
                 if project_type != 'water':
                     self.base_combinatorial = self.plot_combinatorial(mol_df)
