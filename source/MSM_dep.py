@@ -11,21 +11,17 @@ import re
 import collections
 import matplotlib.pyplot as plt
 import matplotlib.pylab as pl
-import matplotlib.patches as patches
 import matplotlib.gridspec as gridspec
-from matplotlib import ticker as ticker
-from matplotlib.patches import ConnectionPatch
-from matplotlib.ticker import FormatStrFormatter, AutoLocator, PercentFormatter, MaxNLocator, ScalarFormatter, LogLocator, LinearLocator, AutoMinorLocator
+import matplotlib.ticker as mtick
 from matplotlib import cm
 from matplotlib import colors as ml_colors
 import numpy as np
 import pandas as pd
 import hvplot
 import holoviews as hv
-#hv.extension('bokeh')
-#pd.options.plotting.backend = 'holoviews'
+hv.extension('bokeh')
+pd.options.plotting.backend = 'holoviews'
 import pickle
-import itertools
 import glob
 import nglview
 try:
@@ -38,7 +34,7 @@ except Exception as v:
     pass
 import mdtraj as md
 from mdtraj.utils import in_units_of
-from simtk.unit import angstrom, picosecond
+from simtk.unit import angstrom
 from itertools import compress, product
 from functools import wraps
 from sklearn.impute import SimpleImputer
@@ -61,29 +57,18 @@ class MSM:
     msm_var_cutoff = 0.95
     report_units = 'angstrom'
     report_flux_units = 'second'
-    pathway_connect_symbol = ' -> '
     ITS_lags=[1, 2, 5, 10, 20, 40, 100, 250, 500, 750, 1000, 1500, 2000, 4000]
     ref_samples=2000
     visual_samples=100
     movie_samples=200
     generate_samples=40
-    pathway_fraction = 0.95
     
 
-    plot_specs = {'normal' : {'ViAc' : pl.cm.YlOrRd(np.linspace(0.2,1,3)),
-                          'BuOH' : pl.cm.YlGnBu(np.linspace(0.2,1,4)),
-                          'BeOH' : pl.cm.BuPu(np.linspace(0.2,1,5))},
-                  'inhibition' : {'BuOH' : pl.cm.YlGnBu(np.linspace(0.2,1,4))[2],
-                                  'BeAc' : 'darkorange', 
-                                  'ViAc' : 'darkorange',
-                                  'BeOH' : ('darkorange', pl.cm.BuPu(np.linspace(0.2,1,5))[3])},
-                  'water' : {'H2O' : ['red'],
-                              'BuOH' : np.vstack([pl.cm.YlGnBu(np.linspace(0.2,1,4)), pl.cm.Oranges(np.linspace(0.5,0.5,1))]),
-                             'BeOH' : np.vstack([pl.cm.BuPu(np.linspace(0.2,1,5)), pl.cm.Oranges(np.linspace(0.5,0.5,1))])}}
+
 
 
     def __init__(self,
-                 supra_project,
+                 project,
                  regions=None,
                  timestep=None,  
                  chunksize=0, 
@@ -116,15 +101,17 @@ class MSM:
 
         """
         
-        self.supra_project = supra_project
-        
+        self.project = project
+        self.systems = self.project.systems
         self.regions=regions
         self.features={}
+        self.data = {}
         self.chunksize=chunksize
         self.stride=stride
         self.skip=skip
-        self.timestep = timestep
-        
+        if timestep is None:
+            self.timestep=self.project.timestep
+        self.unit=self.timestep.unit.get_symbol()
         self.warnings=warnings
         self.pre_process=pre_process
         self.w_equilibration = equilibration
@@ -132,10 +119,15 @@ class MSM:
 
         self.filter_water=filter_water
         self.overwrite = overwrite
-        self.results_path = results
-        
-        #print('Results will be stored under: ', self.results)
-        #print('PyEMMA calculations will be stored under: ', self.stored)
+        if results != None:
+            base_results = tools.Functions.pathHandler(self.project, results)
+        else:
+            base_results = self.project.results
+        self.results =os.path.abspath(f'{base_results}/MSM')
+        self.stored=os.path.abspath(f'{self.results}/MSM_storage')
+        tools.Functions.fileHandler([self.results, self.stored])
+        print('Results will be stored under: ', self.results)
+        print('PyEMMA calculations will be stored under: ', self.stored)
         
         #self.def_top = def_top
         #self.def_traj = def_traj
@@ -144,21 +136,17 @@ class MSM:
         
 
     
-    def execute_or_load(func):
+    def loader(func):
         """Decorator for object calculation of loading"""
         
         @wraps(func)
-        def execute_or_load(self, *args, **kwargs):
-
+        def loader(self, *args, **kwargs):
+            #print(f'Executing {func.__name__}', end='\r')
+            
             if not os.path.exists(self.file_name) or self.overwrite:
-                print(f'Executing {func.__name__}', end='\r')
                 try:
                     out = func(self, *args, **kwargs)
-                    
-                    if isinstance(out, tuple):
-                        out[0].save(self.file_name, overwrite=True)
-                    else:
-                        out.save(self.file_name, overwrite=True)
+                    out.save(self.file_name, overwrite=True)
                 except Exception as v:
                     print(v.__class__, v)
                     out=None
@@ -167,1012 +155,204 @@ class MSM:
                 #print(f'Loading data : {file_name}')
                 out=pyemma.load(self.file_name)
             
-            setattr(self, func.__name__, out)
             return out
-        return execute_or_load
+        return loader
 
     
-    #def plot_flux_lite(self, )
-
-
-
     def set_specs_lite(self, inputs):
         """Decorator for setting attributes"""
 
 
-        (method, mol, idx, it, lag, disc_traj) = inputs
-        self.method = method
-        
-                
+        (project_type, mol, idx, it, lag) = inputs
+
+# =============================================================================
+#         for attr in inputs:
+#             print(attr)
+#             
+#             if attr == 'lag':
+#                 setattr(self, attr, self.lags[self.project_type][self.mol][self.idx])
+#             else:
+#                 setattr(self, attr, attr)
+# =============================================================================
+        self.data = self.input_df.loc[self.start:self.stop:self.msm_stride, (self.project.protein[0], mol)]        
+        self.project_type = project_type
         self.mol = mol
-        self.systems = self.project.systems
         self.it = it
         self.idx = idx
         self.lag = lag
-        if self.timestep is None:
-            self.timestep= self.project.timestep
-        self.unit=self.timestep.unit.get_symbol()
-        if self.results_path != None:
-            base_results = tools.Functions.pathHandler(self.project, self.results_path)
-        else:
-            base_results = self.project.results
-        self.results =os.path.abspath(f'{base_results}/MSM')
-        self.stored=os.path.abspath(f'{self.results}/MSM_storage')
-        tools.Functions.fileHandler([self.results, self.stored])
-        self.dt_scalar = int(str(self.timestep*(self.stride)).split(' ')[0])
         self._lag = str(lag*self.timestep).replace(" ", "")
-        
-        if method == 'MFPT':
-            ext  = 'csv'
-        else:
-            ext = 'npy'
-        
-        if method == 'iTS':
-            self.file_name = f'{self.stored}/{self.method}_{self.project_type}_{mol}_{it}_b{self.start}_e{self.stop}_s{self.msm_stride}.{ext}' 
-        else:
-            
-            self.file_name = f'{self.stored}/{self.method}_{self.project_type}_{mol}_{it}_@{self._lag}_b{self.start}_e{self.stop}_s{self.msm_stride}.{ext}'
-        self.name = f'{it} @{self._lag} ({self.start}:{self.stop}:{self.msm_stride})'
-        self.disc_trajs = disc_traj 
+        self.file_name = f'{self.stored}/{self.method}_{project_type}_{mol}_{it}_@{self._lag}_b{self.start}_e{self.stop}_s{self.msm_stride}.npy'
         
 
+    @loader
+    def bayesMSM_lite(self):
+        
+        
+        disc_trajs = self.data.loc[:, self.it].values.T.astype(int).tolist()
+        return pyemma.msm.bayesian_markov_model(disc_trajs, lag=self.lag, dt_traj=str(self.timestep), conf=0.95)
 
-
-
-
-    
-    
-    def run(self, measurements):
-
-        data = collections.defaultdict(dict)
-
-        for m in measurements:
-            print(f'Processing :  {m[:-1]} \n', end='\r')
-            
-            for method in self.methods:
-                self.method = method
-                self.set_specs_lite([method] + m)
-                try:
-                    func = self.method_functions[method]
-                except KeyError:
-                    raise ValueError('Method not defined: ', method)
-                out = func()
-                data[method][self.name] = out
+    @loader
+    def CKTest_lite(self):
         
-        return data
-
-
-
-    def lite(self, 
-             supra_project, 
-             lags, 
-             input_data=None,
-             extra_input_data = {},
-             regions={}, 
-             states={}, 
-             extra_states={}, 
-             plot_figure=False, 
-             plot_its = True,
-             plot_cktest = True,
-             methods=['bayesMSM'],
-             paths_to_plot=-1,
-             water_mode='combinatorial',
-             macrostates=0):
+        cktest = self.msm.active_set
         
-        self.msm_stride = 1
-        self.lags= lags
-        self.extra_input_data = extra_input_data
-        self.water_mode= water_mode
-        self.macrostates = macrostates
-        self.methods = methods
-        self.method_functions = {'bayesMSM' : self.bayesMSM,
-                                 'bayesHMSM' : self.bayesHMSM,
-                                 'iTS' : self.iTS,
-                                 'CKTest' : self.CKTest,
-                                 'flux' : self.TPT,
-                                 'MFPT' : self.MFPT}
-
-        
-        
-        for project_type, projects in self.supra_project.items():
-            
-            out = {}
-            self.project_type = project_type
-            self.projects = projects
-            
-            print(project_type, projects, water_mode)
-            if project_type == 'inhibition':
-                continue
-            else:
-                if water_mode == 'combinatorial' or project_type != 'water':
-                    print('comb water')
-                    self.regions = regions[project_type]
-                    self.states = states[project_type][0]
-                    self.remap_states = states[project_type][1]
-                    
-        
-                    #self.input_df = input_data[project_type]
-                    input_df = input_data[project_type]
-                    self.start=input_df.index.values[0]
-                    self.stop=input_df.index.values[-1]
-        
-                    for mol, project in projects.items():
-                        self.project = project
-                        
-                    
-                        
-                        if project_type == 'normal':
-                            mols = [mol]
-                        elif project_type == 'inhibition':
-    
-                            if mol == 'BeOH':
-                                mols = [mol, 'BeAc'] 
-                            elif mol == 'BuOH':
-                                mols = [mol, 'ViAc']
-                            continue
-                        else:
-                            mols = input_df.columns.get_level_values('l2').unique()
-                        for _mol in mols:
-                            print(_mol, project_type, self.states)
-                            measurements = []
-                            data = input_df.loc[self.start:self.stop:self.msm_stride, (self.project.protein[0], _mol)]
-                            its = data.columns.get_level_values('l3').unique()
-                            if project_type == 'water' and _mol != 'H2O':
-                                its = its[:-1]
-                            for idx, it in enumerate(its):
-                                lag = lags[project_type][_mol][idx]
-                                disc_traj = data.loc[:, it].values.T.astype(int).tolist()
-                                measurements.append([_mol, idx, it, lag, disc_traj])
-                            out[_mol] = self.run(measurements)
-                
-                elif water_mode != 'combinatorial' or project_type == 'water':  
-                    self.regions = regions[f'water_double']
-                    print('other water')
-                    self.project = projects['H2O']
-                    self.states = extra_states
-                    self.remap_states = extra_states #tools.Functions.state_remaper(extra_states)[1]
-                    
-                    input_df = extra_input_data
-                    mols = input_df.columns.get_level_values('l2').unique()
-                    
-                    print('here', mols, input_df.columns.get_level_values('l3').unique())
-                    #mols = list(extra_input_data.keys())
-
-                    self.start = input_df.index.values[0]
-                    self.stop = input_df.index.values[-1]
-                    
-                    for _mol in mols:       
-                        
-                        data = input_df.iloc[self.start:self.stop:self.msm_stride, input_df.columns.get_level_values('l2') == _mol]
-                        its = data.columns.get_level_values('l3').unique() #[:-1]
-                        #its = list(data.keys())[:-1]
-                        measurements = []
-                        for idx, it in enumerate(its):
-                            lag = lags[project_type][_mol][idx]
-
-                            _data = data.iloc[:, data.columns.get_level_values('l2') == mol]
-                            its = _data.columns.get_level_values('l3')
-                            print(it, its)
-                            disc_traj = _data.iloc[:, _data.columns.get_level_values('l3') == it].values.T.astype(int).tolist() #data[it]
-    
-                            measurements.append([_mol, idx, it, lag, disc_traj])
-                        out[_mol] = self.run(measurements)
-    
-                        
-                        
-      
-                if plot_figure: 
-                    self.plot_kinetics(out, paths_to_plot=paths_to_plot)
-                        
-                if plot_its:
-                    
-                    self.plot_implied_timescales(out)
-            
-        return out
-    
-    
-    def plot_kinetics(self, input_data_mols, paths_to_plot=-1):
-        
-        states = self.states
-        
-        
-        
-        
-        
-        fig =  plt.figure(figsize=(9,9), constrained_layout=True)
-        
-        
-
-        
-        outer_grid = gridspec.GridSpec(2, 2, width_ratios=[2,3], height_ratios=[1,3])
-        flux_grid = gridspec.GridSpecFromSubplotSpec(1,1, subplot_spec = outer_grid[0,1])
-        pathway_grid = gridspec.GridSpecFromSubplotSpec(len(input_data_mols), 3, subplot_spec = outer_grid[1,1], width_ratios=[1,6,1], hspace=0.3)
-        mfpt_grid = gridspec.GridSpecFromSubplotSpec(len(input_data_mols), 1, subplot_spec = outer_grid[1,0], hspace=0.3)
-        
-        
-
-        mol_labels, labels_all = self.defineSubsetLabels(input_data_mols)
-        
-        for idx_mol, (mol, input_data) in enumerate(input_data_mols.items()):
-            print(idx_mol, mol)
-            axes = {'source' : plt.subplot(pathway_grid[idx_mol,0]), 
-                    'sink' : plt.subplot(pathway_grid[idx_mol,2]), 
-                    'intermediate' : plt.subplot(pathway_grid[idx_mol,1])}
-
-            
-            if idx_mol == 0:
-                axes_mfpt = plt.subplot(mfpt_grid[idx_mol, 0])
-            else:
-                axes_mfpt = plt.subplot(mfpt_grid[idx_mol, 0], sharex=axes_mfpt)
-            
-            axes_flux = plt.subplot(flux_grid[0])    
-            
-            
-            labels = mol_labels[mol]
-            fluxes = []
-            
-            
-            if self.water_mode != 'combinatorial':
-                its = [d.split('@')[0] for d in input_data['bayesMSM'].keys()] #self.supra_project['normal'][mol].parameter
-            else:
-                if mol == 'H2O':
-                    its = self.supra_project[self.project_type][mol].parameter
-                else:
-                    its = [d.split('@')[0] for d in input_data['bayesMSM'].keys()] #input_data['bayesMSM'].keys() #self.supra_project['normal'][mol].parameter 
-            print(its)
-            
-            #print(self.supra_project['normal'][mol].parameter, self.supra_project[self.project_type][mol].parameter)
-            
-            data_elements = (input_data['flux'].items(), input_data['bayesMSM'].values(), input_data['MFPT'].values())
-            for idx, ((name, data), model, mfpt) in enumerate(zip(*data_elements)):
-                print(idx, name)
-
-                
-                
-                
-                statdist = model.stationary_distribution
-                _states_model = model.active_set
-                _state_labels = [states[s] for s in _states_model]
-                
-                
-                if self.project_type != 'inhibition':
-                    color = MSM.plot_specs[self.project_type][mol][idx]
-                    _edgecolor = color
-            
-                    #color_mol = plot_specs['normal'][mol_w][1] 
-                    #color_mol = np.vstack([color_mol, pl.cm.Oranges(np.linspace(0.5,0.5,1))])
-            
-                else:
-                    if mol != ('water') and idx == 0:
-                        break
-                    elif mol != ('water') and idx != 0:                        
-                        color =  'red' #'white'
-                        _edgecolor = 'red' #MSM.plot_specs[self.project_type][self.mol]
-                    else:
-                        #break
-                        color = MSM.plot_specs[self.project_type][mol]
-                        _edgecolor = color
-                
-                
-                self.plot_mfpt(idx_mol, mol, mfpt, idx, color, _state_labels, axes_mfpt)
-                #axes_mfpt.set_xlim(1e3, 5e13)
-                #axes_mfpt.set_ylim(0, axes_mfpt.get_ylim()[1]+0.2)
-                
-                
-                (flux_df, committor_df, pathway_df) = data
-                
-                try:
-                    fluxes.append(flux_df.loc[:, 'net flux'].values[0])
-                except AttributeError:
-                    fluxes.append(np.nan)
-                    
-                self.plot_pathways(idx_mol, data, labels, statdist, paths_to_plot, fig, axes, color, _edgecolor)
-            
-            
-# =============================================================================
-#             if self.project_type == 'water':
-#                 it_scalars = [float(str(it).split('mM')[0]) for it in its_to_plot[:-1]]
-#                 _it_scalar_inhib = float(str(its_to_plot[-1]).split('mM')[0])
-#                 fluxes = fluxes[:-1]
-#                 _flux_inhib = fluxes[-1]
-#                 print(it_scalars)
-#                 
-#                 axes_flux.scatter(_it_scalar_inhib, _flux_inhib, color='darkorange')
-# =============================================================================
-            for i,j in zip(its, fluxes):
-                print(j)
-            print(its)
-            if its[0] == '55.56M':
-                its[0] = '0mM'
-            
-            #plot flux
-            it_scalars = [float(str(it).split('mM')[0]) for it in its]
-            
-            if self.water_mode == 'combinatorial' and self.project_type == 'water':
-                color_plot = MSM.plot_specs[self.project_type][mol][0]
-            else:
-                color_plot = MSM.plot_specs['normal'][mol][-2]
-            axes_flux.plot(it_scalars, fluxes, 'o-', color=color_plot, label=mol)
-            
-            formatter = ticker.ScalarFormatter(useMathText=True)
-            formatter.set_scientific(True) 
-            formatter.set_powerlimits((-1,1)) 
-            axes_flux.yaxis.set_major_formatter(formatter) 
-            axes_flux.yaxis.set_minor_locator(AutoMinorLocator())
-            axes_flux.xaxis.set_minor_locator(AutoMinorLocator())
-            axes_flux.set_xlabel('concentration (mM)')
-            axes_flux.set_ylabel(r'Net flux ($s^{-1}$)')
-            axes_flux.legend()
-            
-            for name, ax in axes.items():
-                #ax.set_title(name)
-                #if name != 'intermediate':
-                ax.set_ylim(ax.get_ylim()[0]-1, ax.get_ylim()[1]+1)
-                for key, spine in ax.spines.items():
-                    spine.set_visible(False)
-
-        fig.tight_layout()
-        fig.show()
-        
-        fig.savefig(f'{self.project.results}/figures/kinetics_{self.project_type}.png', dpi=600, bbox_inches='tight')
-        
-        
-
-    def plot_implied_timescales(self, input_data_mols):
-        
-        for mol, data in input_data_mols.items():
-            
-            
-            models = data['iTS']
-            for model, its in models.items():
-                print(mol, model, its)
-            #data[method][self.name]
-                its_plot=pyemma.plots.plot_implied_timescales(its, units=self.unit, dt=self.dt_scalar)
-            
-                #plt.savefig()
-                plt.show()
-    
-    @staticmethod
-    def draw_connect(path_fraction, labels, coords, fig, axes, color, line):
-
-        (s1, x1, y1, s2, x2, y2) = coords
-        width = 4-(3-3*path_fraction/100) # 1+ 4*path_fraction
-        draw = False
-        if s1 in labels['source']: 
-        
-            xyA = (x1,y1)
-            xyB = (x2, y2)
-            coordA = axes['source'].transData
-            coordB = axes['intermediate'].transData
-            axA = axes['source']
-            axB = axes['intermediate']
-            draw = True
-
-        elif s2 in labels['sink']:
-             
-            xyA = (x1, y1)
-            xyB = (x2, y2)
-            coordA = axes['intermediate'].transData
-            coordB = axes['sink'].transData
-            axA = axes['intermediate']
-            axB = axes['sink']
-            draw = True
-        else:
-            axes['intermediate'].plot((x1,x2), 
-                                      (y1,y2), 
-                                      color=color, 
-                                      linestyle=line, 
-                                      linewidth=width,zorder=1)#  2*path_fraction[0]/100)
-            
-        if draw:
-            con = ConnectionPatch(xyA=xyA, 
-                                  xyB=xyB, 
-                                  coordsA=coordA, 
-                                  coordsB=coordB,
-                                  axesA=axA, 
-                                  axesB=axB, 
-                                  color=color, 
-                                  linewidth=width, 
-                                  linestyle=line,zorder=1)
-            fig.add_artist(con)
-    
-    
-    def plot_pathways(self, idx_mol, data, labels, statdist, paths_to_plot, fig, axes, color, _edgecolor):
-                
-        (_, committor_df, pathway_df) = data
-        
-        if not isinstance(committor_df, list):
-
-        
-            
-            comm_data = committor_df.loc[:,'Forward']
-            data_points = []
-            for idx_q, (l, x) in enumerate(zip(comm_data.index.get_level_values(-1).values, comm_data.values)):
-                
-                if x == 1.0:
-                    state_set = 'sink'
-                elif x == 0.0:
-                    state_set = 'source'
-                else:
-                    state_set = 'intermediate'
-                y = labels[state_set].index(l) #np.where(labels[state_set] == l)
-                z = 25 + 400*(statdist[idx_q])
-            
-                _plot = False
-                for path in pathway_df.index.get_level_values('pathway').values[:paths_to_plot]:
-                    path_states = path.split(MSM.pathway_connect_symbol)    
-                    if l in path_states:
-                        _plot= True
-            
-                if _plot:
-                    axes[state_set].scatter(x, y, s= z, facecolors=color, edgecolors=_edgecolor) #, alpha=0.8)
-                    data_points.append((l,x,y))
-            data_points = np.asarray(data_points)
-
-            if idx_mol == len(self.projects) - 1: 
-                axes['intermediate'].set_xlabel('Forward committor probability')
-            elif idx_mol == 0:
-                for name, ax in axes.items():
-                    ax.set_title(name)
-            
-            #axes['intermediate'].axvline(0.5, color='black', linestyle='dashed')
-            axes['source'].axvline(0, color='black', linestyle='dashed')
-            axes['sink'].axvline(1, color='black', linestyle='dashed')
-            axes['sink'].get_xaxis().set_visible(False) 
-            axes['source'].get_xaxis().set_visible(False)
-            axes['intermediate'].set_xlim(-0.1,1.1)
-            axes['source'].set_xlim(-0.5, 0.5)
-            axes['sink'].set_xlim(0.5, 1.5)
-            axes['intermediate'].set_xticks(np.arange(0,1.2,0.2))
-            
-
-            _label_box = axes['intermediate'].yaxis.get_ticklabels()
-            [l.set_bbox(dict(facecolor='grey', edgecolor='none')) for l in _label_box]
-            
-            
-            
-            #axes['intermediate'].set_xscale('logit')
-            #axes['source'].set_ylim(-1, 2)
-            #axes['intermediate'].set_ylim(-1,3)
-            #axes['intermediate'].set_ylim(-1,3)
-        
-            for idx_path, (pathway, path_fraction) in enumerate(zip(pathway_df.index.get_level_values('pathway').values[:paths_to_plot], 
-                                                                    pathway_df.values[:paths_to_plot])):
-                
-                if np.argmax(pathway_df.values[:paths_to_plot]) == idx_path:
-                    line = 'solid'
-                else:
-                    line = 'dashed' #loosely dashed (0, (5, 10))
-                
-                
-                path_states = pathway.split(MSM.pathway_connect_symbol)
-                for s1, s2 in zip(path_states, path_states[1:]):
-                    
-                    index1, index2 = np.where(data_points[:,0] == s1)[0][0],  np.where(data_points[:,0] == s2)[0][0]
-                    x1, x2 = float(data_points[index1, 1]), float(data_points[index2,1])
-                    y1, y2 = float(data_points[index1, 2]), float(data_points[index2,2])
-                    
-                    coords = (s1, x1, y1, s2, x2, y2)
-                    self.draw_connect(path_fraction, labels, coords, fig, axes, color, line)
-
-            for subset in axes.keys():
-                axes[subset].set_yticks(range(len(labels[subset])))
-                axes[subset].set_yticklabels(labels[subset], ha='center', va='center')
-                axes[subset].tick_params(axis='y', width=0)
-                axes[subset].set_axisbelow(False)
-                if subset == 'sink':
-                    pad = -40
-                elif subset == 'intermediate':
-                    pad = -40
-                else:
-                    pad = 10
-                axes[subset].tick_params(axis='y', pad=pad) 
-                #if subset != 'source':
-                axes[subset].spines['left'].set_position('center')
-
-    
-    
-    def plot_mfpt(self, idx_mol, mol, mfpt, idx, color, _state_labels, axes_mfpt):
-        
-
-        
-        mfpt_array = mfpt.values / 1e12
-        mfpt_max = np.max(mfpt_array[mfpt_array > 0])
-        mfpt_min = np.min(mfpt_array[mfpt_array > 0])
-        _ind_max = np.unravel_index(np.argmax(mfpt_array, axis=None), mfpt_array.shape)
-        ind_min = tuple([l[0] for l in np.where(mfpt_array == mfpt_min)])
-        ind_max = tuple((_ind_max)) #reversed
-        
-
-        label_max = ' -> '.join([_state_labels[i] for i in ind_max])
-        label_min = ' -> '.join([_state_labels[i] for i in ind_min])
-
-        print(f'{mol} {idx_mol} {np.shape(mfpt_array)}, min {mfpt_min}, max {mfpt_max}')
-        
-        axes_mfpt.scatter(mfpt_min, idx, s=50, color=color, facecolor='none')
-        axes_mfpt.scatter(mfpt_max, idx, s=50, color=color, facecolor='none')
-        
-        lag = self.lags[self.project_type][mol][idx]*self.timestep._value / 1e12
-        axes_mfpt.scatter(lag, idx, s=100, marker='|', color='red')
-        for x in mfpt_array.flat:
-            axes_mfpt.scatter(x, idx, s=10, color=color)
-        axes_mfpt.annotate(label_max, xy=(mfpt_max, idx+0.1))
-        axes_mfpt.annotate(label_min, xy= (mfpt_min, idx+0.1))
-        axes_mfpt.set_ylabel(mol)
-        axes_mfpt.spines['top'].set_visible(False)
-        axes_mfpt.spines['right'].set_visible(False)
-        #axes_mfpt.set_xlim(-0.05, 1.05)
-        axes_mfpt.set_xscale('log')
-        if self.water_mode != 'combinatorial':
-            all_its = self.supra_project['normal'][mol].parameter
-        else:
-            if mol == 'H2O':
-                all_its = self.supra_project[self.project_type][mol].parameter
-            else:
-                all_its = self.supra_project['normal'][mol].parameter
-        axes_mfpt.set_yticks(range(len(all_its)))
-        axes_mfpt.set_yticklabels(all_its)
-        
-        if idx_mol == len(self.projects) - 1: 
-            axes_mfpt.set_xlabel('MFPT (s)')
-
-
-    
-    #@get_model
-    def TPT(self, 
-            macrostate=None, 
-            mode='by_region',
-            between=([], [])):
-        """
-        Function to calculate flux of model. A and B need to provided.
-
-        Parameters
-        ----------
-        name : TYPE
-            DESCRIPTION.
-        data_tuple : TYPE
-            DESCRIPTION.
-        macrostate : TYPE, optional
-            DESCRIPTION. The default is None.
-        between : TYPE, optional
-            DESCRIPTION. The default is ([], []).
-        top_pathways : TYPE, optional
-            DESCRIPTION. The default is -1.
-
-        Returns
-        -------
-        None.
-
-        """
-
-        msm = self.bayesMSM
-        n_state = len(msm.active_set)
-        
-        #colors = MSM.plot_specs['normal'][self.mol]
-
-        
-        lag_ =str(self.lag*self.timestep).replace(" ", "")
-        if mode == 'by_region':
-            between = self.regions
-        
-        #if self.mol == 'BeAc' or (self.mol == 'ViAc' and self.project_type == 'inhibition'):
-   
-        (A, B, I) = self.get_source_sink(between, msm, mode, macrostate)
-        A_index = list(A.keys())
-        B_index = list(B.keys())
-        
-        
-        label_names = []
-        
-        
-        label_A = [a[0] for a in A.values()]
-        label_B = [b[0] for b in B.values()]
-        label_I = [i[0] for i in I.values()]
-        
-        
-        
-        
-        label_names = label_A + label_I + label_B
-        
-        if self.project_type == 'water':
-            #print(self.states)
-            #print(label_names)
-            label_names = [self.states[s] for s in msm.active_set]
-        
-
-        
-        
-        if len(A_index) and len(B_index):
-        
-            if macrostate != None:
-                flux_ =pyemma.msm.tpt(msm, A_index, B_index)
-                cg, flux = flux_.coarse_grain(msm.metastable_sets)
-            else:
-                flux=pyemma.msm.tpt(msm, A_index, B_index)
-
-    
-            _outA , _outB = "-".join(map(str,label_A)), "-".join(map(str,label_B))
-            flux_name = f'{self.name}_source{_outA}_sink{_outB}'
-    # =============================================================================
-    #         if self.make_tpt_movie:
-    #             file_name = f'{flux_name}_movie'
-    #             tpt_samples = msm.sample_by_distributions(msm.metastable_distributions, MSM.movie_samples)
-    #             print('\tGenerating TPT trajectory ')
-    #             self.save_samples(file_name, tpt_samples)
-    # =============================================================================  
-            base_index = [[self.project_type], [self.mol], [self.it], [f'{n_state}@{lag_}']]
-            base_names = ['project_type', 'mol', 'iterable', 'model']
-
-            comm_index = base_index + [label_names]
-            comm_names = base_names + ['states']
-    
-            #Calculate commmittors
-            index_row_comm= pd.MultiIndex.from_product(comm_index, names= comm_names)
-            f_committor=flux.forward_committor
-            b_committor=flux.backward_committor            
-            committor_df=pd.DataFrame(zip(f_committor, b_committor), index=index_row_comm, columns=['Forward', 'Backward'])
-    
-            #Calculate fluxes
-            index_row= pd.MultiIndex.from_product(base_index, names=base_names)
-            net_flux = flux.net_flux
-            net_flux_s = in_units_of(net_flux, f'second/{self.timestep.unit.get_name()}', 'second/second')
-            rate_s = in_units_of(flux.rate, f'second/{self.timestep.unit.get_name()}', 'second/second')
-            major_flux = flux.major_flux()
-            gross_flux = flux.gross_flux
-            total_flux = flux.total_flux
-            if (net_flux.all() != major_flux.all() != gross_flux.all() != total_flux.all()):
-                print('\tWarning! fluxes are not the same')
-            unit = r'$s^{-1}$'
-            report_flux = "{:.1e} {}".format(net_flux_s.sum(), unit)
-            report_rate = "{:.1e} {}".format(rate_s, unit)
-    
-            
-            #In units of gets the conversion of timestep to second
-            flux_df=pd.DataFrame(columns=['net flux', 'rate'], index=index_row)
-            flux_df.loc[:, 'net flux'] = net_flux_s.sum(1).sum()
-            flux_df.loc[:, 'rate'] = rate_s
-            
-    
-            
-            #Calculate the pathways	
-            paths, path_fluxes = flux.pathways(fraction=MSM.pathway_fraction)
-            path_labels=[[] for _ in paths]
-            for idx, path in enumerate(paths):
-                for p in path:
-                    path_labels[idx-1].append(label_names[p])
-            path_labels=[MSM.pathway_connect_symbol.join(k) for k in path_labels] #
-            
-            path_index = base_index + [path_labels]
-            path_name = base_names + ['pathway']
-            index_col_path = pd.MultiIndex.from_product(path_index, names=path_name)
-            #path_fluxes_s = in_units_of(path_fluxes, f'second/{self.timestep.unit.get_name()}', 'second/second')
-            pathway_df=pd.DataFrame((path_fluxes/np.sum(path_fluxes))*100, index=index_col_path, columns=['% Total'])
-    
-    # =============================================================================
-    #             if scheme == 'combinatorial':    
-    #                 label_names=Functions.sampledStateLabels(regions, sampled_states=states, labels=labels)
-    # =============================================================================               
-            #return 
-            return flux_df, committor_df, pathway_df
-        else:
-            print(f'Model {self.name} does not sample required states\n\t{self.states}\n\tsource: {A}\n\tsink: {B}')
-            return [],[],[]
-
-    #@get_model
-    #@execute_or_load
-    def MFPT(self, macrostates=None, hmsm_lag=False):
-        
-        
-        
-        
-        def mfpt_states():
-            
-            
-            #states = range(1, n_state+1)
-            index_row=pd.MultiIndex.from_product([[s for s in state_labels]], names=['source'])
-            #index_col=pd.MultiIndex.from_product([['mean', 'stdev'], [s for s in state_labels], ], names=['values', 'sink'])
-            index_col=pd.Index(state_labels, name='sink')
-            if not os.path.exists(self.file_name) or self.overwrite:
-                print('calculating MFPT :', self.name)
-                mfpt=pd.DataFrame(index=index_row, columns=index_col)
-                #print('\tCalculating MFPT matrix...')
-    
-                mfpt_array = np.empty((len(state_labels), len(state_labels)))
-                
-                #mfpt_array = np.vectorize(lambda x : msm.sample_mean('mfpt'))
-                
-                for i, s in enumerate(state_labels):
-                    for j, s2 in enumerate(state_labels):
-                        mfpt.loc[s, s2]= msm.sample_mean("mfpt", i,j)
-                        mfpt_array[i, j] = msm.sample_mean("mfpt", i,j)
-                        #mfpt.loc[s, ('stdev', s2)]= msm.sample_std("mfpt", i-1,j-1)
-                        #print(f'\t\ttransition: {i} {s} -> {j}  {s2}', end = '\r')
-                
-                
-                #mfpt.replace(np.nan, 0, inplace=True)
-                _ind_max = np.unravel_index(np.nanargmax(mfpt_array, axis=None), mfpt_array.shape)
-                ind_min = np.unravel_index(np.nanargmin(np.nonzero(mfpt_array), axis=None), mfpt_array.shape)
-    
-                ind_max = tuple(reversed(_ind_max))
-    
-                label_min = [state_labels[i] for i in ind_max]
-                label_max = [state_labels[i] for i in ind_min]
-                
-
-                mfpt.to_csv(self.file_name)
-                #mfpt.dropna(how='all', inplace=True)
-                #mfpt.dropna(how='all', axis=1, inplace=True)
-                #reload again otherwise cannot be processed pcolormesh.
-            else:
-                #print('loading :', self.file_name)
-                mfpt = pd.read_csv(self.file_name, index_col = 0) 
-            
-            means = mfpt #.iloc[: mfpt.columns.get_level_values(0) == 'mean']
-            #means = MSM.mfpt_filter(mfpt, 0)
-
-
-            
-# =============================================================================
-#             cmap_plot=plt.cm.get_cmap("Greys")
-#             fig, axes = plt.subplots(1,1, figsize=(8,6), constrained_layout=True)
-#             matrix = axes.pcolormesh(mfpt_array,
-#                                 cmap=cmap_plot,
-#                                 shading='auto', 
-#                                 norm=ml_colors.LogNorm(vmin = self.lag, vmax = means.max().max()))  
-#             rect_min = patches.Rectangle(ind_min, 1, 1, linewidth=1, edgecolor='green', facecolor='none')
-#             rect_max = patches.Rectangle(ind_max, 1, 1, linewidth=1, edgecolor='red', facecolor='none')
-#             axes.add_patch(rect_min)
-#             axes.add_patch(rect_max)
-#             # shading='auto',means[means > 0].min().min() vmin=self.lag,vmax=means.max().max()) #,
-#             colorbar = plt.colorbar(matrix, orientation='vertical')
-#             colorbar.set_label(label=f'MFPT ({self.unit})', size='large')
-#             colorbar.ax.tick_params(labelsize=14)
-#             axes.set_title(f'MFPT {self.name}')
-#             axes.set_xticks(range(n_state))
-#             axes.set_yticks(range(n_state))
-#             axes.set_xticklabels(state_labels)
-#             axes.set_yticklabels(state_labels)
-#             cmap_plot.set_bad(color='white')
-#             axes.set_xlabel('From state')
-#             axes.set_ylabel('To state')
-#             cmap_plot.set_under(color='black')
-#             cmap_plot.set_bad(color='white')
-#             cmap_plot.set_over(color='grey')
-#             #plt.tight_layout()
-#             plt.show()
-#             fig.savefig(self.file_name}.png', dpi=600, bbox_inches="tight")
-# =============================================================================
-
-    
-            return mfpt    
-        
-        
-        def mfpt_cg_states():
-            macrostates= range(1, macrostate+1)
-            file_name_cg = f'{file_name}_{macrostate}macrostates'
-            mfpt = np.zeros((macrostate, macrostate))
-            if self.CG == 'HMSM':
-                hmsm = self.HMSM(msm, [macrostate], hmsm_lag, plot=False)
-                print('Coarse-graining with Hidden MSM')
-                print(hmsm)
-                for i in macrostates:
-                    for j in macrostates:
-                        print(f'Transition MS: {i} -> {j}', end='\r')
-                        try:
-                            mfpt[i-1, j-1] = hmsm.mfpt([i-1], [j-1])
-                        except:
-                            pass
-            else:
-                msm.pcca(macrostate)
-                print('Coarse-graining with PCCA')
-                for i in macrostates:
-                    for j in macrostates:
-                        print(f'Transition MS: {i} -> {j}', end='\r')
-                        mfpt[i-1, j-1] = msm.mfpt(msm.metastable_sets[i-1], msm.metastable_sets[j-1])
-                            
-                    
-            print('\n')
-            cmap_plot=plt.cm.get_cmap("gist_rainbow")
-            fig, axes = plt.subplots(1,1, figsize=(8,6), constrained_layout=True)
-            try:
-                matrix = axes.pcolormesh(mfpt, 
-                                         cmap=cmap_plot, 
-                                         shading='auto',
-                                         norm=ml_colors.LogNorm(vmin = self.lag, vmax=mfpt.max().max()),
-                                         vmin=self.lag,
-                                         vmax=mfpt.max().max())
-                                         #vmin=mfpt_all[mfpt_all > 0].min().min(),
-                                         #vmax=mfpt_all.max().max(),
-                                         #norm=ml_colors.LogNorm(vmin = mfpt_all[mfpt_all > 0].min().min(), vmax = mfpt_all.max().max())) 
-                colorbar = plt.colorbar(matrix, orientation='vertical')
-                colorbar.set_label(label=f'MFPT ({self.unit})', size='large')
-                colorbar.ax.tick_params(labelsize=14)
-                axes.set_title(f'MFPT {self.full_name} -> {macrostate} macrostates')
-                axes.set_xticks(macrostates)
-                axes.set_yticks(macrostates)
-                cmap_plot.set_bad(color='white')
-                axes.set_xlabel('From macrostate')
-                axes.set_ylabel('To macrostate')
-                cmap_plot.set_under(color='black')
-                cmap_plot.set_bad(color='white')
-                cmap_plot.set_over(color='grey')
-                #plt.tight_layout()
-                plt.show()
-                fig.suptitle(f'{self.method}')
-                fig.savefig(f'{self.results}/{file_name_cg}.png', dpi=600, bbox_inches="tight")
-            
-            except ValueError as v:
-                print(v)
-            #pyemma.plots.plot_network(inverse_mfpt, arrow_label_format=f'%f. {self.unit}', arrow_labels=mfpt, size=12) 
-            
-            
-            return mfpt
-        
-        msm = self.bayesMSM
-        states = msm.active_set
-        state_labels = [self.states[s] for s in states]
-        n_state = len(msm.active_set)
-
-        mfpt = mfpt_states()
-        if macrostates != None:
-            for macrostate in macrostates:
-                mfpt_cg_states()
-
-        return mfpt
-
-
-    @execute_or_load
-    def iTS(self):
-        its = pyemma.msm.its(self.disc_trajs, lags=MSM.ITS_lags, errors='bayes')
-        
-        
-        self.its = its
-        return its
-
-
-
-    @execute_or_load
-    def bayesMSM(self):
-        
-        msm = pyemma.msm.bayesian_markov_model(self.disc_trajs, lag=self.lag, dt_traj=str(self.timestep), conf=0.95)
-        
-        
-        self.msm = msm
-        return msm
-
-    @execute_or_load
-    def CKTest(self):
-        try:
-            msm = self.msm
-        except AttributeError as v:
-            print(f'Warning! {v} for {self.name}')
-            msm = self.bayesMSM()
-        
-        cktest = msm.cktest(len(msm.active_set))
+        dt_scalar=int(str(self.timestep).split(' ')[0])
         ck_plot, axes=pyemma.plots.plot_cktest(cktest, 
-                                                dt=self.dt_scalar, 
+                                                dt=dt_scalar, 
                                                 layout='wide', 
                                                 marker='.',  
                                                 y01=True, 
                                                 units=self.unit) 
         
-        
-        
         return cktest
 
-
-    @execute_or_load
-    def bayesHMSM(self):
+ 
+    def lite(self, mol, lags, project_type=None, input_df=None, methods=['bayesMSM']):
         
-        hmsm = pyemma.msm.bayesian_hidden_markov_model(self.disc_trajs, nstates=self.macrostates, dt_traj=str(self.timestep), conf=0.95, lag=self.lag)
-
-        print(hmsm)
+        self.msm_stride = 1
         
-        print(hmsm.cktest())
-        self.hmsm = hmsm
-        return hmsm
-
-    def defineSubsetLabels(self, input_data_mols):
-            
-            mol_labels = collections.defaultdict(dict)
-            subset_labels = {'source' : [], 'sink' : [], 'intermediate' : []}
-            
-            for mol, input_data in input_data_mols.items():
-
-                labels = {'source' : [], 'sink' : [], 'intermediate' : []}
-                for idx, model in enumerate(input_data['bayesMSM'].values()):
-                
-                    (A, B, I) = self.get_source_sink(self.regions, model, mode='by_regions')
-                    
-                    labels['source'].append([a[0] for a in A.values()])
-                    labels['sink'].append([b[0] for b in B.values()])
-                    labels['intermediate'].append([i[0] for i in I.values()])
-                
-                for subset, _labels in labels.items():
-                    labels_subset = []
-                    sampled_labels = set(list(itertools.chain(*_labels)))
-                    for state, label in self.states.items():
-                        if label in sampled_labels:
-                            labels_subset.append(label)
-                    mol_labels[mol][subset] = labels_subset
-                    for l in labels_subset:
-                        subset_labels[subset].append(l)
-            
-            
-            labels_all = {'source' : [], 'sink' : [], 'intermediate' : []}
-            for subset, label_lists in subset_labels.items():
-                labels_all[subset] = np.unique(np.asarray(label_lists))
-                
-            
-            return mol_labels, labels_all
-
-
-
-    def get_source_sink(self, between, msm, mode, macrostate=None):
-        #TODO: separate macrostate
+        self.input_df = input_df
+        self.start=input_df.index.values[0]
+        self.stop=input_df.index.values[-1]
         
-        def set_labels(X):
-            label= []
-            for idx, set_ in enumerate(sets, 1):
-                for x in X:
-                    if x in set_:
-                        label.append(f'MS {idx}')
+        start = self.start
+        stop = self.stop
+        msm_stride = self.msm_stride
 
-            return list(set(label))
         
-        _A, _B = between[0], between[1]
-        if len(_A) > 0 and len(_B) > 0:
-            pass
-        else:
-            raise ValueError("Source or sink states not defined (between =([A], [B])")
 
-        if mode == 'manual':
-            print('Warning!!!!!!!  test properly')
-            A = [a-1 for a in A]#since user starts at index 1.
-            B = [b-1 for b in B]
-        
-            #TODO: make adap for hmsm
             
-            if isinstance(macrostate, int): 
-                 msm.pcca(macrostate)
-                 sets = msm.metastable_sets
-                 _A = np.concatenate([sets[a] for a in A]) 
-                 _B = np.concatenate([sets[b] for b in B])
-                 label_names = [f'MS {i}' for i in range(1, macrostate+1)]  
+           
+
+
+
+        
+        
+
+        
+        
+        #@self.loader
+        def ITS_lite(df, mol, it):
+            
+            #pyemma.config.show_progress_bars = False
+            disc_trajs =  df.loc[:, it].values.T.astype(int).tolist()
+            
+            base_name = f'iTS_{project_type}_{mol}_{it}_b{start}_e{stop}'
+            file_name = f'{self.stored}/{base_name}.npy'
+            print(file_name + '.npy')
+            if not os.path.exists(file_name) or self.overwrite:                
+                print(f'Calculating implied TS of {file_name}')
+                its=pyemma.msm.its(disc_trajs, lags=MSM.ITS_lags, errors='bayes')
+                its.save(file_name, overwrite=self.overwrite)  
+            else:
+                print(f'Loading implied TS : {file_name}')
+                its=pyemma.load(file_name)
+     
+            
+            dt_scalar=int(str(self.timestep*(self.stride)).split(' ')[0])
+            print(self.timestep, self.stride, dt_scalar)
+            
+            its_plot=pyemma.plots.plot_implied_timescales(its, units=self.unit, dt=dt_scalar)
+            its_plot.set_title(f'{project_type} : {mol} {it} ({start}:{stop})')
+            plt.tight_layout()
+            plt.savefig(f'{self.results}/{base_name}.png', dpi=600, bbox_inches="tight")
+            plt.show()    
     
-                 
-                 not_I = list(_A)+ list(_B)
-                 I = list(set(not_I) ^ set(msm.active_set))
-                 label_A = set_labels(_A)
-                 label_B = set_labels(_B)
-                 label_I = set_labels(I)
-                 print(f'\tPerforming coarse-grained TPT from A->I->B\n\tA = {label_A}\n\tB = {label_B}\n\tI = {label_I}')
-                 label_names_reord = label_A+label_I+label_B
-                 cmap = pl.cm.Set1(np.linspace(0,1,macrostate))
-                 colors = []
-                 for reord in label_names_reord:
-                     idx = label_names.index(reord)
-                     colors.append(cmap[idx])
-                     
-                 return (_A, label_A, _B, label_B, label_names_reord)
-                
+            return its
 
-        else:
+        
+        
+        models_ITS = collections.defaultdict(dict)
+        models_msm = collections.defaultdict(dict)
+        models_cktest = collections.defaultdict(dict)
+        
+        
+        
+        method_functions = {'bayesMSM' : self.bayesMSM_lite,
+                            'CKTest' : self.CKTest_lite}
+        
+        def pipeline(measurements):
 
-            A = {idx : (self.states[a], a) for idx, a in enumerate(msm.active_set) if a in _A}
-            B= {idx : (self.states[b], b) for idx, b in enumerate(msm.active_set) if b in _B}
 
-            _I = np.setdiff1d(range(len(msm.active_set)), list(A.keys()) + list(B.keys()))
-            _I_index = [msm.active_set.tolist()[i] for i in _I]            
-            _I_label = [self.states[i] for i in _I_index]            
-            I = dict(zip(_I, zip(_I_label, _I_index)))
-            #print(f'\tPerforming  TPT from A->I->B\n\tA = {A}\n\tB = {B}\n\tI = {I}')            
+            for method in methods:
+                self.method = method
+                for m in measurements:
+                    print('Pipeline : ', m)
+                    self.set_specs_lite(m)
+                    func = method_functions[method]
+                    out = func()
+                    #print('pipeline out', out)
+
             
-            return (A,B,I)
+        measurements = []
+        if project_type == 'water':
+            _mols = input_df.columns.get_level_values('l2').unique()
+            print(_mols)
 
+            for mol_w in _mols:
+
+                data = input_df.loc[start:stop:msm_stride, (self.project.protein[0], mol_w)]
+                
+                for idx, it in enumerate(data.columns.get_level_values('l3').unique()):
+                    
+                    lag = lags[project_type][mol_w][idx]
+                    measurements.append((project_type, mol_w, idx, it, lag))
+                    
+                    
+                    #models_ITS[mol_w][it_w] = ITS_lite(mol_df, mol_w, it_w)
+# =============================================================================
+#                         model = self.bayesMSM_lite(mol_df, mol_w, lag, it)
+#                         models_msm[mol_w][it] = model
+#                         models_cktest[mol_w][it] = self.CKTest_lite(model, mol_w, it)
+# =============================================================================
+                    
+
+        elif project_type == 'inhibition':
+            _mols = data.columns.get_level_values('l2').unique()
+            print(mol, _mols)
+            
+            for mol_inhib in _mols:
+                
+                data = data.loc[start:stop:msm_stride, (self.project.protein[0], mol_inhib)]
+                for idx, it in enumerate(data.columns.get_level_values('l3').unique()):
+                    
+                    
+                    lag = lags[project_type][mol_inhib][idx]
+                    measurements.append((project_type, mol_inhib, idx, it, lag))
+                    #models_ITS[mol_inhib][it_inhib] = ITS_lite(mol_df, mol_inhib, it_inhib)    
+# =============================================================================
+#                         model = self.bayesMSM_lite(mol_df, mol_inhib, lag, it)
+#                         models_msm[mol_inhib][it] = model
+#                         models_cktest[mol_inhib][it] = self.CKTest_lite(model, mol_inhib, it)
+# =============================================================================
+                    
+        else:
+            data = input_df.loc[start:stop:msm_stride, (self.project.protein[0], mol)]
+            
+            for idx, it in enumerate(data.columns.get_level_values('l3').unique()):
+                print(mol, idx, it)
+                lag = lags[project_type][mol][idx]
+                measurements.append((project_type, mol, idx, it, lag))
+                
+# =============================================================================
+#                     
+#     
+#                     #models_ITS[mol][it] = ITS_lite(mol_df, mol, it)
+#                     model = self.bayesMSM_lite(mol_df, mol, lag, it)
+#                     models_msm[mol][it] = model
+#                     models_cktest[mol][it] = self.CKTest_lite(model, mol, it)
+# =============================================================================
+
+        
+        pipeline(measurements)
+
+        return (models_ITS, models_msm)
+        
 
 
         
+        
+    
     
     @staticmethod
     def plot_correlations(df,
@@ -2034,10 +1214,287 @@ class MSM:
 
 
 
+    @log
+    def flux_calculation(self, 
+                         msm, 
+                         macrostate=None, 
+                         between=([], [])):
+        """
+        Function to calculate flux of model. A and B need to provided.
+
+        Parameters
+        ----------
+        name : TYPE
+            DESCRIPTION.
+        data_tuple : TYPE
+            DESCRIPTION.
+        macrostate : TYPE, optional
+            DESCRIPTION. The default is None.
+        between : TYPE, optional
+            DESCRIPTION. The default is ([], []).
+        top_pathways : TYPE, optional
+            DESCRIPTION. The default is -1.
+
+        Returns
+        -------
+        None.
+
+        """
+
+        lag_ =str(self.lag*self.timestep).replace(" ", "")
+
+        A, B = between[0], between[1]
+        A = [a-1 for a in A]#since user starts at index 1.
+        B = [b-1 for b in B]
+        if len(A) > 0 and len(B) > 0:
+            pass
+        else:
+            raise("Source or sink states not defined (between =([A], [B])")
+            
+        def set_labels(X):
+            label= []
+            for idx, set_ in enumerate(sets, 1):
+                for x in X:
+                    if x in set_:
+                        label.append(f'MS {idx}')
+
+            return list(set(label))
+        
+        #TODO: make adap for hmsm
+        
+        if isinstance(macrostate, int): 
+             msm.pcca(macrostate)
+             sets = msm.metastable_sets
+             A_ = np.concatenate([sets[a] for a in A]) 
+             B_ = np.concatenate([sets[b] for b in B])
+             
+             label_names = [f'MS {i}' for i in range(1, macrostate+1)]  
+
+             
+             not_I = list(A_)+ list(B_)
+             I = list(set(not_I) ^ set(msm.active_set))
+             label_A = set_labels(A_)
+             label_B = set_labels(B_)
+             label_I = set_labels(I)
+             print(f'\tPerforming coarse-grained TPT from A->I->B\n\tA = {label_A}\n\tB = {label_B}\n\tI = {label_I}')
+             label_names_reord = label_A+label_I+label_B
+             cmap = pl.cm.Set1(np.linspace(0,1,macrostate))
+             colors = []
+             for reord in label_names_reord:
+                 idx = label_names.index(reord)
+                 colors.append(cmap[idx])
+                 
+             flux_ =pyemma.msm.tpt(msm, A_, B_)
+             cg, flux = flux_.coarse_grain(msm.metastable_sets)
+        else:
+            #Warning! test this properly
+            A_ = np.concatenate([sets[a] for a in A]) 
+            B_ = np.concatenate([sets[b] for b in B])
+            flux=pyemma.msm.tpt(msm, A_, B_)
+            label_names = [f'state {i}' for i in range(1, self.n_state+1)]
+        
+        flux_name = f'{self.results}/{self.full_name}_tpt{"-".join(map(str,between[0]))}_{"-".join(map(str,between[1]))}'
+        if self.make_tpt_movie:
+            file_name = f'{flux_name}_movie'
+            tpt_samples = msm.sample_by_distributions(msm.metastable_distributions, MSM.movie_samples)
+            print('\tGenerating TPT trajectory ')
+            self.save_samples(file_name, tpt_samples)
+                
+
+            
+        #Calculate commmittors
+        index_row_comm=pd.MultiIndex.from_product([[self.ft_name], [self.feature], [f'{self.n_state}@{lag_}'], label_names_reord], names=['name', 'feature', 'model', 'states'])
+        f_committor=flux.forward_committor
+        b_committor=flux.backward_committor
+        
+        committor_df=pd.DataFrame(zip(f_committor, b_committor), index=index_row_comm, columns=['Forward', 'Backward'])
+        
+        #Calculate fluxes
+        index_row= pd.MultiIndex.from_product([[self.ft_name], [self.feature], [f'{self.n_state}@{lag_}']], 
+                                              names=['name', 'feature', 'model'])
+        net_flux = flux.net_flux
+        net_flux_s = in_units_of(net_flux, f'second/{self.timestep.unit.get_name()}', 'second/second')
+        rate_s = in_units_of(flux.rate, f'second/{self.timestep.unit.get_name()}', 'second/second')
+        major_flux = flux.major_flux()
+        gross_flux = flux.gross_flux
+        total_flux = flux.total_flux
+        if (net_flux.all() != major_flux.all() != gross_flux.all() != total_flux.all()):
+            print('\tWarning! fluxes are not the same')
+        unit = r'$s^{-1}$'
+        report_flux = "{:.1e} {}".format(net_flux_s.sum(), unit)
+        report_rate = "{:.1e} {}".format(rate_s, unit)
+
+        
+        #In units of gets the conversion of timestep to second
+        flux_df=pd.DataFrame(columns=['net flux', 'rate'], index=index_row)
+        flux_df.loc[:, 'net flux'] = net_flux_s.sum(1).sum()
+        flux_df.loc[:, 'rate'] = rate_s
+        fig, axes = plt.subplots(1,1, figsize=(10, 8))
+        pyemma.plots.plot_flux(flux,
+                               flux_scale = in_units_of(1, f'second/{self.timestep.unit.get_name()}', 'second/second'),
+                               pos=None, 
+                               state_sizes = flux.stationary_distribution,
+                               show_committor=True,
+                               state_labels = label_names_reord,
+                               show_frame=False,
+                               state_colors = colors,
+                               arrow_curvature = 2,
+                               state_scale = 0.5,
+                               figpadding=0.1,
+                               max_height=6,
+                               max_width=8,
+                               arrow_label_format='%.1e  / s',
+                               ax=axes)
+        axes.set_title(f'Flux {self.full_name}' +
+                       f'\n{" ".join(label_A)} -> {" ".join(label_B)}' + 
+                       f'\nRate: {report_rate} Net Flux: {report_flux}', 
+                  ha='center',
+                  fontsize=12)
+        axes.axvline(0, linestyle='dashed', color='black')
+        axes.axvline(1, linestyle='dashed', color='black')
+        axes.grid(True, axis='x', linestyle='dashed')
+        axes.set_xlim(-0.15, 1.15)
+        axes.set_xticks(np.arange(0,1.1,0.1))
+        plt.show()
+        fig.savefig(f'{flux_name}.png')
+        
+        #Calculate the pathways	
+        paths, path_fluxes = flux.pathways(fraction=0.95)
+        path_labels=[[] for _ in paths]
+        for idx, path in enumerate(paths):
+            for p in path:
+                path_labels[idx-1].append(label_names_reord[p])
+        path_labels=[' -> '.join(k) for k in path_labels]
+        index_col_path = pd.MultiIndex.from_product([[self.ft_name], [self.feature], [f'{self.n_state}@{lag_}'], path_labels], 
+                                                    names=['name', 'feature', 'model', 'pathway'])
+        #path_fluxes_s = in_units_of(path_fluxes, f'second/{self.timestep.unit.get_name()}', 'second/second')
+        pathway_df=pd.DataFrame((path_fluxes/np.sum(path_fluxes))*100, index=index_col_path, columns=['% Total'])
+
+# =============================================================================
+#             if scheme == 'combinatorial':    
+#                 label_names=Functions.sampledStateLabels(regions, sampled_states=states, labels=labels)
+# =============================================================================               
+        return flux_df, committor_df, pathway_df
 
 
-
-
+    @log
+    def MFPT_calculation(self, msm, macrostates=None, hmsm_lag=False):
+        
+        def mfpt_states():
+            
+            
+            states = range(1, self.n_state+1)
+            index_row=pd.MultiIndex.from_product([[s for s in states]], names=['source'])
+            index_col=pd.MultiIndex.from_product([[s for s in states], ['mean', 'stdev']], names=['sink', 'values'])
+            
+            if not os.path.exists(f'{self.results}/{file_name}.csv') or self.overwrite:
+                mfpt=pd.DataFrame(index=index_row, columns=index_col)
+                print('\tCalculating MFPT matrix...')
+                for i in states:
+                    for j in reversed(states):
+                        mfpt.loc[(i), (j, 'mean')]= msm.sample_mean("mfpt", i-1,j-1)
+                        mfpt.loc[(i), (j, 'stdev')]= msm.sample_std("mfpt", i-1,j-1)
+                        print(f'\t\ttransition: {i} -> {j} ', end = '\r')
+                print('\n')
+                mfpt.to_csv(f'{self.results}/{file_name}.csv')
+            
+            #reload again otherwise cannot be processed pcolormesh.
+            mfpt = pd.read_csv(f'{self.results}/{file_name}.csv', index_col = 0, header = [0,1]) 
+            means = MSM.mfpt_filter(mfpt, 0)
+            cmap_plot=plt.cm.get_cmap("gist_rainbow")
+            
+            fig, axes = plt.subplots(1,1, figsize=(8,6), constrained_layout=True)
+            matrix = axes.pcolormesh(means, 
+                                     cmap=cmap_plot,
+                                     shading='auto',
+                                     vmin=self.lag,
+                                     vmax=means.max().max(),
+                                     norm=ml_colors.LogNorm(vmin = self.lag, vmax = means.max().max()))    #means[means > 0].min().min()
+            colorbar = plt.colorbar(matrix, orientation='vertical')
+            colorbar.set_label(label=f'MFPT ({self.unit})', size='large')
+            colorbar.ax.tick_params(labelsize=14)
+            axes.set_title(f'MFPT {self.full_name}')
+            axes.set_xticks(states)
+            axes.set_yticks(states)
+            cmap_plot.set_bad(color='white')
+            axes.set_xlabel('From state')
+            axes.set_ylabel('To state')
+            cmap_plot.set_under(color='black')
+            cmap_plot.set_bad(color='white')
+            cmap_plot.set_over(color='grey')
+            #plt.tight_layout()
+            plt.show()
+            fig.savefig(f'{self.results}/{file_name}.png', dpi=600, bbox_inches="tight")
+    
+            return mfpt    
+        
+        
+        def mfpt_cg_states():
+            macrostates= range(1, macrostate+1)
+            file_name_cg = f'{file_name}_{macrostate}macrostates'
+            mfpt = np.zeros((macrostate, macrostate))
+            if self.CG == 'HMSM':
+                hmsm = self.HMSM(msm, [macrostate], hmsm_lag, plot=False)
+                print('Coarse-graining with Hidden MSM')
+                print(hmsm)
+                for i in macrostates:
+                    for j in macrostates:
+                        print(f'Transition MS: {i} -> {j}', end='\r')
+                        try:
+                            mfpt[i-1, j-1] = hmsm.mfpt([i-1], [j-1])
+                        except:
+                            pass
+            else:
+                msm.pcca(macrostate)
+                print('Coarse-graining with PCCA')
+                for i in macrostates:
+                    for j in macrostates:
+                        print(f'Transition MS: {i} -> {j}', end='\r')
+                        mfpt[i-1, j-1] = msm.mfpt(msm.metastable_sets[i-1], msm.metastable_sets[j-1])
+                            
+                    
+            print('\n')
+            cmap_plot=plt.cm.get_cmap("gist_rainbow")
+            fig, axes = plt.subplots(1,1, figsize=(8,6), constrained_layout=True)
+            try:
+                matrix = axes.pcolormesh(mfpt, 
+                                         cmap=cmap_plot, 
+                                         shading='auto',
+                                         norm=ml_colors.LogNorm(vmin = self.lag, vmax=mfpt.max().max()),
+                                         vmin=self.lag,
+                                         vmax=mfpt.max().max())
+                                         #vmin=mfpt_all[mfpt_all > 0].min().min(),
+                                         #vmax=mfpt_all.max().max(),
+                                         #norm=ml_colors.LogNorm(vmin = mfpt_all[mfpt_all > 0].min().min(), vmax = mfpt_all.max().max())) 
+                colorbar = plt.colorbar(matrix, orientation='vertical')
+                colorbar.set_label(label=f'MFPT ({self.unit})', size='large')
+                colorbar.ax.tick_params(labelsize=14)
+                axes.set_title(f'MFPT {self.full_name} -> {macrostate} macrostates')
+                axes.set_xticks(macrostates)
+                axes.set_yticks(macrostates)
+                cmap_plot.set_bad(color='white')
+                axes.set_xlabel('From macrostate')
+                axes.set_ylabel('To macrostate')
+                cmap_plot.set_under(color='black')
+                cmap_plot.set_bad(color='white')
+                cmap_plot.set_over(color='grey')
+                #plt.tight_layout()
+                plt.show()
+                fig.suptitle(f'{self.method}')
+                fig.savefig(f'{self.results}/{file_name_cg}.png', dpi=600, bbox_inches="tight")
+            
+            except ValueError as v:
+                print(v)
+            #pyemma.plots.plot_network(inverse_mfpt, arrow_label_format=f'%f. {self.unit}', arrow_labels=mfpt, size=12) 
+            
+            
+            return mfpt
+        
+        file_name=f'MFPT_{self.full_name}'
+        mfpt_states()
+        if macrostates != None:
+            for macrostate in macrostates:
+                mfpt_cg_states()
             
 
 
@@ -2642,6 +2099,139 @@ class MSM:
                 plot()
             else:
                 print('\tPCCA skipped')
+
+
+    @log
+    def CKTest_calculation(self, msm, macrostates):
+        """
+        
+
+        Parameters
+        ----------
+        macrostates : TYPE
+            DESCRIPTION.
+        mlags : TYPE, optional
+            DESCRIPTION. The default is 7.
+
+        Returns
+        -------
+        ck_tests : TYPE
+            DESCRIPTION.
+
+        """
+        
+        pyemma.config.show_progress_bars = False
+        
+        f = mtick.ScalarFormatter(useOffset=False, useMathText=True)
+        g = lambda x,pos : "${}$".format(f._formatSciNotation('%1e' % x))
+        for macrostate in macrostates:
+            file_name = f'CKtest_{self.full_name}_{macrostate}macrostates'
+            if not os.path.exists(f'{self.stored}/{file_name}.npy') or self.overwrite:
+                print(f'\tCK test: {self.full_name} -> {macrostate} macrostates')
+                cktest=msm.cktest(macrostate)
+                cktest.save(f'{self.stored}/{file_name}.npy', overwrite=True)
+            else:
+                print('\tCK test found: ', self.full_name)
+                cktest=pyemma.load(f'{self.stored}/{file_name}.npy')
+    
+            dt_scalar=int(str(self.timestep*self.stride).split(' ')[0])
+            ck_plot, axes=pyemma.plots.plot_cktest(cktest, 
+                                                   dt=dt_scalar, 
+                                                   layout='wide', 
+                                                   marker='.',  
+                                                   y01=True, 
+                                                   units=self.unit)
+            for ax in axes:
+                for subax in ax:
+                    subax.xaxis.set_major_formatter(mtick.FuncFormatter(g))    
+                #TODO (maybe?): play around with subplot properties
+    # =============================================================================
+    #             for ax in axes:
+    #                 for subax in ax:
+    #                     #subax.set_xscale('log')
+    # =============================================================================
+            ck_plot.suptitle(f'CK test: {self.full_name} -> {macrostate} macrostates', va='top', ha='center', weight='bold', fontsize=12)
+            ck_plot.tight_layout()
+            ck_plot.savefig(f'{self.results}/{file_name}.png', dpi=600, bbox_inches="tight")
+            plt.show()
+
+    def bayesMSM_calculation(self,   
+                             lag, 
+                             msm_stride=1,
+                             statdist=None) -> dict:
+        """
+        
+
+        Parameters
+        ----------
+        discretized_data : TYPE
+            DESCRIPTION.
+        states : TYPE
+            DESCRIPTION.
+        lags : TYPE
+            DESCRIPTION.
+        statdist : TYPE, optional
+            DESCRIPTION. The default is None.
+
+        Raises
+        ------
+        TypeError
+            DESCRIPTION.
+
+        Returns
+        -------
+        dict
+            DESCRIPTION.
+
+        """
+        #Important legacy
+        #data=np.array(np.load(self.values['discretized'][0]))
+        #data_i=np.ascontiguousarray(data[0::msm_stride])
+
+        #TODO: make statdist into arguments for msm construction.
+        file_name=f'{self.stored}/bayesMSM_{self.full_name}.npy'
+        if not os.path.exists(file_name) or self.overwrite:
+            _, disc_trajs, _ = self.load_discTrajs()
+            try:
+                print(f'\tGenerating Bayesian MSM for {self.full_name}')
+                bayesMSM=pyemma.msm.bayesian_markov_model(disc_trajs[0::msm_stride], lag=lag, dt_traj=str(self.timestep), conf=0.95)
+                bayesMSM.save(file_name, overwrite=True)
+            except Exception as v:
+                print(v)
+                bayesMSM=None
+             
+        else:
+            #print(f'\tBayesian MSM found for {self.full_name} ', end='\r')
+            bayesMSM=pyemma.load(file_name)
+
+        return bayesMSM
+        
+    def ITS_calculation(self, c_stride=1) -> dict:
+
+        pyemma.config.show_progress_bars = False
+        data_concat, disc_trajs, clusters = self.load_discTrajs()
+        file_name = f'ITS_{self.ft_base_name}_{self.n_state}'            
+        its=None
+        its_stride=1
+        while its == None and its_stride < 10000:
+            try:
+                its_name=f'{self.stored}/{file_name}_{its_stride}sits.npy'
+                if not os.path.exists(its_name) or self.overwrite:                
+                    print(f'\tCalculating ITS for {self.n_state} states and trajectory stride of {its_stride}', end='\r')
+                    its=pyemma.msm.its(disc_trajs[0::its_stride], lags=MSM.ITS_lags, errors='bayes')
+                    its.save(f'{self.stored}/{file_name}_{its_stride}sits.npy', overwrite=self.overwrite)  
+                else:
+                    print(f'ITS profile found for: {self.ft_base_name}, {self.n_state} states and {its_stride} sits')
+                    its=pyemma.load(its_name)
+            except:
+                print('\tWarning!Could not generate ITS. Increasing stride.')
+                its_stride=its_stride*2      
+        dt_scalar=int(str(self.timestep*(self.stride*its_stride)).split(' ')[0])
+        its_plot=pyemma.plots.plot_implied_timescales(its, units=self.unit, dt=dt_scalar)
+        its_plot.set_title(f'ITS of {self.ft_base_name} \n{self.n_state} states', ha='center', weight='bold', fontsize=10)
+        plt.tight_layout()
+        plt.savefig(f'{self.results}/{file_name}.png', dpi=600, bbox_inches="tight")
+        plt.show()
     
     def TICA_calculation(self,
                          lags,
@@ -3270,7 +2860,7 @@ class MSM:
         mfpt.dropna(how='all', inplace=True)
         mfpt.dropna(how='all', axis=1, inplace=True)
             
-        idx = pd.IndexSlice  
+        idx = pd.IndexSlice    
         means=mfpt.loc[:, idx[:, 'mean']]
         stdevs=mfpt.loc[:, idx[:, 'stdev']]
         
@@ -3306,39 +2896,4 @@ class MSM:
         selection_new = f'residue {resid_range[0]+init} to {resid_range[-1]+init} {" ".join(selection_[-2:])}'
         
         return selection_new
-
-
-            
-            
-# =============================================================================
-#   def dep_plot_flux():
-#             fig, axes = plt.subplots(1,1, figsize=(10, 8))
-#             pyemma.plots.plot_flux(flux,
-#                                    flux_scale = in_units_of(1, f'second/{self.timestep.unit.get_name()}', 'second/second'),
-#                                    pos=None, 
-#                                    state_sizes = flux.stationary_distribution,
-#                                    show_committor=True,
-#                                    state_labels = label_names,
-#                                    show_frame=False,
-#                                    state_colors = colors,
-#                                    arrow_curvature = 2,
-#                                    state_scale = 0.5,
-#                                    figpadding=0.1,
-#                                    max_height=6,
-#                                    max_width=8,
-#                                    arrow_label_format='%.1e  / s',
-#                                    ax=axes)
-#             axes.set_title(f'{self.mol} {self.it} : {n_state}@{lag_}' +
-#                            f'\n{" ".join(label_A)} -> {" ".join(label_B)}' + 
-#                            f'\nRate: {report_rate} Net Flux: {report_flux}', 
-#                       ha='center',
-#                       fontsize=12)
-#             axes.axvline(0, linestyle='dashed', color='black')
-#             axes.axvline(1, linestyle='dashed', color='black')
-#             axes.grid(True, axis='x', linestyle='dashed')
-#             axes.set_xlim(-0.15, 1.15)
-#             axes.set_xticks(np.arange(0,1.1,0.1))
-#             fig.savefig(f'{flux_name}.png')
-# =============================================================================
-
 

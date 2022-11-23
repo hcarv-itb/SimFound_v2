@@ -83,17 +83,29 @@ class Functions:
         
         if ordered:
             parameters= ['50mM', '150mM', '300mM', '600mM', '1M', '2.5M', '5.5M']
+
+        
+        if isinstance(parameters, str):
+            parameters = [parameters]
+        #if isinstance(parameters, str):
+        #    paramaters = [parameters]
             
         for idx, p in enumerate(parameters):
 
+            try:
+                _p = re.split('(\d+)',p)[1:]
+                p = ' '.join(_p)
+            except:
+                pass  
+                
             unit_string = str(p)
-            print(unit_string)
             if re.search('K', unit_string):
                 scalar=float(str(p).split('K')[0])*unit.kelvin
                 #self.parameter_scalar.append(scalar)
                 #parameter_label.append(str(scalar).replace(" ",""))
                 #print(f'Converted parameter "temperature" (in K) into scalar: {scalar}')
-            elif re.search('M', unit_string):
+            elif re.search('M', unit_string):                    
+                
                 try:
                     scalar=float(str(p).split('M')[0])*unit.molar
                 except ValueError:
@@ -101,9 +113,9 @@ class Functions:
                 #print(f'Converted parameter "concentration" (in Molar) into scalar: {scalar}')
             else:
                 scalar=idx
-                print(f'Converted unidentified parameter into scalar: {scalar}')
+                #print(f'Converted unidentified parameter into scalar: {scalar}')
                 
-            parameter_dict[p]=str(scalar)
+            parameter_dict[unit_string]=str(scalar)
         
         if get_uniques:    
 

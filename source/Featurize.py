@@ -220,7 +220,7 @@ class Featurize:
 
                 else:
                     print(f'Setting {system.name} for calculation', end='\r')
-                    self.scalars[name] = system.scalar
+                    #self.scalars[name] = system.scalar
                     results_folder=system.results_folder
                     topology=Trajectory.Trajectory.fileFilter(name, 
                                                                 system.topology, 
