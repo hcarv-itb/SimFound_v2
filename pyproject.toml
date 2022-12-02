@@ -1,3 +1,22 @@
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "SimFoundry2"
+version = "0.0.1"
+authors = [
+  { name="Henrique F. Carvalho", email="henrique.carvalho@itb.uni-stuttgart.de" },
+]
+description = "A molecular dynamics analysis package"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU GPLv3",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/hcarv-itb/SimFound_v2"
+"Bug Tracker" = "https://github.com/hcarv-itb/SimFound_v2/issues"

@@ -1,0 +1,22 @@
+Metadata-Version: 2.1
+Name: SimFoundry2
+Version: 0.0.1
+Summary: A molecular dynamics analysis package
+Author-email: "Henrique F. Carvalho" <henrique.carvalho@itb.uni-stuttgart.de>
+Project-URL: Homepage, https://github.com/hcarv-itb/SimFound_v2
+Project-URL: Bug Tracker, https://github.com/hcarv-itb/SimFound_v2/issues
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: GNU GPLv3
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown
+License-File: LICENSE
+
+# SimFound_v2
+
+Simulation Foundry 2
+
+Insert detailed description here.
+
+[Github-flavored Markdown](https://guides.github.com/features/mastering-markdown/)
+to write your content.

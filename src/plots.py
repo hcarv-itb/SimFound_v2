@@ -35,27 +35,27 @@ class Plots:
     
     def __init__(self,
                  supra_project : dict,
-                 dG : pd.DataFrame,
-                combinatorial : pd.DataFrame,
-                plot_specs : dict,
-                input_states : dict,
-                subset_states : dict,
-                labels_regions : list = ['A', 'T', 'E', 'S', 'B'],
-                subset_projects : list = ['normal'],
-                mol_water : dict ={},
-                color2 : str ='darkorange',
-                mol2 : dict ={'BuOH' : 'ViAc', 'BeOH' : 'BeAc'},
-                metric_data : dict ={},
-                discretized_trajectories : dict ={},
-                correlation_data : dict ={},
-                metrics : bool = False,
-                metric_method : str ='Mutual Information (normalized)',
-                double_comb_fractions : dict ={},
-                double_comb_states : dict ={},
-                sampling_resolution : int =10,
-                figure_format : tuple =(3,2),
-                figure_type :str = 'full_page',
-                ) -> dict:
+                    dG : pd.DataFrame,
+                    combinatorial : pd.DataFrame,
+                    plot_specs :dict,
+                    input_states : dict,
+                    subset_states : dict,
+                    labels_regions = ['A', 'T', 'E', 'S', 'B'],
+                    subset_projects = ['normal'],
+                    mol_water={} ,
+                    color2='darkorange',
+                    mol2={'BuOH' : 'ViAc', 'BeOH' : 'BeAc'},
+                    metric_data={},
+                    discretized_trajectories={},
+                    correlation_data={},
+                    metrics= False,
+                    metric_method='Mutual Information (normalized)',
+                    double_comb_fractions={},
+                    double_comb_states={},
+                    sampling_resolution=10,
+                    figure_format=(3,2),
+                    figure_type = 'full_page',
+                    ) -> dict:
         
         self.supra_project : dict = {k : v for k, v in supra_project.items() if k in subset_projects}
         self.dG : pd.DataFrame = dG 
@@ -1021,58 +1021,7 @@ class Plots:
 
 
 
-    def loadCombinatorialDfAndStates(self, dG : dict, combinatorial_dict : dict , mol : str):
-        """
 
-        Function to load the combinatorial state discretized trajectories.         
-
-        Parameters
-        ----------
-        combinatorial_dict : dict
-            DESCRIPTION.
-        mol : str
-            DESCRIPTION.
-
-        Returns
-        -------
-        states : TYPE
-            DESCRIPTION.
-        combinatorial_df : TYPE
-            DESCRIPTION.
-        idx_state : TYPE
-            DESCRIPTION.
-        
-        Notes
-        -----
-        Refactor to directly load the csv files instead of being provided as huge dictionaries.
-
-        """
-        
-        
-        project_type = self.project_type
-        input_states = self.input_states
-        
-        if project_type != 'water':
-            dG_df = dG[project_type][mol]
-        else:
-            base_df = dG[project_type][mol]
-            dG_df = base_df.iloc[:, base_df.columns.get_level_values(0) == mol].droplevel(0, axis=1)
-                        
-        if project_type == 'inhibition':
-            base_states = self.double_comb_states['inhibition']
-        else:
-            base_states = input_states[project_type]
-        
-        if isinstance(input_states[project_type], tuple):
-            idx_state = 1
-            states = base_states[idx_state]
-            combinatorial_df = combinatorial_dict[project_type][mol].replace(to_replace=base_states[0].keys(), value=states.keys())
-        else:
-            idx_state = 0
-            states = base_states[idx_state]
-            combinatorial_df = combinatorial_dict[project_type][mol]
-        
-        return states, combinatorial_df, dG_df, idx_state
 
                         
 
@@ -1105,25 +1054,55 @@ class Plots:
             
             self.setFigure(mode='set')
             
-
+            
+            #if project_type == 'normal':
+                #self.plot_state_cartoon()
+            
             for idx_mol, (mol, project) in enumerate(projects.items()):
                 print(mol)
                 self.project = project
+
+                if project_type != 'water':
+                    dG_df = dG[project_type][mol]
+                else:
+                    base_df = dG[project_type][mol]
+                    dG_df = base_df.iloc[:, base_df.columns.get_level_values(0) == mol].droplevel(0, axis=1)
+
+                if project_type == 'inhibition':
+                    base_states = self.double_comb_states['inhibition']
+                else:
+                    base_states = input_states[project_type]
+
+                if isinstance(input_states[project_type], tuple):
+                    idx_state = 1
+                    self.states = base_states[idx_state]
+                    combinatorial_df = combinatorial[project_type][mol].replace(to_replace=base_states[0].keys(), value=self.states.keys())
+                else:
+                    idx_state = 0
+                    self.states = base_states[idx_state]
+                    combinatorial_df = combinatorial[project_type][mol]
+ 
+
                 self.iterables = project.parameter
                 #self.steps = plot_specs[project_type][mol][0]
                 self.color_mol = plot_specs[project_type][mol][1]
                 self.linestyle = plot_specs[project_type]['linestyle'] 
+                
                 self.idx_mol = idx_mol
                 self.mol = mol
+                
                 self.setSubplots()
                 self.lns = []
                 self.scatters = []
-                states, combinatorial_df, dG_df, idx_state = self.loadData(dG, combinatorial, mol)
-                self.states = states
+
+                #ax_comb = plt.subplot(grid_comb[idx_mol])
                 self.counts_states = np.empty([len(self.iterables), len(self.states)])
                 #self.count_regions = np.empty([len(self.iterables), len(self.steps)+1])
                 
-
+                
+                #if project_type == 'normal':
+                    
+                    #subgrid_normal_subunits = gridspec.GridSpecFromSubplotSpec(len(self.iterables),1, subplot_spec = self.grid_comb[idx_mol, 2], hspace=0)
                     
                 if project_type == 'normal':
                     for idx, it in enumerate(self.iterables): 
@@ -1134,41 +1113,68 @@ class Plots:
                         self.plot_subunitsStateSampling(combinatorial_df)
                         
                     mol_df = pd.DataFrame(self.counts_states.T, index=self.states, columns=self.iterables)
-
-                    self.base_combinatorial = self.plot_combinatorial(mol_df, mode='scalar')
+    
                     
-                    image_mol = plt.imread(f'{project.results}/figures/{mol}_activeSite_ATESB.png')
-                    self.ax_image.imshow(image_mol)
-                    self.ax_image.axis('off')
+                    if project_type == 'normal':
+                        #self.plot_metrics((self.metric_data[project_type][mol], []))
+                        self.base_combinatorial = self.plot_combinatorial(mol_df, mode='scalar')
                         
-                elif project_type == 'inhibition':
-                    
-                    #TODO: Check if this also needs to be looped over self.iterables.
-                    self.base_combinatorial = self.plot_combinatorial(mol_df, mode='histogram')
-                    self.ax2 = self.ax_dG.twiny()
-                    self.color_mol = [color2]
-                    self.linestyle = 'dashed'
-                    self.idx_it = 0
-                    self.it = '5mM'
-
-                    inib_df = pd.read_csv(f'{project.results}/binding_profile/binding_profile_acylSer-His_{mol2[mol]}_mean_b0_e-1_s1.csv', index_col=0)    
-                    df_comb_inhib = combinatorial_df.loc[:, combinatorial_df.columns.get_level_values('l3') == self.it]
-
-                    self.states_mol = self.double_comb_states['normal'][idx_state] 
-                    self.plot_dg_inhib(inib_df)
-                    self.plot_regions(df_comb_inhib)
-                    
-                    sampling_fractions = self.getStateSamplingFraction(df_comb_inhib, states=self.states_mol, w_subset=False)
-                    df_mol_inhib = pd.DataFrame(sampling_fractions,
-                                                index=self.states_mol, 
-                                                columns=[self.it])
-                    self.plot_combinatorial(df_mol_inhib, mode='histogram') #, mode='ternary')
+                        image_mol = plt.imread(f'{project.results}/figures/{mol}_activeSite_ATESB.png')
+                        self.ax_image.imshow(image_mol)
+                        self.ax_image.axis('off')
                         
-
+                    elif project_type == 'inhibition':
+                        self.base_combinatorial = self.plot_combinatorial(mol_df, mode='histogram')
+    
+                        self.ax2 = self.ax_dG.twiny()
+                        self.color_mol = [color2]
+                        self.linestyle = 'dashed'
+                        self.idx_it = 0
+                        self.it = '5mM'
+                        inib_mol = mol2[mol]
+    
+                        inib_df = pd.read_csv(f'{project.results}/binding_profile/binding_profile_acylSer-His_{inib_mol}_mean_b0_e-1_s1.csv', index_col=0)    
+                        df_comb_inhib = combinatorial_df.loc[:, combinatorial_df.columns.get_level_values('l3') == self.it]
+    
+                        self.states_mol = self.double_comb_states['normal'][idx_state] 
+                        
+                        self.plot_dg_inhib(inib_df)
+                        self.plot_regions(df_comb_inhib)
+                        
+                        df_mol_inhib = pd.DataFrame(self.getStateSamplingFraction(df_comb_inhib, 
+                                                                                  states=self.states_mol, 
+                                                                                  w_subset=False),
+                                                    index=self.states_mol, 
+                                                    columns=[self.it])
+                        self.plot_combinatorial(df_mol_inhib, mode='histogram') #, mode='ternary')
+                        
+    # =============================================================================
+    #                     metric = self.plot_metrics((self.metric_data[project_type][mol], self.correlation_data[project_type][mol]))
+    #                     if self.idx_mol == 1:
+    #                     
+    #                         _colorbar = plt.subplot(self.grid_comb[-1,:])
+    #                         _colorbar.axis('off')
+    #                         cbar = plt.colorbar(metric, ax=_colorbar, orientation='horizontal')
+    #                         cbar.set_label(self.metric_method) 
+    # =============================================================================
+                            
+                            
+    # =============================================================================
+    
+    #                     
+    #                     
+    #                     #plot_combinatorial
+    #                     self.ax_comb2.bar(self.states_mol.keys(), state_sampling_fraction, color=color2)
+    #                     self.ax_comb2.set_yscale('log')
+    #                     self.ax_comb2.tick_params(axis='y', which='major', width=2, length=4)
+    #                     self.ax_comb2.tick_params(bottom=False, labelbottom=False)
+    #                     self.ax_comb2.yaxis.set_major_locator(LogLocator(base=10.0, numticks=4))
+    #                     self.ax_comb2.grid(linestyle='--', axis='y')
+    # =============================================================================
                         
     
                 #NOTE: This is only loading the other _water dfs. The df of water has been handled before
-                elif project_type == 'water':
+                if project_type == 'water':
     
                     
     
