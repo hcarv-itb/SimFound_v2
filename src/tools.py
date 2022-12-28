@@ -77,14 +77,10 @@ class Functions:
 
 
     @staticmethod
-    def setScalar(parameters, ordered=False, get_uniques=False):
+    def setScalar(parameters, get_uniques=False):
         
         parameter_dict = {}
-        
-        if ordered:
-            parameters= ['50mM', '150mM', '300mM', '600mM', '1M', '2.5M', '5.5M']
 
-        
         if isinstance(parameters, str):
             parameters = [parameters]
         #if isinstance(parameters, str):
@@ -92,12 +88,14 @@ class Functions:
             
         for idx, p in enumerate(parameters):
 
-            try:
-                _p = re.split('(\d+)',p)[1:]
-                p = ' '.join(_p)
-            except:
-                pass  
-                
+# =============================================================================
+#             try:
+#                 _p = re.split('(\d+)',p)[1:]
+#                 p = ' '.join(_p)
+#             except:
+#                 pass  
+# =============================================================================
+ 
             unit_string = str(p)
             if re.search('K', unit_string):
                 scalar=float(str(p).split('K')[0])*unit.kelvin
@@ -310,7 +308,6 @@ class Functions:
                 return encodings.index(x)
 
         #Discretize array values in state bins.                 
-        
         #state_map=np.digitize(df, shells, right=True) 
         state_map = np.searchsorted(shells, df, side='right')
         state_comb=pd.DataFrame(index=df.index)

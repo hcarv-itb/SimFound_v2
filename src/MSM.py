@@ -33,6 +33,7 @@ try:
     import Trajectory
     import tools_plots
     import tools
+    import plots
 except Exception as v:
     print(v)
     pass
@@ -227,7 +228,7 @@ class MSM:
         data = collections.defaultdict(dict)
 
         for m in measurements:
-            print(f'Processing :  {m[:-1]} \n', end='\r')
+            #print(f'Processing :  {m[:-1]} \n', end='\r')
             
             for method in self.methods:
                 self.method = method
@@ -249,7 +250,7 @@ class MSM:
              input_data=None,
              extra_input_data = {},
              regions={}, 
-             states={}, 
+             input_states={}, 
              extra_states={}, 
              plot_figure=False, 
              plot_its = True,
@@ -264,6 +265,7 @@ class MSM:
         self.extra_input_data = extra_input_data
         self.water_mode= water_mode
         self.macrostates = macrostates
+        self.input_states = input_states
         self.methods = methods
         self.method_functions = {'bayesMSM' : self.bayesMSM,
                                  'bayesHMSM' : self.bayesHMSM,
@@ -273,6 +275,7 @@ class MSM:
                                  'MFPT' : self.MFPT}
 
         
+        output = collections.defaultdict(dict)
         
         for project_type, projects in self.supra_project.items():
             
@@ -280,103 +283,327 @@ class MSM:
             self.project_type = project_type
             self.projects = projects
             
-            print(project_type, projects, water_mode)
-            if project_type == 'inhibition':
-                continue
-            else:
-                if water_mode == 'combinatorial' or project_type != 'water':
-                    print('comb water')
-                    self.regions = regions[project_type]
-                    self.states = states[project_type][0]
-                    self.remap_states = states[project_type][1]
-                    
-        
-                    #self.input_df = input_data[project_type]
-                    input_df = input_data[project_type]
-                    self.start=input_df.index.values[0]
-                    self.stop=input_df.index.values[-1]
-        
-                    for mol, project in projects.items():
-                        self.project = project
-                        
-                    
-                        
-                        if project_type == 'normal':
-                            mols = [mol]
-                        elif project_type == 'inhibition':
-    
-                            if mol == 'BeOH':
-                                mols = [mol, 'BeAc'] 
-                            elif mol == 'BuOH':
-                                mols = [mol, 'ViAc']
-                            continue
-                        else:
-                            mols = input_df.columns.get_level_values('l2').unique()
-                        for _mol in mols:
-                            print(_mol, project_type, self.states)
-                            measurements = []
-                            data = input_df.loc[self.start:self.stop:self.msm_stride, (self.project.protein[0], _mol)]
-                            its = data.columns.get_level_values('l3').unique()
-                            if project_type == 'water' and _mol != 'H2O':
-                                its = its[:-1]
-                            for idx, it in enumerate(its):
-                                lag = lags[project_type][_mol][idx]
-                                disc_traj = data.loc[:, it].values.T.astype(int).tolist()
-                                measurements.append([_mol, idx, it, lag, disc_traj])
-                            out[_mol] = self.run(measurements)
-                
-                elif water_mode != 'combinatorial' or project_type == 'water':  
-                    self.regions = regions[f'water_double']
-                    print('other water')
-                    self.project = projects['H2O']
-                    self.states = extra_states
-                    self.remap_states = extra_states #tools.Functions.state_remaper(extra_states)[1]
-                    
-                    input_df = extra_input_data
-                    mols = input_df.columns.get_level_values('l2').unique()
-                    
-                    print('here', mols, input_df.columns.get_level_values('l3').unique())
-                    #mols = list(extra_input_data.keys())
+            print(project_type)
 
-                    self.start = input_df.index.values[0]
-                    self.stop = input_df.index.values[-1]
+            if water_mode == 'combinatorial' or project_type != 'water':
+                self.regions = regions[project_type]
+                self.states = input_states[project_type][0]
+                self.remap_states = input_states[project_type][1]
+                
+                input_df = input_data[project_type]
+                self.start=input_df.index.values[0]
+                self.stop=input_df.index.values[-1]
+    
+                for mol, project in projects.items():
+                    self.project = project
                     
-                    for _mol in mols:       
+                
+                    
+                    if project_type == 'normal':
+                        mols = [mol]
+                    elif project_type == 'inhibition':
+
+                        if mol == 'BeOH':
+                            mols = [mol] #, 'BeAc'] 
+                        elif mol == 'BuOH':
+                            mols = [mol] #, 'ViAc']
+                        #continue
+                    else:
+                        mols = input_df.columns.get_level_values('l2').unique()
                         
-                        data = input_df.iloc[self.start:self.stop:self.msm_stride, input_df.columns.get_level_values('l2') == _mol]
-                        its = data.columns.get_level_values('l3').unique() #[:-1]
-                        #its = list(data.keys())[:-1]
+                    for _mol in mols:
                         measurements = []
+                        data = input_df.loc[self.start:self.stop:self.msm_stride, (self.project.protein[0], _mol)]
+                        its = data.columns.get_level_values('l3').unique()
+                        #if project_type != 'normal' and _mol != 'H2O':
+                        #    its = its[:-1]
                         for idx, it in enumerate(its):
                             lag = lags[project_type][_mol][idx]
-
-                            _data = data.iloc[:, data.columns.get_level_values('l2') == mol]
-                            its = _data.columns.get_level_values('l3')
-                            print(it, its)
-                            disc_traj = _data.iloc[:, _data.columns.get_level_values('l3') == it].values.T.astype(int).tolist() #data[it]
-    
+                            disc_traj = data.loc[:, it].values.T.astype(int).tolist()
                             measurements.append([_mol, idx, it, lag, disc_traj])
                         out[_mol] = self.run(measurements)
+            
+            elif water_mode != 'combinatorial' or project_type == 'water':  
+                self.regions = regions['water_double']
+                self.project = projects['H2O']
+                self.states = extra_states
+                self.remap_states = extra_states #tools.Functions.state_remaper(extra_states)[1]
+                
+                input_df = extra_input_data
+                mols = input_df.columns.get_level_values('l2').unique()
+
+
+                self.start = input_df.index.values[0]
+                self.stop = input_df.index.values[-1]
+                
+                for _mol in mols:       
+                    
+                    data = input_df.iloc[self.start:self.stop:self.msm_stride, input_df.columns.get_level_values('l2') == _mol]
+                    its = data.columns.get_level_values('l3').unique() #[:-1]
+                    #its = list(data.keys())[:-1]
+                    measurements = []
+                    for idx, it in enumerate(its):
+                        lag = lags[project_type][_mol][idx]
+
+                        _data = data.iloc[:, data.columns.get_level_values('l2') == mol]
+                        its = _data.columns.get_level_values('l3')
+                        disc_traj = _data.iloc[:, _data.columns.get_level_values('l3') == it].values.T.astype(int).tolist() #data[it]
+
+                        measurements.append([_mol, idx, it, lag, disc_traj])
+                    out[_mol] = self.run(measurements)
     
                         
                         
       
-                if plot_figure: 
-                    self.plot_kinetics(out, paths_to_plot=paths_to_plot)
+                #if plot_figure: 
+                #    self.plot_kinetics(out, paths_to_plot=paths_to_plot)
                         
-                if plot_its:
+                #if plot_its:
                     
-                    self.plot_implied_timescales(out)
-            
-        return out
+                #    self.plot_implied_timescales(out)
+        
+            output[project_type] = out
+        
+        
+        self.plot_kinetics_lite(output)
+        
+        
+        
+        return output
     
+    
+    def plot_kinetics_lite(self, input_data):
+        
+        colors = {'BeOH': [pl.cm.BuPu(np.linspace(0.2,1,5)), 3, 's'], 
+                  'BuOH' : [pl.cm.YlGnBu(np.linspace(0.2,1,4)), 2, '^'],
+                  'ViAc' : [pl.cm.YlOrRd(np.linspace(0.2,1,3)), 1,  'o'],
+                  'H2O' : ['red', 0, '*'],
+                  'BeAc' : ['darkorange', 's'],
+                  }
+        plt.rcParams['font.size'] = '8'
+        fig = plt.figure(figsize=(7.48, 5.61))
+        subfigs = fig.subfigures(1,2, width_ratios=[3,2])
+        subfigs_flux_path = subfigs[0].subfigures(2,1, height_ratios=[3,2])
+        subfig_flux = subfigs_flux_path[0].subplots(1,1)
+        subfig_water = subfigs[1].subplots(3,1, sharex=True)
+        ax_flux = subfig_flux
+        ax_ratios_flux = subfig_water[0]
+        ax_k = subfig_water[1]
+        ax_kd = subfig_water[2]
+        subfig_pathway = subfigs_flux_path[1].subplot_mosaic([['scheme','ViAc', 'BeOH', 'BuOH']], sharey=True, gridspec_kw = {'width_ratios' :[2,3,3,3]})
+        ax_scheme = subfig_pathway['scheme']
+        plots.Plots.draw_scheme(ax_scheme, 
+                                self.input_states['normal'][1], 
+                                offset= 0.8, 
+                                mode = 'combinatorial')
+    
+        compare_flux_data = {}
+        compare_inhib_flux_data = {}
+        for project_type, project_data in input_data.items():
+            print(project_type)
+            
+            for mol, data in project_data.items():
+                print(mol)
+                its = [d.split('@')[0] for d in data['bayesMSM'].keys()]
+                
+                iterable_scalars = [] #[0]
+        
+                for it in its:
+                    
+                    try:
+                        bulk_value=float(str(it).split('M')[0]) 
+                    except:
+                        bulk_value=float(str(it).split('mM')[0])
+                    iterable_scalars.append(bulk_value)
+
+                _color, idx_color, marker = colors[mol]
+                color_flux = _color[idx_color]
+
+                flux_data = [l[0]['net flux'].values for l in data['flux'].values()] 
+                committor_data = [l[1]['Forward'] for l in data['flux'].values()]    
+                statdist = [d.stationary_distribution for d in data['bayesMSM'].values()]
+                
+                mfpt = [l for l in data['MFPT'].values()]
+                
+                #plot committors
+                if project_type != 'water':
+                    ax_committor = subfig_pathway[mol]
+                    
+                    _states = self.input_states[project_type][1]
+                    
+                    if project_type == 'inhibition':
+                        
+                        committor_data = [committor_data[-1]]
+                        statdist = [statdist[-1]]
+                
+    
+                    for idx_it, it_comm in enumerate(committor_data):
+                        comms_to_plot = []
+                        idx_to_plot = []
+
+                        
+                        for idx, s in _states.items():
+                            try:
+                                comm_value = it_comm.loc[it_comm.index.get_level_values('states') == s].values[0]
+                                comms_to_plot.append(comm_value)
+                                idx_to_plot.append(idx)
+                            except:
+                                pass
+
+                        if project_type == 'inhibition':
+                            _color_plot = 'darkorange'
+                            _color_edge = 'none'
+                            linestyle = 'dashed'
+                            
+                        else:
+                            _color_plot = _color[idx_it]
+                            _color_edge = _color[idx_it]
+                            linestyle = 'solid'
+                        
+                        size = np.digitize(statdist[idx_it], bins = np.geomspace(1e-5,1, num=6)) * 5
+
+                        ax_committor.plot(comms_to_plot, 
+                                          idx_to_plot, 
+                                          color=_color_plot,
+                                          linestyle = linestyle)
+                        ax_committor.scatter(comms_to_plot,
+                                             idx_to_plot,
+                                             color= _color_plot,
+                                             linestyle = linestyle,
+                                             s = size,
+                                             facecolor = _color_edge,
+                                             edgecolor = _color_plot
+                                             )
+                        ax_committor.set_yticks(range(len(_states)))
+                        ax_committor.set_yticklabels(_states.values())
+                        ax_committor.set_xticks(np.arange(0,1.5,0.5))
+                        
+                        if mol == 'BeOH':
+                            ax_committor.set_xlabel('Forward committor probability')
+
+                
+                if project_type == 'normal':
+                    ax_flux.plot(iterable_scalars, 
+                                 flux_data, 
+                                 color=color_flux, 
+                                 marker=marker, 
+                                 linestyle='solid', 
+                                 label = mol)
+                    compare_flux_data[mol] = flux_data
+                    
+                elif project_type == 'inhibition':
+                    label = f'{mol} + 5 mM {its[-1].split("_")[1]}'
+                    ax_flux.scatter(100, 
+                                    flux_data[-1], 
+                                    facecolor='darkorange', 
+                                    edgecolor='darkorange', 
+                                    marker=marker, 
+                                    label = label)
+                    compare_inhib_flux_data[mol] = flux_data[-1]
+                elif project_type == 'water':
+                    
+                    if mol != 'H2O':
+                        ax_flux.plot(iterable_scalars[:-1], 
+                                     flux_data[:-1], 
+                                     color=color_flux, 
+                                     marker=marker, 
+                                     linestyle='dashed', 
+                                     label = f'water in {mol}')
+                        ax_flux.scatter(100, 
+                                        flux_data[-1], 
+                                        facecolor='none', 
+                                        edgecolor='darkorange', 
+                                        marker=marker)
+                        
+                        
+                        compare_data = np.array(compare_flux_data[mol]) / np.array(flux_data[:-1])
+                        ax_ratios_flux.plot(iterable_scalars[:-1], 
+                                            compare_data, 
+                                            color=color_flux, 
+                                            marker=marker)
+                        ax_ratios_flux.scatter(100, 
+                                               compare_inhib_flux_data[mol] / flux_data[-1], 
+                                               facecolor='darkorange', 
+                                               edgecolor='darkorange', 
+                                               marker=marker)
+                        #on = mfpt.iloc[0,1]
+                        #off = mfpt.iloc[1,0]
+                        ons = []
+                        offs = []
+                        for m in mfpt:
+                            
+                            ons.append((1 / m.iloc[0,1]) *1e12)
+                            offs.append((1 / m.iloc[1,0]) * 1e12)
+                            
+                        kds = 1 / (np.array(ons)*55.56 / np.array(offs))
+                        
+                        ax_k.plot(iterable_scalars[:-1], 
+                                  ons[:-1], 
+                                  marker = marker, 
+                                  markerfacecolor = color_flux, 
+                                  color=color_flux,
+                                  label = r'k$_{on}$ / 55.56 M')
+                        ax_k.plot(iterable_scalars[:-1], 
+                                  offs[:-1], 
+                                  linestyle ='dashed', 
+                                  marker = marker, 
+                                  markerfacecolor = 'none', 
+                                  color=color_flux,
+                                  label = r'k$_{off}$')
+                        ax_kd.plot(iterable_scalars[:-1],
+                                   kds[:-1]*1000,
+                                   color=color_flux,
+                                   marker = marker)
+
+                        
+                        
+                    else:
+                        ax_flux.axhline(flux_data[0], color='red')
+                        
+                        on_0 = 1 / mfpt[0].iloc[0,1] * 1e12
+                        off_0 = 1 / mfpt[0].iloc[1,0] * 1e12
+                        
+                        kd_0 = 1 / (on_0 *55.56 / off_0)
+                        
+                        ax_k.axhline(on_0, color='red')
+                        ax_k.axhline(off_0, color='red', linestyle='dashed')
+                        ax_kd.axhline(kd_0*1000, color='red')
+                        ax_kd.text(200, kd_0*1000, f'{np.around(kd_0*1000, decimals=2)} mM', color='red')
+                        
+                
+                from matplotlib.lines import Line2D    
+                water_labels = [Line2D([0], [0], marker='o', color='black', linestyle='dotted', label=r'k$_{off}$', markerfacecolor='none'),
+                                Line2D([0], [0], marker='o', color='black', linestyle='solid', label=r'k$_{on}$ / 55.56 M', markerfacecolor='black')]
+                ax_k.legend(handles=water_labels)
+                ax_k.set_xscale('log')
+                ax_k.set_yscale('log')
+                ax_k.set_ylabel(r'rate (s$^{-1}$)')
+                
+                ax_kd.set_ylabel(r'K$_D$ = k$_{on}$/k$_{off}$ (mM)')
+                ax_kd.set_xscale('log')
+                ax_kd.set_xlabel('Concentration (mM)')
+                
+                ax_flux.set_xscale('log')
+                ax_flux.set_yscale('log')
+                ax_flux.legend() #bbox_to_anchor=(0., 1.02, 1., .102), loc='lower left', ncol=2, mode="expand", borderaxespad=0.)
+                ax_flux.set_xticks([])
+                ax_flux.set_xlabel('Concentration (mM)')
+                ax_flux.set_ylabel(r'Flux ($s^{-1}$)')
+                ax_flux.xaxis.set_major_locator(plots.Plots.scalars_uniques)
+                ax_flux.xaxis.set_major_formatter(FormatStrFormatter("%d") ) 
+                
+                ax_ratios_flux.set_ylabel(r'Flux$_t$ / Flux$_h$ $\approx$ r$_t$ / r$_h$')
+                ax_ratios_flux.set_ylim(0,1)
+                ax_ratios_flux.set_xscale('log')
+                
+                ax_ratios_flux.xaxis.set_major_locator(plots.Plots.scalars_uniques)
+                ax_ratios_flux.xaxis.set_major_formatter(FormatStrFormatter("%d") ) 
+        
+        fig.savefig(f'{self.project.results}/figures/kinetics_all.png', dpi=600, bbox_inches='tight')
     
     def plot_kinetics(self, input_data_mols, paths_to_plot=-1):
         
         states = self.states
-        
-        
-        
         
         
         fig =  plt.figure(figsize=(9,9), constrained_layout=True)
@@ -394,7 +621,6 @@ class MSM:
         mol_labels, labels_all = self.defineSubsetLabels(input_data_mols)
         
         for idx_mol, (mol, input_data) in enumerate(input_data_mols.items()):
-            print(idx_mol, mol)
             axes = {'source' : plt.subplot(pathway_grid[idx_mol,0]), 
                     'sink' : plt.subplot(pathway_grid[idx_mol,2]), 
                     'intermediate' : plt.subplot(pathway_grid[idx_mol,1])}
@@ -419,7 +645,6 @@ class MSM:
                     its = self.supra_project[self.project_type][mol].parameter
                 else:
                     its = [d.split('@')[0] for d in input_data['bayesMSM'].keys()] #input_data['bayesMSM'].keys() #self.supra_project['normal'][mol].parameter 
-            print(its)
             
             #print(self.supra_project['normal'][mol].parameter, self.supra_project[self.project_type][mol].parameter)
             
@@ -463,8 +688,9 @@ class MSM:
                 
                 try:
                     fluxes.append(flux_df.loc[:, 'net flux'].values[0])
-                except AttributeError:
-                    fluxes.append(np.nan)
+                except AttributeError as v:
+                    print(v)
+                    #fluxes.append(np.nan)
                     
                 self.plot_pathways(idx_mol, data, labels, statdist, paths_to_plot, fig, axes, color, _edgecolor)
             
@@ -478,10 +704,10 @@ class MSM:
 #                 print(it_scalars)
 #                 
 #                 axes_flux.scatter(_it_scalar_inhib, _flux_inhib, color='darkorange')
-# =============================================================================
-            for i,j in zip(its, fluxes):
-                print(j)
-            print(its)
+# =============================================================================        
+            #for i,j in zip(its, fluxes):
+            #    print(i, j)
+
             if its[0] == '55.56M':
                 its[0] = '0mM'
             

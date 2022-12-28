@@ -451,11 +451,10 @@ class Featurize:
 
         """
         
+        (trajectory, topology, results_folder, name, df_name)=system_specs
+        (selection,  start, stop, timestep, stride, units_x, units_y, task, store_traj, subset)=specs  
+  
         
-        
-        (trajectory, topology, results_folder, name)=system_specs
-        (selection,  start, stop, timestep, stride, units_x, units_y, task, store_traj, subset)=specs   
-        names, indexes, column_index=Featurize.df_template(system_specs, unit=[units_y])
         traj=Trajectory.Trajectory.loadTrajectory(system_specs, specs)
         
         if traj != None and topology != None:
@@ -497,8 +496,11 @@ class Featurize:
                          precentered=False,
                          parallel=False)  
 
+
+
+
             rows=pd.Index(np.arange(0, len(rmsd), stride)*timestep, name=units_x)
-            df_system=pd.DataFrame(rmsd, columns=column_index, index=rows)
+            df_system=pd.DataFrame(rmsd, index=rows)
             
             return df_system
     

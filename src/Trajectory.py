@@ -154,7 +154,7 @@ class Trajectory:
             
             if not sel_frames.empty: 
                 frames = sel_frames.index.values
-                print(name, frames)
+                print(name)
                 if self.n_samples > 1:
                     frames = np.random.choice(frames, size=min(self.n_samples, len(frames))) #int(self.n_samples / samples[state][parameter]),
                 if self.n_samples == 1:
@@ -190,7 +190,15 @@ class Trajectory:
         for name, system in self.systems.items():
             print('WARNING! set for ternary!!!!!!!!')
             #TODO: propagate this behavior
-            if system.parameter in set(parameters_extract) or system.parameter == f'100mM_{self.mol2}_5mM':
+            
+            print(system.ligand)
+            
+            if system.ligand == 'BeOH':
+                mol2 = 'BeAc'
+            elif system.ligand == 'BuOH':
+                mol2 = 'ViAc'
+            
+            if system.parameter in set(parameters_extract) or system.parameter == f'100mM_{mol2}_5mM':
                 parameter_cols = df.columns.get_level_values(2) == '5mM' #system.parameter
                 replicate_cols = df.columns.get_level_values(3) == str(system.replicate)
                 extract_columns = np.logical_and(parameter_cols, replicate_cols)
@@ -235,12 +243,11 @@ class Trajectory:
         #print(frames_to_extract)
         
         out_files = []
+        
         for state in states:
             iterable_frames = frames_to_extract[frames_to_extract[:,0] == state]
-            print(iterable_frames[:,1])
             for parameter in parameters:
                 parameter_frames = iterable_frames[iterable_frames[:,1] == parameter]
-                print(parameter, parameter_frames)
                 if len(parameter_frames):
                     print(f'Processing {state}: {parameter}', end='\r')
                     _trajs = parameter_frames[:,4]
@@ -306,6 +313,8 @@ class Trajectory:
  
         frames_to_extract= self.frame_selector(df, states)
         files_to_process = self.file_selector(frames_to_extract, states, state_labels, parameters)
+        
+        print(files_to_process)
     
         for system_files in files_to_process:
             (systems_to_concatenate, trajectory_name) = system_files

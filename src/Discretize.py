@@ -268,6 +268,9 @@ class Discretize:
 
 
         if replicate != None:
+            print([f'{system.results_folder}/{df_name}' for system in self.systems.values() if system.replicate == replicate])
+            print(df_name)
+
             file = [glob.glob(f'{system.results_folder}/{df_name}')[0] for system in self.systems.values() if system.replicate == replicate and system.parameter == iterable]
             if len(file) == 1:
                 out_df = pd.read_csv(file[0], index_col=0, header=header)
@@ -1068,106 +1071,6 @@ class Discretize:
         
         return plt.show()
 
-
-    @classmethod
-    def get_combinatorial_traj(cls):
-        
-        return cls()
-
-
-
-    @staticmethod
-    def data_loader(combinatorial_traj,
-                    supra_project, 
-                    projects, 
-                    project_type,
-                    state_boundaries,
-                    state_labels,
-                    state_name = 'ATESB',
-                    water_mols = {'normal' : ['BeOH', 'BuOH'], 'inhibition' : ['BeOH', 'BuOH']}):
-        
-        
-        
-        def loader():
-            supra_df = pd.DataFrame()
-            
-            combinatorial = {}
-            if project_type == 'water':
-                project = projects['H2O']
-                
-                supra_df = combinatorial_traj
-                if isinstance(supra_df, tuple):
-                    (supra_df, states) = supra_df
-                print(np.unique(supra_df.dropna().values.flat).astype(int))
-                for p_type, mols_w in water_mols.items():
-                    if p_type == 'normal' :
-                        for mol_w in mols_w:
-                            its_w = supra_project[p_type][mol_w].parameter
-                            for it_w in its_w:
-                                df_mol = pd.read_csv(f'{project.results}/combinatorial_acylSer-His_{mol_w}_water_{it_w}_{state_name}.csv', index_col=0, header=[0,1,2,3,4,5])
-                                supra_df = pd.concat([supra_df, df_mol], axis=1)
-                                print(mol_w, it_w, np.unique(supra_df.dropna().values.flat).astype(int))
-                    else:
-                        for mol_w in mols_w:
-                            if mol_w == 'BeOH':
-                                mol2 = 'BeAc'
-                            else:
-                                mol2 = 'ViAc'
-                            print(mol_w, mol2)
-                            df_name = f'{project.results}/combinatorial_acylSer-His_{mol_w}-{mol2}_water_100mM_{mol2}_5mM_{state_name}.csv'
-                            supra_df = pd.concat([supra_df, pd.read_csv(df_name, index_col=0, header=[0,1,2,3,4,5])], axis=1)
-                            print(mol_w, mol2, it_w, np.unique(supra_df.dropna().values.flat).astype(int))
-                            
-                combinatorial['H2O'] = supra_df
-                
-            elif project_type == 'normal':
-                
-                supra_df = pd.DataFrame()
-                for mol, project in projects.items():  
-                    
-        
-                    df_mol = combinatorial_traj
-                    supra_df = pd.concat([supra_df, df_mol], axis=1)
-                    combinatorial[mol] = df_mol
-            
-            else:
-                
-                supra_df = pd.DataFrame()
-                for mol, project in projects.items():                                                                                    
-                    df_mol = pd.read_csv(f'{project.results}/combinatorial_acylSer-His_{mol}_100mM_{state_name}.csv', index_col=0, header=[0,1,2,3,4,5])
-                    if mol == 'BeOH':
-                        mol2 = 'BeAc'
-                    else:
-                        mol2 = 'ViAc'
-                    df_mol_in_mol2 = pd.read_csv(f'{project.results}/combinatorial_acylSer-His_{mol}_100mM_{mol2}_5mM_{state_name}.csv', index_col=0, header=[0,1,2,3,4,5])
-                    df_mol2 = pd.read_csv(f'{project.results}/combinatorial_acylSer-His_{mol2}_100mM_{mol2}_5mM_{state_name}.csv', index_col=0, header=[0,1,2,3,4,5])
-                    df_mol_ternary = pd.concat([df_mol, df_mol_in_mol2, df_mol2], axis=1) 
-                    supra_df = pd.concat([supra_df, df_mol_ternary], axis=1) 
-                    combinatorial[mol] = df_mol_ternary
-                    
-                    
-            return combinatorial, supra_df
-        
-
-
-            
-            
-        print(project_type)
-    
-        
-    
-        combinatorial, supra_df = loader()
-    
-        state_indexes = np.unique(supra_df.dropna().values.flat).astype(int) 
-        state_labels = tools.Functions.sampledStateLabels(state_boundaries, state_labels, sampled_states=state_indexes) 
-        states = {j : i for i, j in zip(state_labels, state_indexes)}
-    
-    
-        sampled_states = tools.Functions.state_remaper(states)
-        
-
-        
-        return combinatorial, supra_df, sampled_states
         
         
     @staticmethod
@@ -1210,14 +1113,6 @@ class Discretize:
 
             metric_table_mol  = run_metric_parallel() #correlation_tables[mol1]
             
-            #X = mol, its
-            #target = water
-            #mi = 
-            
-            #f_test, _ = f_regression(X, y)
-            #f_test /= np.max(f_test)
-            #cross_corr_trajectory[idx] = i[1]
-            #out_cross_corr = cross_corr_trajectory.reshape((9,9,len(ref)))
             return np.asarray(metric_table_mol).reshape(len(states1), len(states2)), traj_mol
         
         elif corr_mode == 'all':
@@ -1258,50 +1153,7 @@ class Discretize:
         return out #corr_coeff
 
 
-    @staticmethod
-    def get_metricsInhibition(combinatorial, 
-                                   mol_ternary, 
-                                   sampled_states, 
-                                   n_cores=10, 
-                                   corr_mode='single', 
-                                   remap_traj = False,
-                                   method='mutualInformation'):
-        
-        
-        
-        states_mol = sampled_states['inhibition'][0]
-        states_list = list(states_mol.keys()) #list(states.keys())
-        #state_combs = itertools.product(states_list, states_list)
-        #_states = (states_list, states_list)
-        
-        correlation_tables = {}
-        trajectories = {}
-        
 
-        for mol1, mol2 in mol_ternary.items():
-            print(mol1)
-           
-            df_mol = combinatorial['inhibition'][mol1].loc[:, ('acyl_octamer', mol1, f'100mM_{mol2}')] 
-            df_mol2 = combinatorial['inhibition'][mol1].loc[:, ('acyl_octamer', mol2, '5mM')] #f'100mM_{mol2}')]  
-            
-            states_mol_list = states_list# list(np.unique(df_mol2.values.flat))
-            #states_mol_list = {s : states_mol[s] for s in _states_mol_list}  
-            _states = (states_list, states_mol_list)
-            state_combs = itertools.product(states_list, states_mol_list) #this needs to be here since its not reinitializing
-            _inputs = (df_mol, df_mol2, mol1, mol2, _states, state_combs, n_cores)
-            
-            table, traj = Discretize.run_metric(_inputs, corr_mode, method=method)
-            if remap_traj:
-                traj = tools.Functions.remap_trajectories_states(traj, states_mol)[0]
-
-            #table = table.reshape(len(states_mol), len(states_mol))
-            correlation_tables[mol1], trajectories[mol1] = table, traj
-            
-            
-            #TODO:  single corr from traj_mol or median of all columns beware of vmax vmin changes
-            
-            
-        return correlation_tables, trajectories
         
         
     
@@ -1479,109 +1331,132 @@ class Discretize:
         
 
 
+    def get_metrics(supra_project : dict,
+                    combinatorial : dict, 
+                    input_mols : dict, 
+                    sampled_states, 
+                    n_cores : int = 10, 
+                    corr_mode : str or list ='single', 
+                    remap_traj : bool = False,
+                    method : str ='correlation'):
+        
+        
+        functions = {'normal' : Discretize.get_metricsNormal,
+                 'inhibition' : Discretize.get_metricsInhibition,
+                 'water' : Discretize.get_metricsWater}
+        
+        
+        
+        metrics = {}
+        for project_type, projects in supra_project.items():
+            input_mol = input_mols[project_type]
+            
+            
+            _inputs = (combinatorial, input_mol, sampled_states, n_cores, corr_mode, remap_traj, method, project_type)
+            metrics[project_type] = functions[project_type](_inputs)
+
+        return metrics
+        
+        
     
 
-    @staticmethod
-    def get_metricsNormal(combinatorial : dict, 
-                         mol_water, 
-                         sampled_states, 
-                         n_cores=10, 
-                         compare_method='by_pair',
-                         corr_mode='single', 
-                         remap_traj=False,
-                         method='correlation'):
-        
 
+    def get_metricsNormal(inputs, ref_map = {'A-B' : (0,1), 
+                                             'C-H' : (2, 7), 
+                                             'E-F' : (4,5), 
+                                             'D-G' : (3,6)}):
         
-        base = combinatorial['normal']
+        (combinatorial, input_mols, sampled_states, n_cores, corr_mode, remap_traj, method, project_type) = inputs
+        
+        base = combinatorial[project_type]
         
         mols = list(base.keys())
 
-        states_mol = sampled_states['normal'][0]
+        states_mol = sampled_states[project_type][0]
         states_mol_list = list(states_mol.keys())
        
-
         _states = (states_mol_list, states_mol_list)
 
         trajectories = collections.defaultdict(dict)
-        correlation_tables = collections.defaultdict(dict)
+        data = collections.defaultdict(dict)
         
-        
-        def correlation_map(x):
-            
-            if x > 0:
-                return 1
-            elif x < 0:
-                return -1
-            else:
-                return 0
-        
-        
-        ref_map = {'A-B' : (0,1), 'C-H' : (2, 7), 'E-F' : (4,5), 'D-G' : (3,6)}
-        
-        from scipy import stats
         
         for idx_mol, mol in enumerate(mols):
 
             df_mol = base[mol].iloc[:, base[mol].columns.get_level_values('l2') == mol]
             iterables = df_mol.columns.get_level_values('l3').unique()
 
-            print(idx_mol, mol)
-
             for it in iterables:
 
                 df_it = df_mol.iloc[:, df_mol.columns.get_level_values('l3') == it]
                 references = df_it.columns.get_level_values('l5').unique()
                 
-                it_table = {}
-                if compare_method == 'by_pair':
-                    for pair, index in ref_map.items():
-                        #TODO: map ref_i for letter (references may not be sorted)
-                        idx, idx2 = index[0], index[1]
-                        ref, ref2 = references[idx], references[idx2]
-                        label, label2 = pair.split('-')
-                        print(label, label2)
-                        df_ref = df_it.iloc[:, df_it.columns.get_level_values('l5') == ref]
-                        df_ref2 = df_it.iloc[:, df_it.columns.get_level_values('l5') == ref2]
-                        state_combs = itertools.product(states_mol_list, states_mol_list)
-                        _inputs = (df_ref, df_ref2, label, label2, _states, state_combs, n_cores)
-                        table, _ = Discretize.run_metric(_inputs, corr_mode, method=method)
-                        it_table[pair] = table
- 
-                if method == 'mutualInformation':
-                    out = it_table #.sum(axis=0)
-                else:
-                    _it_table = np.asarray(it_table) 
-                    mask = np.vectorize(correlation_map)(_it_table)
-                    out = stats.mode(mask, axis=0).mode[0]
-                correlation_tables[mol][it], trajectories[mol][it] = out, pd.DataFrame()
+                it_data = {}
 
+                for pair, index in ref_map.items():
+                    #TODO: map ref_i for letter (references may not be sorted)
+                    idx, idx2 = index[0], index[1]
+                    ref, ref2 = references[idx], references[idx2]
+                    label, label2 = pair.split('-')
+                    df_ref = df_it.iloc[:, df_it.columns.get_level_values('l5') == ref]
+                    df_ref2 = df_it.iloc[:, df_it.columns.get_level_values('l5') == ref2]
+                    state_combs = itertools.product(states_mol_list, states_mol_list)
+                    _inputs = (df_ref, df_ref2, label, label2, _states, state_combs, n_cores)
+
+                    metric, _ = Discretize.run_metric(_inputs, corr_mode, method=method)
+                    it_data[pair] = metric
+                
+                data[mol][it], trajectories[mol][it] = it_data, pd.DataFrame() 
         
-        
-        return correlation_tables, trajectories
-        
-        
-        
-        pass
+        return data #, trajectories
+
     
         
-
-
-    @staticmethod
-    def get_metricsWater(combinatorial, 
-                         mol_water, 
-                         sampled_states, 
-                         n_cores=10, 
-                         corr_mode='single', 
-                         remap_traj=False,
-                         method='correlation'):
+    def get_metricsInhibition(inputs):
         
+        (combinatorial, input_mols, sampled_states, n_cores, corr_mode, remap_traj, method, project_type) = inputs
+        
+        base = combinatorial[project_type]
+        states_mol = sampled_states[project_type][0]
+        states_list = list(states_mol.keys()) #list(states.keys())
 
         
-        base_water_df = combinatorial['water']['H2O']
+        correlation_tables = {}
+        trajectories = {}
+        
+
+        for mol1, mol2 in input_mols.items():
+            print(mol1)
+           
+            df_mol = base[mol1].loc[:, ('acyl_octamer', mol1, f'100mM_{mol2}')] 
+            df_mol2 = base[mol1].loc[:, ('acyl_octamer', mol2, '5mM')] #f'100mM_{mol2}')]  
+            
+            states_mol_list = states_list
+ 
+            _states = (states_list, states_mol_list)
+            state_combs = itertools.product(states_list, states_mol_list) #this needs to be here since its not reinitializing
+            _inputs = (df_mol, df_mol2, mol1, mol2, _states, state_combs, n_cores)
+            
+            table, traj = Discretize.run_metric(_inputs, corr_mode, method=method)
+            if remap_traj:
+                traj = tools.Functions.remap_trajectories_states(traj, states_mol)[0]
+
+            correlation_tables[mol1], trajectories[mol1] = table, traj
+            
+            #TODO:  single corr from traj_mol or median of all columns beware of vmax vmin changes
+            
+            
+        return correlation_tables #, trajectories
+
+    def get_metricsWater(inputs):
+        
+        (combinatorial, input_mols, sampled_states, n_cores, corr_mode, remap_traj, method, project_type) = inputs
+        
+        
+        base_water_df = combinatorial[project_type]['H2O']
 
         states_mol = sampled_states['normal'][0]
-        states_water = sampled_states['water'][0]
+        states_water = sampled_states[project_type][0]
         states_mol_list = list(states_mol.keys())
         states_water_list = list(states_water.keys())
        
@@ -1590,7 +1465,7 @@ class Discretize:
 
         trajectories = collections.defaultdict(dict)
         correlation_tables = collections.defaultdict(dict)
-        for idx_mol, (mol1, iterables_mol_w) in enumerate(mol_water.items()):
+        for idx_mol, (mol1, iterables_mol_w) in enumerate(input_mols.items()):
             print(idx_mol, mol1, iterables_mol_w)
             
             (iterables, mol2) = iterables_mol_w
@@ -1615,65 +1490,173 @@ class Discretize:
                 correlation_tables[mol1][it], trajectories[mol1][it] = table, traj
         
         
-        return correlation_tables, trajectories
+        return correlation_tables #, trajectories
+
+
+    @staticmethod
+    def dG_loader(supra_project,
+                  bulks,
+                  water_mols,
+                  plots=False) -> dict:
+        
+        
+        dG = collections.defaultdict(dict)
+        
+        for project_type, projects in supra_project.items():
+            dG[project_type] = {}
+            print(project_type)
+            if project_type != 'water':
+                for mol, project in projects.items():
+                    if mol == 'ViAc':
+                        feature_name = f'Ser11-Ala55_{mol}'
+                    else:
+                        feature_name = f'acylSer-His_{mol}' 
+        
+                    df_mol = Discretize(project, 
+                                        method='dNAC', 
+                                        feature_name=feature_name).dG_calculation(bulk=bulks[mol], 
+                                                                                  plot_all=plots)
+                    dG[project_type][mol] = df_mol 
+                    
+        
+            else:
+                mol = 'H2O' 
+                project = projects['H2O']
+                print(project, mol)
+                df_mol = Discretize(project, 
+                                               method='dNAC_combinatorial_onTheFly', 
+                                               feature_name='acylSer-His_H2O').dG_calculation(bulk=bulks[mol], 
+                                                                                            bulk_solvent='55.56M', 
+                                                                                            plot_all=plots)
+                df_mol.columns = pd.MultiIndex.from_product([[mol], df_mol.columns])
+                for p_type, mols_w in water_mols.items():
+                    print(p_type, mols_w)
+                    if p_type == 'normal':
+                        for mol_w in mols_w:
+        
+                            print(p_type, mol_w)
+                            df_mol_w = pd.read_csv(f'{project.results}/binding_profile/binding_profile_acylSer-His_{mol_w}_water_mean_b0_e-1_s1.csv', index_col=0)
+                            df_mol_w.columns = pd.MultiIndex.from_product([[mol_w], df_mol_w.columns])
+                            df_mol = pd.concat([df_mol, df_mol_w], axis=1)
+                    else:
+                        for mol_w in mols_w:
+                            if mol_w == 'BeOH':
+                                mol2 = 'BeAc'
+                            else:
+                                mol2 = 'ViAc'
+                            print(mol_w, mol2)
+                            df_mol_w2 = pd.read_csv(f'{project.results}//binding_profile/binding_profile_acylSer-His_{mol_w}-{mol2}_water_mean_b0_e-1_s1.csv', index_col=0)
+        
+                            df_mol_w2.columns = pd.MultiIndex.from_product([[mol_w], df_mol_w2.columns])
+                            df_mol = pd.concat([df_mol, df_mol_w2], axis=1)
+                dG[project_type][mol] = df_mol 
+        
+        
+        return dG
+        
+        
+
+
+    @staticmethod
+    def combinatorial_loader(supra_project, 
+                             water_mols, 
+                             state_boundaries, 
+                             input_labels, 
+                             state_name):
+        
+        supra_combinatorial = collections.defaultdict(dict)
+        supra_dfs = {}
+        sampled_states = {}
+        
+        for project_type, projects in supra_project.items():
+        
+        
+            supra_df = pd.DataFrame()
+            combinatorial = {}
+            if project_type == 'water':
+                project = projects['H2O']
+                supra_df = Discretize(project, 
+                                      method='dNAC_combinatorial_onTheFly', 
+                                      feature_name=f'acylSer-His_H2O').combinatorial(state_boundaries, 
+                                                                                     labels=input_labels, 
+                                                                                     reconstruct=True) 
+
+                for p_type, mols_w in water_mols.items():
+        
+                    
+                    if p_type == 'normal' :
+                        for mol_w in mols_w:
+                            if mol_w == 'ViAc':
+                                feature_name = f'Ser11-Ala55_{mol_w}'
+                            else:
+                                feature_name = f'acylSer-His_{mol_w}'
+                            its_w = supra_project[p_type][mol_w].parameter
+                            
+                            for it_w in its_w:
+                                df_mol = pd.read_csv(f'{project.results}/combinatorial_{feature_name}_water_{it_w}_{state_name}.csv', 
+                                                     index_col=0, 
+                                                     header=[0,1,2,3,4,5])
+                                supra_df = pd.concat([supra_df, df_mol], axis=1)
+
+                    else:
+                        for mol_w in mols_w:
+                            if mol_w == 'BeOH':
+                                mol2 = 'BeAc'
+                            else:
+                                mol2 = 'ViAc'
+                            df_name = f'{project.results}/combinatorial_acylSer-His_{mol_w}-{mol2}_water_100mM_{mol2}_5mM_{state_name}.csv'
+                            supra_df = pd.concat([supra_df, pd.read_csv(df_name, index_col=0, header=[0,1,2,3,4,5])], axis=1)
+        
+                combinatorial['H2O'] = supra_df
+                
+            elif project_type == 'normal':
+                
+                supra_df = pd.DataFrame()
+                for mol, project in projects.items():  
+                    
+                    if mol == 'ViAc':
+                        feature_name = f'Ser11-Ala55_{mol}'
+                    else:
+                        feature_name = f'acylSer-His_{mol}' 
+        
+                    df_mol = Discretize(project, method='dNAC', feature_name=feature_name).combinatorial([4,10,20,80], labels=['A', 'T', 'E', 'S', 'B'])
+                    supra_df = pd.concat([supra_df, df_mol], axis=1)
+                    combinatorial[mol] = df_mol
+            else:
+                
+                supra_df = pd.DataFrame()
+                for mol, project in projects.items():                                                                                    
+                    df_base = pd.read_csv(f'{project.results}/combinatorial_acylSer-His_{mol}_100mM_{state_name}.csv', index_col=0, header=[0,1,2,3,4,5])
+                    if mol == 'BeOH':
+                        mol2 = 'BeAc'
+                    else:
+                        mol2 = 'ViAc'
+                    df_mol_in_mol2 = pd.read_csv(f'{project.results}/combinatorial_acylSer-His_{mol}_100mM_{mol2}_5mM_{state_name}.csv', index_col=0, header=[0,1,2,3,4,5])
+                    df_mol2 = pd.read_csv(f'{project.results}/combinatorial_acylSer-His_{mol2}_100mM_{mol2}_5mM_{state_name}.csv', index_col=0, header=[0,1,2,3,4,5])
+                    df_mol = pd.concat([df_base, df_mol_in_mol2, df_mol2], axis=1) 
+                    supra_df = pd.concat([supra_df, df_mol], axis=1) 
+            
+                    combinatorial[mol] = df_mol
+                    
+            
+            #print(supra_df)
+            
+            supra_combinatorial[project_type] = combinatorial
+            supra_dfs[project_type] = supra_df
+            
+            state_indexes = np.unique(supra_df.dropna().values.flat).astype(int) 
+            state_labels = tools.Functions.sampledStateLabels(state_boundaries, input_labels, sampled_states=state_indexes) 
+        
+            states = {j : i for i, j in zip(state_labels, state_indexes)}
+            sampled_states[project_type] = tools.Functions.state_remaper(states)
+            
+        
+        #print(supra_combinatorial, supra_dfs, sampled_states)
+            
+        return supra_combinatorial, supra_dfs, sampled_states   
 
 
 
-
-
-
-    # =============================================================================
-#     def minValue(self, state_shell):
-#         """Discretization is made directly on raw_data using the numpy digitize function.
-#         Minimum value per frame (axis=2) is found using the numpy min function. 
-#         Discretization controled by state_shell"""
-#         
-#         msm_min_f={}
-#         for feature, parameters in self.features.items():
-#             raw_data=[] #data_dict may contain one or more .npy objects
-#             for parameter, data in parameters.items():
-#                 if os.path.exists(data):
-#                     i_arr=np.load(data)
-#                     raw_data.append(i_arr)
-#                 else:
-#                     print(f'\tWarning: file {data} not found.')
-#             rep, frames, ref, sel=np.shape(raw_data)
-#             raw_reshape=np.asarray(raw_data).reshape(rep*frames, ref*sel)
-#             discretize=np.min(np.digitize(raw_reshape, state_shell), axis=1)
-# 
-#             disc_path=f'{self.results_folder}/discretized-minimum-{self.name}-{parameter}.npy'
-#             np.save(disc_path, discretize)
-#             msm_min_f[parameter]={'discretized':[disc_path]}
-#         return msm_min_f
-#     
-#     def single(self, state_shell):
-#         """Discretization is made directly on raw_data using the numpy digitize function.
-#         For each ligand, the digitized value is obtained. Discretization controled by state_shell.
-#         WARNING: size of output array is N_frames*N_ligands*N_replicates. Might crash for high N_frames or N_ligands"""
-#         
-#         msm_single_f={}
-#         for parameter, data_dict in self.features.items():
-#             raw_data=[] #data_dict may contain one or more .npy objects
-#             for i in data_dict:
-#                 if os.path.exists(i):
-#                     i_arr=np.load(i)
-#                     raw_data.append(i_arr)
-#                 else:
-#                     print(f'\tWarning: file {i} not found.')
-#             rep, frames, ref, sel=np.shape(raw_data)
-#             raw_reshape=np.asarray(raw_data).reshape(rep*frames*ref*sel)
-#             
-#             discretize=np.digitize(raw_reshape, state_shell)
-#             disc_path='{}/discretized-single-{}-{}.npy'.format(self.results, self.name, parameter)
-#             np.save(disc_path, discretize)
-#             msm_single_f[parameter]={'discretized':[disc_path]}
-#         return msm_single_f
-# =============================================================================    
-    
-
-    
-
-    
     
     
     
